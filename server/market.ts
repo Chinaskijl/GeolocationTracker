@@ -370,75 +370,101 @@ class Market {
    * @param listingId - ID лота
    * @returns true, если покупка успешна, иначе false
    */
-  async purchaseListing(listingId: string): Promise<boolean> {
-    const listing = this.listings.find(l => l.id === parseInt(listingId, 10));
+  async purchaseListing(listingId: string | number): Promise<boolean> {
+    const listingIdNum = typeof listingId === 'string' ? parseInt(listingId, 10) : listingId;
+    const listing = this.listings.find(l => l.id === listingIdNum);
+    
     if (!listing) {
       console.log(`Лот ${listingId} не найден`);
       return false;
     }
 
+    // Получаем текущее состояние игры
     const gameState = await storage.getGameState();
+    const totalPrice = listing.amount * listing.pricePerUnit;
 
-    if (listing.type === 'sell') {
-      // Игрок покупает ресурс
-      const totalPrice = listing.amount * listing.pricePerUnit;
+    try {
+      if (listing.type === 'sell') {
+        // Игрок покупает ресурс
+        
+        // Проверка наличия достаточного количества золота
+        if (gameState.resources.gold < totalPrice) {
+          console.log(`Недостаточно золота для покупки. Требуется: ${totalPrice}, Имеется: ${gameState.resources.gold}`);
+          return false;
+        }
 
-      // Проверка наличия достаточного количества золота
-      if (gameState.resources.gold < totalPrice) {
-        console.log(`Недостаточно золота для покупки. Требуется: ${totalPrice}, Имеется: ${gameState.resources.gold}`);
-        return false;
+        // Создаем новый объект состояния для изменений
+        const newResources = { ...gameState.resources };
+        
+        // Снимаем золото
+        newResources.gold -= totalPrice;
+        
+        // Добавляем ресурс (убедимся, что значение не undefined)
+        newResources[listing.resourceType] = (newResources[listing.resourceType] || 0) + listing.amount;
+        
+        // Сохраняем обновленное состояние
+        await storage.setGameState({ 
+          ...gameState, 
+          resources: newResources 
+        });
+
+        // Создаем запись о транзакции
+        this.createTransaction({
+          resourceType: listing.resourceType,
+          amount: listing.amount,
+          pricePerUnit: listing.pricePerUnit,
+          timestamp: Date.now(),
+          type: 'buy'
+        });
+
+        // Удаляем лот из рынка
+        this.listings = this.listings.filter(l => l.id !== listingIdNum);
+
+        console.log(`Успешная покупка лота ${listingId}. Ресурс: ${listing.resourceType}, Количество: ${listing.amount}, Цена: ${totalPrice}`);
+        return true;
+        
+      } else if (listing.type === 'buy') {
+        // Игрок продает ресурс
+        
+        // Проверка наличия достаточного количества ресурса
+        if ((gameState.resources[listing.resourceType] || 0) < listing.amount) {
+          console.log(`Недостаточно ресурса для продажи. Требуется: ${listing.amount}, Имеется: ${gameState.resources[listing.resourceType] || 0}`);
+          return false;
+        }
+
+        // Создаем новый объект состояния для изменений
+        const newResources = { ...gameState.resources };
+        
+        // Снимаем ресурс
+        newResources[listing.resourceType] -= listing.amount;
+        
+        // Добавляем золото
+        newResources.gold += totalPrice;
+        
+        // Сохраняем обновленное состояние
+        await storage.setGameState({ 
+          ...gameState, 
+          resources: newResources 
+        });
+
+        // Создаем запись о транзакции
+        this.createTransaction({
+          resourceType: listing.resourceType,
+          amount: listing.amount,
+          pricePerUnit: listing.pricePerUnit,
+          timestamp: Date.now(),
+          type: 'sell'
+        });
+
+        // Удаляем лот из рынка
+        this.listings = this.listings.filter(l => l.id !== listingIdNum);
+
+        console.log(`Успешная продажа лота ${listingId}. Ресурс: ${listing.resourceType}, Количество: ${listing.amount}, Получено золота: ${totalPrice}`);
+        return true;
       }
-
-      // Снимаем золото и добавляем ресурс
-      gameState.resources.gold -= totalPrice;
-      gameState.resources[listing.resourceType] = (gameState.resources[listing.resourceType] || 0) + listing.amount;
-
-      await storage.setGameState(gameState);
-
-      // Создаем запись о транзакции
-      this.createTransaction({
-        resourceType: listing.resourceType,
-        amount: listing.amount,
-        pricePerUnit: listing.pricePerUnit,
-        timestamp: Date.now(),
-        type: 'buy'
-      });
-
-      // Удаляем лот из рынка
-      this.listings = this.listings.filter(l => l.id !== parseInt(listingId, 10));
-
-      console.log(`Успешная покупка лота ${listingId}. Ресурс: ${listing.resourceType}, Количество: ${listing.amount}, Цена: ${totalPrice}`);
-      return true;
-    } else if (listing.type === 'buy') {
-      // Игрок продает ресурс
-      const totalPrice = listing.amount * listing.pricePerUnit;
-
-      // Проверка наличия достаточного количества ресурса
-      if ((gameState.resources[listing.resourceType] || 0) < listing.amount) {
-        console.log(`Недостаточно ресурса для продажи. Требуется: ${listing.amount}, Имеется: ${gameState.resources[listing.resourceType] || 0}`);
-        return false;
-      }
-
-      // Снимаем ресурс и добавляем золото
-      gameState.resources[listing.resourceType] -= listing.amount;
-      gameState.resources.gold += totalPrice; // Важно: добавляем золото при продаже
-
-      await storage.setGameState(gameState);
-
-      // Создаем запись о транзакции
-      this.createTransaction({
-        resourceType: listing.resourceType,
-        amount: listing.amount,
-        pricePerUnit: listing.pricePerUnit,
-        timestamp: Date.now(),
-        type: 'sell'
-      });
-
-      // Удаляем лот из рынка
-      this.listings = this.listings.filter(l => l.id !== parseInt(listingId, 10));
-
-      console.log(`Успешная продажа лота ${listingId}. Ресурс: ${listing.resourceType}, Количество: ${listing.amount}, Получено золота: ${totalPrice}`);
-      return true;
+    } catch (error) {
+      console.error('Ошибка при обработке транзакции:', error);
+      return false;
     }
 
     return false;
