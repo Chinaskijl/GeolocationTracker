@@ -1,152 +1,91 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { Listing, ResourceType } from '@/shared/marketTypes';
-import { getResourceIcon } from '@/lib/resources';
+import { getResourceIcon, getResourceName } from '@/lib/resources';
 
 /**
- * Параметры компонента списка лотов
+ * Параметры компонента для отображения списка лотов на рынке
  */
 interface MarketListingsProps {
-  onRefreshNeeded?: () => void;
-  selectedResource?: ResourceType; // Выбранный ресурс
-  onListingPurchased?: () => void; // Обработчик успешной покупки лота
+  onListingPurchased?: () => void;
+  currentResource?: ResourceType;
+  onResourceSelect?: (resource: ResourceType) => void;
 }
 
 /**
- * Компонент для отображения списка активных лотов на рынке
+ * Компонент для отображения списков лотов на рынке
  * 
- * @param onRefreshNeeded - Функция, вызываемая при необходимости обновления данных
- * @param selectedResource - Выбранный тип ресурса для фильтрации
- * @param onListingPurchased - Функция, вызываемая после успешной покупки лота
+ * @param onListingPurchased - Функция обратного вызова, вызываемая после успешной покупки лота
+ * @param currentResource - Текущий выбранный тип ресурса для фильтрации
+ * @param onResourceSelect - Функция обратного вызова при выборе ресурса
  */
-export function MarketListings({ onRefreshNeeded, selectedResource, onListingPurchased }: MarketListingsProps) {
+export function MarketListings({ onListingPurchased, currentResource, onResourceSelect }: MarketListingsProps) {
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [currentResource, setCurrentResource] = useState<ResourceType | undefined>(selectedResource || 'food');
 
-  // Обновляем текущий ресурс, когда изменяется выбранный ресурс из родительского компонента
-  useEffect(() => {
-    if (selectedResource) {
-      setCurrentResource(selectedResource);
-    }
-  }, [selectedResource]);
-
-  // Список всех доступных ресурсов (без gold, так как это основная валюта)
+  // Получение списка доступных ресурсов для фильтрации (без золота)
   const resources: ResourceType[] = ['food', 'wood', 'oil', 'metal', 'steel', 'weapons'];
 
-  // Загрузка списка лотов с сервера
+  /**
+   * Загрузка лотов с сервера
+   */
   const fetchListings = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const response = await fetch('/api/market/listings');
-
-      if (!response.ok) {
-        throw new Error('Не удалось загрузить список лотов');
-      }
-
-      const data = await response.json();
-      setListings(data);
+      const response = await axios.get('/api/market/listings');
+      setListings(response.data);
+      setError(null);
     } catch (err) {
-      console.error('Ошибка при загрузке списка лотов:', err);
-      setError(err instanceof Error ? err.message : 'Неизвестная ошибка');
+      console.error('Ошибка при загрузке лотов:', err);
+      setError('Не удалось загрузить лоты. Пожалуйста, попробуйте позже.');
     } finally {
       setLoading(false);
     }
   };
 
-  // Покупка лота
-  const handleBuy = async (listingId: number) => {
+  /**
+   * Покупка лота
+   * 
+   * @param listingId - ID лота для покупки
+   */
+  const purchaseListing = async (listingId: number) => {
     try {
-      const response = await fetch('/api/market/buy', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ listingId }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Не удалось купить лот');
-      }
-
+      await axios.post(`/api/market/buy/${listingId}`);
       // Обновляем список лотов после покупки
       fetchListings();
-
-      // Уведомляем родительский компонент о необходимости обновления
-      if (onRefreshNeeded) {
-        onRefreshNeeded();
-      }
       if (onListingPurchased) {
         onListingPurchased();
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Ошибка при покупке лота:', err);
-      alert(err instanceof Error ? err.message : 'Ошибка при покупке лота');
+      setError(err.response?.data?.message || 'Не удалось купить лот');
     }
   };
 
-  // Отмена своего лота
-  const handleCancel = async (listingId: number) => {
-    try {
-      const response = await fetch('/api/market/cancel', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ listingId }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Не удалось отменить лот');
-      }
-
-      // Обновляем список лотов после отмены
-      fetchListings();
-
-      // Уведомляем родительский компонент о необходимости обновления
-      if (onRefreshNeeded) {
-        onRefreshNeeded();
-      }
-    } catch (err) {
-      console.error('Ошибка при отмене лота:', err);
-      alert(err instanceof Error ? err.message : 'Ошибка при отмене лота');
-    }
-  };
-
-  // Загружаем список лотов при монтировании компонента
+  // Загрузка лотов при монтировании компонента
   useEffect(() => {
     fetchListings();
-
-    // Устанавливаем интервал для периодического обновления списка лотов
-    const interval = setInterval(fetchListings, 30000); // Обновляем каждые 30 секунд
-
-    return () => clearInterval(interval);
   }, []);
 
-  // Форматирование даты
-  const formatDate = (dateString: string): string => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('ru-RU', {
-      day: '2-digit',
-      month: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    }).format(date);
+  // Обработчик выбора ресурса
+  const handleResourceSelect = (resource: ResourceType) => {
+    if (onResourceSelect) {
+      onResourceSelect(resource);
+    }
   };
 
   if (loading) {
-    return <div className="text-center p-4">Загрузка списка лотов...</div>;
+    return <div className="text-center p-4">Загрузка лотов...</div>;
   }
 
   if (error) {
     return (
       <div className="text-center p-4 text-red-500">
-        Ошибка: {error}
+        <p>{error}</p>
         <button 
-          onClick={fetchListings}
-          className="ml-2 px-2 py-1 bg-blue-500 text-white rounded"
+          onClick={fetchListings} 
+          className="mt-2 px-4 py-2 bg-blue-500 text-white rounded"
         >
           Повторить
         </button>
@@ -163,99 +102,62 @@ export function MarketListings({ onRefreshNeeded, selectedResource, onListingPur
     ? listings.filter(listing => listing.resourceType === currentResource)
     : listings;
 
-  // Удаление золота из списка ресурсов, если оно там есть
-  const resourceTypes = Object.keys(filteredListings.reduce((acc, curr) => {
-      acc[curr.resourceType] = true;
-      return acc;
-  }, {} as Record<ResourceType, boolean>));
-
-
-  const groupedListings: Record<ResourceType, Listing[]> = {};
-  resourceTypes.forEach(type => groupedListings[type as ResourceType] = []);
-  filteredListings.forEach(listing => {
-      if(listing.resourceType !== 'gold') { // Exclude gold
-        groupedListings[listing.resourceType].push(listing);
-      }
-  });
-
-
   return (
-    <div className="overflow-x-auto">
-      <div className="mb-2">
+    <div>
+      <div className="mb-4 flex flex-wrap gap-2">
         {resources.map((resource) => (
           <button
             key={resource}
-            onClick={() => setCurrentResource(resource)}
-            className={`px-3 py-1 mx-1 rounded ${currentResource === resource ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}
+            onClick={() => handleResourceSelect(resource)}
+            className={`flex items-center px-3 py-1.5 rounded-full text-sm ${
+              currentResource === resource
+                ? 'bg-blue-500 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
           >
-            {resource}
+            <span className="mr-1">{getResourceIcon(resource)}</span>
+            <span className="capitalize">{getResourceName(resource)}</span>
           </button>
         ))}
       </div>
-      <h3 className="text-lg font-medium mb-2">Активные лоты на рынке</h3>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {Object.entries(groupedListings).map(([resourceType, resourceListings]) => {
-          if (resourceListings.length === 0) return null;
-
-          return (
-            <div key={resourceType} className="border rounded-lg p-4">
-              <div className="flex items-center mb-2">
-                {getResourceIcon(resourceType as ResourceType)}
-                <span className="ml-2 font-medium capitalize">{resourceType}</span>
+      <div className="space-y-4">
+        {filteredListings.length > 0 ? (
+          filteredListings.map((listing) => (
+            <div key={listing.id} className="border rounded-lg p-4 shadow-sm bg-white">
+              <div className="flex justify-between items-center">
+                <div>
+                  <span className="mr-2 text-lg">{getResourceIcon(listing.resourceType)}</span>
+                  <span className="font-medium">{getResourceName(listing.resourceType)}</span>
+                  <span className="ml-2 text-gray-600">x{listing.amount}</span>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm text-gray-600">
+                    Цена: <span className="font-medium">{listing.price}</span> 💰
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    За единицу: <span className="font-medium">{(listing.price / listing.amount).toFixed(2)}</span> 💰
+                  </div>
+                </div>
               </div>
-
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-gray-100 dark:bg-gray-800">
-                    <th className="p-2 text-left">Тип</th>
-                    <th className="p-2 text-right">Кол-во</th>
-                    <th className="p-2 text-right">Цена/ед.</th>
-                    <th className="p-2 text-right">Всего</th>
-                    <th className="p-2 text-right">Продавец</th>
-                    <th className="p-2 text-right">Действия</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {resourceListings.map((listing) => (
-                    <tr key={listing.id} className="border-b dark:border-gray-700">
-                      <td className="p-2 text-left">
-                        <span className={`px-2 py-1 rounded text-xs ${
-                          listing.type === 'sell' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
-                        }`}>
-                          {listing.type === 'sell' ? 'Продажа' : 'Покупка'}
-                        </span>
-                      </td>
-                      <td className="p-2 text-right">{listing.amount}</td>
-                      <td className="p-2 text-right">{listing.pricePerUnit}</td>
-                      <td className="p-2 text-right">{listing.amount * listing.pricePerUnit}</td>
-                      <td className="p-2 text-right">
-                        {listing.owner === 'player' ? 'Вы' : 'ИИ'}
-                      </td>
-                      <td className="p-2 text-right">
-                        {listing.owner === 'player' ? (
-                          <button
-                            onClick={() => handleCancel(listing.id)}
-                            className="px-2 py-1 bg-red-500 text-white text-xs rounded"
-                          >
-                            Отменить
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handleBuy(listing.id)}
-                            className="px-2 py-1 bg-blue-500 text-white text-xs rounded"
-                          >
-                            {listing.type === 'sell' ? 'Купить' : 'Продать'}
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <div className="mt-2 flex justify-between items-center">
+                <div className="text-sm text-gray-600">
+                  Продавец: <span className="font-medium">{listing.seller}</span>
+                </div>
+                <button
+                  onClick={() => purchaseListing(listing.id)}
+                  className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
+                >
+                  Купить
+                </button>
+              </div>
             </div>
-          );
-        })}
+          ))
+        ) : (
+          <div className="text-center p-4 text-gray-500">
+            Нет лотов с выбранным ресурсом
+          </div>
+        )}
       </div>
     </div>
   );

@@ -37,6 +37,10 @@ const MarketPanel = ({ open, onClose }) => {
   }
 
   const [selectedResource, setSelectedResource] = useState(''); // Added state for selected resource
+  const fetchGameState = () => {
+    //Implement fetching game state here.  Replace with your actual fetch logic.
+    console.log("Fetching game state...");
+  };
 
   return (
     <div 
@@ -53,21 +57,22 @@ const MarketPanel = ({ open, onClose }) => {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Левая панель - создание лота */}
           <div className="md:col-span-1">
             <MarketCreateListing onSuccess={handleListingCreated} />
           </div>
 
           {/* Средняя панель - графики цен и общий селектор ресурсов */}
-          <div className="md:col-span-2">
+          <div className="md:col-span-1">
             <MarketPriceChartSelector onResourceSelect={setSelectedResource} excludeResource="gold"/> {/* Передаем функцию для установки выбранного ресурса */}
+            <MarketPriceChart selectedResource={selectedResource}/> {/*Added to display the chart based on selected resource*/}
           </div>
         </div>
 
         {/* Нижняя панель - список лотов */}
         <div className="mt-6">
-          <MarketListings selectedResource={selectedResource} onListingPurchased={handleListingCreated} /> {/* Передаем выбранный ресурс в компонент списка лотов */}
+          <MarketListings selectedResource={selectedResource} onListingPurchased={() => fetchGameState()} /> {/* Передаем выбранный ресурс в компонент списка лотов */}
         </div>
       </div>
     </div>
