@@ -8,13 +8,35 @@ import type { City, GameState } from '@shared/schema';
 import { BUILDINGS } from '@/lib/game';
 
 const MarketButton = ({ onOpenMarket }) => (
-  <button onClick={onOpenMarket}>Open Market</button>
+  <button 
+    onClick={onOpenMarket}
+    className="fixed bottom-4 right-4 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg z-[1000] flex items-center space-x-2"
+  >
+    <span>💰</span>
+    <span>Открыть рынок</span>
+  </button>
 );
 
 const MarketPanel = ({ open, onClose }) => (
-  <div style={{ display: open ? 'block' : 'none' }}>
-    <h1>Market</h1>
-    <button onClick={onClose}>Close</button>
+  <div 
+    className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[2000] transition-opacity ${open ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+  >
+    <div className="bg-white rounded-lg p-6 w-3/4 max-w-3xl max-h-[80vh] overflow-y-auto">
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold">Рынок ресурсов</h1>
+        <button 
+          onClick={onClose}
+          className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg"
+        >
+          Закрыть
+        </button>
+      </div>
+      
+      <div className="space-y-4">
+        <p className="text-gray-600">Здесь вы можете покупать и продавать ресурсы</p>
+        {/* Здесь будет содержимое рынка */}
+      </div>
+    </div>
   </div>
 );
 
