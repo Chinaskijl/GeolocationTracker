@@ -27,9 +27,14 @@ export function CityPanel() {
       console.log('Current resources:', gameState.resources);
       console.log('Building cost:', building.cost);
 
-      await apiRequest('POST', `/api/cities/${selectedCity.id}/build`, {
+      const response = await apiRequest('POST', `/api/cities/${selectedCity.id}/build`, {
         buildingId
       });
+      
+      // Обновляем текущий выбранный город на основе полученного ответа
+      if (response) {
+        useGameStore.getState().setSelectedCity(response);
+      }
 
       console.log('Building successful, invalidating queries');
       queryClient.invalidateQueries({ queryKey: ['/api/cities'] });
