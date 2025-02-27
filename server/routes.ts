@@ -288,6 +288,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Failed to get listings' });
     }
   });
+  
+  // Получение истории цен
+  app.get("/api/market/prices/:resourceType", (req, res) => {
+    try {
+      const { resourceType } = req.params;
+      const days = req.query.days ? Number(req.query.days) : undefined;
+      
+      const prices = market.getPriceHistory(resourceType as any, days);
+      res.json(prices);
+    } catch (error) {
+      console.error('Ошибка при получении истории цен:', error);
+      res.status(500).json({ message: 'Failed to get price history' });
+    }
+  });
+  
+  // Получение истории транзакций
+  app.get("/api/market/transactions", (req, res) => {
+    try {
+      const limit = req.query.limit ? Number(req.query.limit) : undefined;
+      const transactions = market.getTransactions();
+      
+      // Если указан лимит, возвращаем только последние N транзакций
+      const result = limit ? transactions.slice(-limit) : transactions;
+      res.json(result);
+    } catch (error) {
+      console.error('Ошибка при получении истории транзакций:', error);
+      res.status(500).json({ message: 'Failed to get transactions' });
+    }
+  });
 
   // Создание нового лота
   app.post("/api/market/create-listing", async (req, res) => {

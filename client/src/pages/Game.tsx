@@ -17,17 +17,22 @@ const MarketButton = ({ onOpenMarket }) => (
   </button>
 );
 
-const MarketPanel = ({ open, onClose }) => {
-  // Импортируем компоненты для рынка только если панель открыта
-  const MarketCreateListing = open ? require('@/components/Market/MarketCreateListing').MarketCreateListing : null;
-  const MarketPriceChart = open ? require('@/components/Market/MarketPriceChart').MarketPriceChart : null;
-  const MarketTransactions = open ? require('@/components/Market/MarketTransactions').MarketTransactions : null;
+// Импортируем компоненты для рынка заранее
+import { MarketCreateListing } from '@/components/Market/MarketCreateListing';
+import { MarketPriceChart } from '@/components/Market/MarketPriceChart';
+import { MarketTransactions } from '@/components/Market/MarketTransactions';
 
+const MarketPanel = ({ open, onClose }) => {
   // Обработчик успешного создания лота
   const handleListingCreated = () => {
     // Можно добавить логику обновления или уведомления
     console.log('Лот успешно создан');
   };
+
+  // Если панель не открыта, не рендерим содержимое
+  if (!open) {
+    return null;
+  }
 
   return (
     <div 
@@ -44,8 +49,7 @@ const MarketPanel = ({ open, onClose }) => {
           </button>
         </div>
 
-        {open && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Левая панель - создание лота */}
             <div className="md:col-span-1">
               <MarketCreateListing onSuccess={handleListingCreated} />
