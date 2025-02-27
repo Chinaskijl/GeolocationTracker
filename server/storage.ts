@@ -62,11 +62,11 @@ async function initializeGameData() {
   await saveGameState({
     resources: {
       gold: 500,
-      wood: 200,
-      food: 500, // Исправляем количество еды на 500
-      oil: 100
+      wood: 500,
+      food: 500,
+      oil: 500
     },
-    population: 0, // Исправляем население на 0
+    population: 0,
     military: 0
   });
 }
@@ -82,9 +82,9 @@ async function createInitialCities() {
       longitude: 37.6173,
       population: 0,
       maxPopulation: 150000,
-      resources: {},
+      resources: { food: 10, gold: 8 },
       boundaries: [[55.8, 37.5], [55.9, 37.7], [55.7, 37.8], [55.6, 37.6], [55.8, 37.5]],
-      owner: "player",
+      owner: "neutral",
       buildings: [],
       military: 0
     },
