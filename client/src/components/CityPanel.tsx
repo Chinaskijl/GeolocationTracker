@@ -165,7 +165,7 @@ export function CityPanel() {
               <div className="p-4 space-y-4">
                 {BUILDINGS.map(building => {
                   const buildingCount = selectedCity.buildings.filter(b => b === building.id).length;
-                  const atLimit = buildingCount >= building.maxCount || building.maxCount === 0;
+                  const atLimit = building.maxCount > 0 && buildingCount >= building.maxCount;
 
                   return (
                     <Button
