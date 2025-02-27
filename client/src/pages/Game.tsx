@@ -50,8 +50,8 @@ const MarketPanel = ({ open, onClose }) => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Левая панель - создание лота */}
-            <div className="md:col-span-1">
+          {/* Левая панель - создание лота */}
+          <div className="md:col-span-1">
               <MarketCreateListing onSuccess={handleListingCreated} />
             </div>
 
