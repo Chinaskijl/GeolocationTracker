@@ -214,8 +214,21 @@ export function CityPanel() {
         {/* Информация о ресурсах города удалена */}
 
         {selectedCity.owner === 'neutral' && (
+          <>
           <div className="space-y-2">
-            <h3 className="font-medium">Административные действия</h3>ectedCity.name}.`,
+            <h3 className="font-medium">Административные действия</h3>
+            <UpdateBoundariesButton
+              onClick={async () => {
+                try {
+                  await apiRequest('POST', `/api/cities/${selectedCity.id}/updateBoundaries`);
+                  toast({
+                    title: 'Границы обновлены',
+                    description: `Границы города ${selectedCity.name} успешно обновлены.`,
+                  });
+                } catch (error) {
+                  toast({
+                    title: 'Ошибка обновления границ',
+                    description: `Не удалось обновить границы города ${selectedCity.name}.`,
                     variant: 'destructive',
                   });
                 }
@@ -223,7 +236,7 @@ export function CityPanel() {
               className="w-full mb-2"
             >
               Обновить границы города
-            </div>
+            </UpdateBoundariesButton>
             <Button 
               onClick={handleCapture}
               disabled={hasCapital && gameState.military < selectedCity.maxPopulation / 4}
@@ -237,6 +250,7 @@ export function CityPanel() {
               </p>
             )}
           </div>
+          </>
         )}
 
         {selectedCity.owner === 'player' && (
