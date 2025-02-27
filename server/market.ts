@@ -137,6 +137,7 @@ class Market {
       } else {
         // ИИ продает ресурсы игроку
         newResources[listing.resourceType] += listing.amount;
+        newResources.gold -= totalCost;
       }
       
       await storage.setGameState({ ...gameState, resources: newResources });

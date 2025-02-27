@@ -20,6 +20,8 @@ const MarketButton = ({ onOpenMarket }) => (
 // Импортируем компоненты для рынка заранее
 import { MarketCreateListing } from '@/components/Market/MarketCreateListing';
 import { MarketPriceChart } from '@/components/Market/MarketPriceChart';
+import { MarketPriceChartSelector } from '@/components/Market/MarketPriceChartSelector';
+import { MarketListings } from '@/components/Market/MarketListings';
 import { MarketTransactions } from '@/components/Market/MarketTransactions';
 
 const MarketPanel = ({ open, onClose }) => {
@@ -57,17 +59,12 @@ const MarketPanel = ({ open, onClose }) => {
 
           {/* Правая панель - графики и история */}
           <div className="md:col-span-2 space-y-6">
-            {/* Графики цен для разных ресурсов */}
+            {/* График цен с селектором ресурса */}
+            <MarketPriceChartSelector />
+
+            {/* Список активных лотов на рынке */}
             <div className="bg-white rounded-lg shadow p-4">
-              <h2 className="text-xl font-semibold mb-4">Графики цен</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <MarketPriceChart resourceType="food" />
-                <MarketPriceChart resourceType="wood" />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                <MarketPriceChart resourceType="oil" />
-                <MarketPriceChart resourceType="metal" />
-              </div>
+              <MarketListings onRefreshNeeded={handleListingCreated} />
             </div>
 
             {/* История транзакций */}
