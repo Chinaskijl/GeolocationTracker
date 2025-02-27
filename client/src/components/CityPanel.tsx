@@ -12,6 +12,8 @@ export function CityPanel() {
 
   if (!selectedCity) return null;
 
+  const hasCapital = cities.some(city => city.owner === 'player');
+
   const handleBuild = async (buildingId: string) => {
     try {
       console.log(`Attempting to build ${buildingId} in city ${selectedCity.id}`);
@@ -37,27 +39,34 @@ export function CityPanel() {
   };
 
   const handleCapture = async () => {
-    if (selectedCity.owner === 'neutral' && gameState.military >= selectedCity.maxPopulation / 4) {
-      try {
-        console.log(`Attempting to capture city ${selectedCity.id}`);
-        console.log('Military strength:', gameState.military);
-        console.log('Required strength:', selectedCity.maxPopulation / 4);
+    try {
+      console.log(`Attempting to capture city ${selectedCity.id}`);
 
+      // Если нет столицы, позволяем захватить любой город
+      if (!hasCapital) {
         await apiRequest('POST', `/api/cities/${selectedCity.id}/capture`, {
           owner: 'player'
         });
-
-        console.log('Capture successful, invalidating queries');
-        queryClient.invalidateQueries({ queryKey: ['/api/cities'] });
-      } catch (error) {
-        console.error('Failed to capture:', error);
+        console.log('Capital city captured successfully');
+      } else if (gameState.military >= selectedCity.maxPopulation / 4) {
+        // Для захвата других городов требуются военные
+        console.log('Military strength:', gameState.military);
+        console.log('Required strength:', selectedCity.maxPopulation / 4);
+        await apiRequest('POST', `/api/cities/${selectedCity.id}/capture`, {
+          owner: 'player'
+        });
+        console.log('City captured successfully');
       }
+
+      queryClient.invalidateQueries({ queryKey: ['/api/cities'] });
+    } catch (error) {
+      console.error('Failed to capture:', error);
     }
   };
 
   const handleTransferMilitary = async (toCityId: number) => {
     try {
-      const amount = Math.floor(selectedCity.military || 0); // Перемещаем все войска
+      const amount = Math.floor(selectedCity.military || 0);
       if (amount <= 0) return;
 
       await apiRequest('POST', `/api/cities/${selectedCity.id}/transfer-military`, {
@@ -137,12 +146,12 @@ export function CityPanel() {
           <div className="space-y-2">
             <Button 
               onClick={handleCapture}
-              disabled={gameState.military < selectedCity.maxPopulation / 4}
+              disabled={hasCapital && gameState.military < selectedCity.maxPopulation / 4}
               className="w-full"
             >
-              {selectedCity.buildings.length === 0 ? 'Выбрать столицей' : 'Захватить город'}
+              {!hasCapital ? 'Выбрать столицей' : 'Захватить город'}
             </Button>
-            {gameState.military < selectedCity.maxPopulation / 4 && (
+            {hasCapital && gameState.military < selectedCity.maxPopulation / 4 && (
               <p className="text-sm text-red-500">
                 Требуется {Math.ceil(selectedCity.maxPopulation / 4)} военных
               </p>
