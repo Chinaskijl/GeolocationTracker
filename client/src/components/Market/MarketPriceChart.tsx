@@ -1,105 +1,144 @@
-import { useEffect, useState } from 'react';
-import { ResourceType } from '@shared/schema';
-import { getResourceIcon } from '@/lib/resources';
-import { getPriceHistory } from '@/lib/api';
-import { 
-  LineChart, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
-  ResponsiveContainer 
-} from 'recharts';
 
-interface MarketPriceChartProps {
-  resourceType: ResourceType;
-  selectedResource?: ResourceType;
+import React, { useEffect, useState } from 'react';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer
+} from 'recharts';
+import { ResourceType } from '@/shared/marketTypes';
+import { getResourceIcon } from '@/lib/resources';
+
+/**
+ * Интерфейс для точки данных на графике цен
+ */
+interface PricePoint {
+  time: string;
+  price: number;
 }
 
 /**
- * Компонент отображения графика цен на ресурс
- * @param resourceType - Тип ресурса для отображения графика цен
- * @param selectedResource - Выбранный ресурс для сравнения (если задан)
+ * Свойства компонента графика цен
  */
-export function MarketPriceChart({ resourceType, selectedResource }: MarketPriceChartProps) {
-  const [priceHistory, setPriceHistory] = useState<{timestamp: number, price: number}[]>([]);
+interface MarketPriceChartProps {
+  resourceType: ResourceType;
+}
+
+/**
+ * Компонент для отображения графика цен ресурса на рынке
+ * 
+ * @param resourceType - Тип ресурса для которого отображается график
+ */
+export function MarketPriceChart({ resourceType }: MarketPriceChartProps) {
+  const [priceHistory, setPriceHistory] = useState<PricePoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Если передан selectedResource и он отличается от resourceType, используем его
-  const displayResourceType = selectedResource || resourceType;
-
   useEffect(() => {
-    const fetchPriceData = async () => {
+    const fetchPriceHistory = async () => {
       try {
         setLoading(true);
-        const data = await getPriceHistory(displayResourceType);
-        setPriceHistory(data);
-        setError(null);
+        const response = await fetch(`/api/market/prices/${resourceType}`);
+        if (!response.ok) {
+          throw new Error('Не удалось загрузить историю цен');
+        }
+        
+        const data = await response.json();
+        
+        // Преобразуем временные метки в формат минут
+        const formattedData = data.map((point: any) => ({
+          time: formatTimeInMinutes(new Date(point.timestamp)),
+          price: point.price
+        }));
+        
+        setPriceHistory(formattedData);
       } catch (err) {
-        console.error('Error fetching price history:', err);
-        setError('Не удалось загрузить историю цен');
+        console.error('Ошибка при загрузке истории цен:', err);
+        setError(err instanceof Error ? err.message : 'Неизвестная ошибка');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchPriceData();
-    // Обновляем данные каждые 30 секунд
-    const interval = setInterval(fetchPriceData, 30000);
+    fetchPriceHistory();
+    
+    // Обновляем данные каждую минуту
+    const intervalId = setInterval(fetchPriceHistory, 60000);
+    
+    return () => clearInterval(intervalId);
+  }, [resourceType]);
 
-    return () => clearInterval(interval);
-  }, [displayResourceType]);
+  /**
+   * Форматирует время в формате "минуты назад"
+   */
+  const formatTimeInMinutes = (date: Date): string => {
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMinutes = Math.floor(diffMs / 60000);
+    
+    if (diffMinutes < 1) {
+      return 'сейчас';
+    } else if (diffMinutes === 1) {
+      return '1 мин. назад';
+    } else if (diffMinutes < 60) {
+      return `${diffMinutes} мин. назад`;
+    } else {
+      const hours = Math.floor(diffMinutes / 60);
+      if (hours === 1) {
+        return '1 час назад';
+      } else if (hours < 24) {
+        return `${hours} ч. назад`;
+      } else {
+        return `${Math.floor(hours / 24)} д. назад`;
+      }
+    }
+  };
 
-  // Форматируем данные для графика
-  const chartData = priceHistory.map(item => ({
-    time: new Date(item.timestamp).toLocaleTimeString(),
-    price: item.price
-  }));
+  if (loading) {
+    return <div className="p-4 text-center">Загрузка графика цен...</div>;
+  }
+
+  if (error) {
+    return <div className="p-4 text-center text-red-500">Ошибка: {error}</div>;
+  }
+
+  if (priceHistory.length === 0) {
+    return (
+      <div className="p-4 text-center text-gray-500">
+        Нет доступной истории цен для {getResourceIcon(resourceType)} {resourceType}
+      </div>
+    );
+  }
 
   return (
-    <div className="bg-white p-4 rounded-lg shadow">
-      <div className="flex items-center mb-2">
-        {getResourceIcon(displayResourceType)}
-        <h3 className="text-lg font-semibold ml-2 capitalize">{displayResourceType}</h3>
-      </div>
-
-      {loading && priceHistory.length === 0 ? (
-        <div className="h-40 flex items-center justify-center">
-          <span>Загрузка данных...</span>
-        </div>
-      ) : error ? (
-        <div className="h-40 flex items-center justify-center text-red-500">
-          {error}
-        </div>
-      ) : priceHistory.length === 0 ? (
-        <div className="h-40 flex items-center justify-center">
-          <span>Нет данных по ценам</span>
-        </div>
-      ) : (
-        <div className="h-40">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart
-              data={chartData}
-              margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="time" />
-              <YAxis />
-              <Tooltip />
-              <Line 
-                type="monotone" 
-                dataKey="price" 
-                stroke="#8884d8" 
-                activeDot={{ r: 8 }} 
-                name={`Цена ${displayResourceType}`}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      )}
+    <div className="w-full h-64 p-2">
+      <h3 className="text-lg font-medium mb-2 flex items-center">
+        {getResourceIcon(resourceType)} 
+        <span className="ml-2">История цен {resourceType}</span>
+      </h3>
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart
+          data={priceHistory}
+          margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="time" />
+          <YAxis />
+          <Tooltip />
+          <Legend />
+          <Line 
+            type="monotone" 
+            dataKey="price" 
+            name="Цена" 
+            stroke="#8884d8" 
+            activeDot={{ r: 8 }} 
+          />
+        </LineChart>
+      </ResponsiveContainer>
     </div>
   );
 }

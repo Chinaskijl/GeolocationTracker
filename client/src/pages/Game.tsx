@@ -52,7 +52,7 @@ const MarketPanel = ({ open, onClose }) => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Левая панель - создание лота */}
           <div className="md:col-span-1">
-            <MarketCreateListing onSuccess={handleListingCreated} /> {/*onResourceSelect is missing, but assumed to be handled elsewhere*/}
+            <MarketCreateListing onSuccess={handleListingCreated} />
           </div>
 
           {/* Правая панель - графики и история */}
@@ -60,12 +60,14 @@ const MarketPanel = ({ open, onClose }) => {
             {/* Графики цен для разных ресурсов */}
             <div className="bg-white rounded-lg shadow p-4">
               <h2 className="text-xl font-semibold mb-4">Графики цен</h2>
-              {/*  Assuming activeResource is used here to filter the charts. Needs implementation */}
-              <MarketPriceChart resourceType="food" />
-              <MarketPriceChart resourceType="wood" />
-              <MarketPriceChart resourceType="oil" />
-              <MarketPriceChart resourceType="metal" />
-
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <MarketPriceChart resourceType="food" />
+                <MarketPriceChart resourceType="wood" />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <MarketPriceChart resourceType="oil" />
+                <MarketPriceChart resourceType="metal" />
+              </div>
             </div>
 
             {/* История транзакций */}
@@ -84,7 +86,6 @@ export default function Game() {
   const { setCities, setGameState } = useGameStore();
   const queryClient = useQueryClient();
   const [isMarketOpen, setIsMarketOpen] = useState(false);
-  const [activeResource, setActiveResource] = useState<ResourceType | null>(null); // Added state for active resource
 
   const { data: cities } = useQuery<City[]>({
     queryKey: ['/api/cities']
@@ -166,6 +167,3 @@ export default function Game() {
     </div>
   );
 }
-
-// Missing type definition.  Needs to be added based on the application's context.
-type ResourceType = 'food' | 'wood' | 'oil' | 'metal';
