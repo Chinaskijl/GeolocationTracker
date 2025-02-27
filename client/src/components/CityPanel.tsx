@@ -33,35 +33,33 @@ export function CityPanel() {
       });
 
       console.log('Building successful, invalidating queries');
-      queryClient.invalidateQueries({ queryKey: ['/api/cities'] });
-
-      // Создаем промис, который разрешится, когда придет следующее обновление от сервера
-      const waitForUpdate = new Promise<void>((resolve) => {
-        // Функция, которая будет вызвана при следующем WebSocket обновлении
-        const subscription = useGameStore.subscribe(
-          (state) => state.cities,
-          (cities) => {
-            const cityInState = cities.find(city => city.id === selectedCity.id);
-            if (cityInState && cityInState.buildings.includes(buildingId)) {
-              // Обновляем выбранный город
-              useGameStore.getState().setSelectedCity(cityInState);
-              // Отписываемся от обновлений
-              subscription();
-              // Завершаем промис
-              resolve();
-            }
-          }
-        );
-
-        // Установим таймаут для случая, если обновление не придет
-        setTimeout(() => {
-          subscription();
-          resolve();
-        }, 2000);
+      await queryClient.invalidateQueries({ queryKey: ['/api/cities'] });
+      
+      // Явно получаем обновленные данные с сервера
+      const updatedCities = await queryClient.fetchQuery({ 
+        queryKey: ['/api/cities'],
+        staleTime: 0
       });
-
-      // Ждем обновления с сервера
-      await waitForUpdate;
+      
+      console.log('Received updated cities after building:', updatedCities);
+      
+      // Находим обновленный город в полученных данных
+      const updatedCity = updatedCities.find(city => city.id === selectedCity.id);
+      
+      if (updatedCity) {
+        console.log('Updated city data:', updatedCity);
+        
+        // Обновляем список городов
+        useGameStore.getState().setCities(updatedCities);
+        
+        // Обновляем выбранный город
+        useGameStore.getState().setSelectedCity(updatedCity);
+        
+        // Проверяем, обновились ли данные как ожидалось
+        console.log('Updated selected city in store:', useGameStore.getState().selectedCity);
+      } else {
+        console.error('Could not find updated city in response');
+      }
     } catch (error) {
       console.error('Failed to build:', error);
     }
