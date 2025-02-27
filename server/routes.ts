@@ -41,6 +41,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let totalMilitaryGrowth = 0;
       let totalPopulationUsed = 0;
 
+      const newResources = { ...gameState.resources };
+
       // Calculate production from all buildings in all player cities
       for (const city of cities) {
         if (city.owner === 'player') {
@@ -59,7 +61,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Resource production
             if (building.resourceProduction) {
               const { type, amount } = building.resourceProduction;
-              gameState.resources[type] += amount;
+              newResources[type] += amount;
               console.log(`Resource production: +${amount} ${type}`);
             }
 
@@ -99,12 +101,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       totalFoodConsumption = gameState.population * POPULATION_FOOD_CONSUMPTION;
       console.log(`Total food consumption: -${totalFoodConsumption}`);
 
-      // Update game state
+      // Update game state with new resources
       const newGameState = {
         ...gameState,
         resources: {
-          ...gameState.resources,
-          food: Math.max(0, gameState.resources.food - totalFoodConsumption)
+          ...newResources,
+          food: Math.max(0, newResources.food - totalFoodConsumption)
         },
         population: Math.max(0, gameState.population + totalPopulationGrowth - totalPopulationUsed),
         military: gameState.military + totalMilitaryGrowth
