@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Map } from '@/components/Map';
 import { ResourcePanel } from '@/components/ResourcePanel';
@@ -7,9 +7,22 @@ import { useGameStore } from '@/lib/store';
 import type { City, GameState } from '@shared/schema';
 import { BUILDINGS } from '@/lib/game';
 
+const MarketButton = ({ onOpenMarket }) => (
+  <button onClick={onOpenMarket}>Open Market</button>
+);
+
+const MarketPanel = ({ open, onClose }) => (
+  <div style={{ display: open ? 'block' : 'none' }}>
+    <h1>Market</h1>
+    <button onClick={onClose}>Close</button>
+  </div>
+);
+
+
 export default function Game() {
   const { setCities, setGameState } = useGameStore();
   const queryClient = useQueryClient();
+  const [isMarketOpen, setIsMarketOpen] = useState(false);
 
   const { data: cities } = useQuery<City[]>({
     queryKey: ['/api/cities']
@@ -86,6 +99,8 @@ export default function Game() {
       <Map />
       <ResourcePanel />
       <CityPanel />
+      <MarketButton onOpenMarket={() => setIsMarketOpen(true)} />
+      <MarketPanel open={isMarketOpen} onClose={() => setIsMarketOpen(false)} />
     </div>
   );
 }

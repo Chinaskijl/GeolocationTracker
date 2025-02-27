@@ -106,3 +106,8 @@
     "bufferutil": "^4.0.8"
   }
 }
+{
+  "dependencies": {
+    "recharts": "^2.7.0"
+  }
+}

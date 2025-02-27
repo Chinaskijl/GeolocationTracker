@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { WebSocket, WebSocketServer } from "ws";
 import { gameLoop } from "./gameLoop";
 import { BUILDINGS } from "../client/src/lib/game";
+import { market } from "./market";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
@@ -272,6 +273,113 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error updating game state:', error);
       res.status(500).json({ message: 'Failed to update game state' });
+    }
+  });
+
+  // API эндпоинты для рыночной системы
+  
+  // Получение списка лотов
+  app.get("/api/market/listings", (_req, res) => {
+    try {
+      const listings = market.getListings();
+      res.json(listings);
+    } catch (error) {
+      console.error('Ошибка при получении списка лотов:', error);
+      res.status(500).json({ message: 'Failed to get listings' });
+    }
+  });
+
+  // Создание нового лота
+  app.post("/api/market/create-listing", async (req, res) => {
+    try {
+      const { resourceType, amount, pricePerUnit, type } = req.body;
+      
+      const result = await market.createPlayerListing({
+        resourceType,
+        amount: Number(amount),
+        pricePerUnit: Number(pricePerUnit),
+        type
+      });
+      
+      if (result) {
+        // Обновляем игровое состояние у всех клиентов
+        gameLoop.broadcastGameState();
+        res.json({ success: true });
+      } else {
+        res.status(400).json({ message: 'Failed to create listing' });
+      }
+    } catch (error) {
+      console.error('Ошибка при создании лота:', error);
+      res.status(500).json({ message: 'Failed to create listing' });
+    }
+  });
+
+  // Покупка лота
+  app.post("/api/market/buy", async (req, res) => {
+    try {
+      const { listingId } = req.body;
+      
+      const result = await market.buyListing(Number(listingId), 'player');
+      
+      if (result) {
+        // Обновляем игровое состояние у всех клиентов
+        gameLoop.broadcastGameState();
+        res.json({ success: true });
+      } else {
+        res.status(400).json({ message: 'Failed to buy listing' });
+      }
+    } catch (error) {
+      console.error('Ошибка при покупке лота:', error);
+      res.status(500).json({ message: 'Failed to buy listing' });
+    }
+  });
+
+  // Отмена лота
+  app.post("/api/market/cancel", async (req, res) => {
+    try {
+      const { listingId } = req.body;
+      
+      const result = await market.cancelListing(Number(listingId));
+      
+      if (result) {
+        // Обновляем игровое состояние у всех клиентов
+        gameLoop.broadcastGameState();
+        res.json({ success: true });
+      } else {
+        res.status(400).json({ message: 'Failed to cancel listing' });
+      }
+    } catch (error) {
+      console.error('Ошибка при отмене лота:', error);
+      res.status(500).json({ message: 'Failed to cancel listing' });
+    }
+  });
+
+  // Получение истории транзакций
+  app.get("/api/market/transactions", (_req, res) => {
+    try {
+      const transactions = market.getTransactions();
+      res.json(transactions);
+    } catch (error) {
+      console.error('Ошибка при получении истории транзакций:', error);
+      res.status(500).json({ message: 'Failed to get transactions' });
+    }
+  });
+
+  // Получение истории цен
+  app.get("/api/market/price-history/:resource", (req, res) => {
+    try {
+      const { resource } = req.params;
+      const { days } = req.query;
+      
+      const priceHistory = market.getPriceHistory(
+        resource as any, 
+        days ? Number(days) : undefined
+      );
+      
+      res.json(priceHistory);
+    } catch (error) {
+      console.error('Ошибка при получении истории цен:', error);
+      res.status(500).json({ message: 'Failed to get price history' });
     }
   });
 
