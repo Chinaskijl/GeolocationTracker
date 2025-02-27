@@ -54,19 +54,12 @@ export default function Game() {
           console.log('Received cities update:', message.cities);
           setCities(message.cities);
         }
-      } catch (error) {
-        console.error('Failed to parse WebSocket message:', error);
-      }
-    };
-
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (data.type === 'CITY_UPDATE') {
+        
+        if (message.type === 'CITY_UPDATE') {
           queryClient.invalidateQueries({ queryKey: ['/api/cities'] });
         }
       } catch (error) {
-        console.error('WebSocket message error:', error);
+        console.error('Failed to parse WebSocket message:', error);
       }
     };
 

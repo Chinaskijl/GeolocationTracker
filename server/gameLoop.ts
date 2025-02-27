@@ -132,12 +132,8 @@ export class GameLoop {
     setInterval(() => {
       this.tick();
       
-      // Отправляем обновление всех клиентов каждую итерацию
-      updateCounter++;
-      if (updateCounter >= 1) { // каждую секунду
-        updateCounter = 0;
-        this.broadcastGameState();
-      }
+      // Всегда отправляем обновления клиентам при каждом тике
+      this.broadcastGameState();
     }, this.tickInterval);
   }
   
