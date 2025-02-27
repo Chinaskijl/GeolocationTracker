@@ -217,26 +217,7 @@ export function CityPanel() {
           <>
           <div className="space-y-2">
             <h3 className="font-medium">Административные действия</h3>
-            <UpdateBoundariesButton
-              onClick={async () => {
-                try {
-                  await apiRequest('POST', `/api/cities/${selectedCity.id}/updateBoundaries`);
-                  toast({
-                    title: 'Границы обновлены',
-                    description: `Границы города ${selectedCity.name} успешно обновлены.`,
-                  });
-                } catch (error) {
-                  toast({
-                    title: 'Ошибка обновления границ',
-                    description: `Не удалось обновить границы города ${selectedCity.name}.`,
-                    variant: 'destructive',
-                  });
-                }
-              }}
-              className="w-full mb-2"
-            >
-              Обновить границы города
-            </UpdateBoundariesButton>
+            {/* Кнопка обновления границ убрана, так как границы загружаются автоматически */}
             <Button 
               onClick={handleCapture}
               disabled={hasCapital && gameState.military < selectedCity.maxPopulation / 4}
