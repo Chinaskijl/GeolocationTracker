@@ -5,6 +5,7 @@ import { WebSocket, WebSocketServer } from "ws";
 import { gameLoop } from "./gameLoop";
 import { BUILDINGS } from "../client/src/lib/game";
 import { market } from "./market";
+import { updateAllCityBoundaries, updateCityBoundary } from "./osmService";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
@@ -437,6 +438,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Ошибка при получении истории цен:', error);
       res.status(500).json({ message: 'Failed to get price history' });
+    }
+  });
+
+  // Эндпоинт для обновления границ всех городов
+  app.post("/api/cities/update-boundaries", async (_req, res) => {
+    try {
+      await updateAllCityBoundaries();
+      const cities = await storage.getCities();
+      res.json(cities);
+    } catch (error) {
+      console.error('Ошибка при обновлении границ городов:', error);
+      res.status(500).json({ message: 'Failed to update city boundaries' });
+    }
+  });
+
+  // Эндпоинт для обновления границ конкретного города
+  app.post("/api/cities/:id/update-boundary", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const city = await updateCityBoundary(Number(id));
+      res.json(city);
+    } catch (error) {
+      console.error('Ошибка при обновлении границ города:', error);
+      res.status(500).json({ message: 'Failed to update city boundary' });
     }
   });
 
