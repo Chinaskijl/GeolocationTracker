@@ -210,15 +210,7 @@ export function CityPanel() {
           </div>
         )}
 
-        <div className="space-y-2">
-          <h3 className="font-medium">Ресурсы города:</h3>
-          {Object.entries(selectedCity.resources).map(([resource, amount]) => (
-            <div key={resource} className="flex items-center justify-between">
-              <span>{getResourceIcon(resource)} {resource}</span>
-              <span>+{amount}</span>
-            </div>
-          ))}
-        </div>
+        {/* Информация о ресурсах города удалена */}
 
         {selectedCity.owner === 'neutral' && (
           <div className="space-y-2">
