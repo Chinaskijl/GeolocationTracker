@@ -36,6 +36,8 @@ const MarketPanel = ({ open, onClose }) => {
     return null;
   }
 
+  const [selectedResource, setSelectedResource] = useState(''); // Added state for selected resource
+
   return (
     <div 
       className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[2000] transition-opacity ${open ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
@@ -57,21 +59,16 @@ const MarketPanel = ({ open, onClose }) => {
             <MarketCreateListing onSuccess={handleListingCreated} />
           </div>
 
-          {/* Правая панель - графики и история */}
-          <div className="md:col-span-2 space-y-6">
-            {/* График цен с селектором ресурса */}
-            <MarketPriceChartSelector />
-
-            {/* Список активных лотов на рынке */}
-            <div className="bg-white rounded-lg shadow p-4">
-              <MarketListings onRefreshNeeded={handleListingCreated} />
-            </div>
-
-            {/* История транзакций */}
-            <div className="bg-white rounded-lg shadow p-4">
-              <MarketTransactions limit={10} />
-            </div>
+          {/* Средняя панель - графики цен и общий селектор ресурсов */}
+          <div className="md:col-span-2">
+            <MarketPriceChartSelector onResourceSelect={setSelectedResource} excludeResource="gold"/> {/* Pass selectedResource to MarketListings */}
+            <MarketPriceChart selectedResource={selectedResource} /> {/* Assuming MarketPriceChart takes selectedResource */}
           </div>
+        </div>
+
+        {/* Нижняя панель - список лотов */}
+        <div className="mt-6">
+          <MarketListings selectedResource={selectedResource} onListingPurchased={handleListingCreated} /> {/* Pass selectedResource to MarketListings */}
         </div>
       </div>
     </div>

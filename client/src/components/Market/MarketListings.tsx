@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Listing, ResourceType } from '@/shared/marketTypes';
 import { getResourceIcon } from '@/lib/resources';
@@ -8,14 +7,16 @@ import { getResourceIcon } from '@/lib/resources';
  */
 interface MarketListingsProps {
   onRefreshNeeded?: () => void;
+  selectedResource?: ResourceType; // Added selectedResource prop
 }
 
 /**
  * Компонент для отображения списка активных лотов на рынке
  * 
  * @param onRefreshNeeded - Функция, вызываемая при необходимости обновления данных
+ * @param selectedResource - Выбранный тип ресурса для фильтрации
  */
-export function MarketListings({ onRefreshNeeded }: MarketListingsProps) {
+export function MarketListings({ onRefreshNeeded, selectedResource }: MarketListingsProps) {
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -25,11 +26,11 @@ export function MarketListings({ onRefreshNeeded }: MarketListingsProps) {
     try {
       setLoading(true);
       const response = await fetch('/api/market/listings');
-      
+
       if (!response.ok) {
         throw new Error('Не удалось загрузить список лотов');
       }
-      
+
       const data = await response.json();
       setListings(data);
     } catch (err) {
@@ -50,15 +51,15 @@ export function MarketListings({ onRefreshNeeded }: MarketListingsProps) {
         },
         body: JSON.stringify({ listingId }),
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Не удалось купить лот');
       }
-      
+
       // Обновляем список лотов после покупки
       fetchListings();
-      
+
       // Уведомляем родительский компонент о необходимости обновления
       if (onRefreshNeeded) {
         onRefreshNeeded();
@@ -79,15 +80,15 @@ export function MarketListings({ onRefreshNeeded }: MarketListingsProps) {
         },
         body: JSON.stringify({ listingId }),
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Не удалось отменить лот');
       }
-      
+
       // Обновляем список лотов после отмены
       fetchListings();
-      
+
       // Уведомляем родительский компонент о необходимости обновления
       if (onRefreshNeeded) {
         onRefreshNeeded();
@@ -101,10 +102,10 @@ export function MarketListings({ onRefreshNeeded }: MarketListingsProps) {
   // Загружаем список лотов при монтировании компонента
   useEffect(() => {
     fetchListings();
-    
+
     // Устанавливаем интервал для периодического обновления списка лотов
     const interval = setInterval(fetchListings, 30000); // Обновляем каждые 30 секунд
-    
+
     return () => clearInterval(interval);
   }, []);
 
@@ -141,36 +142,42 @@ export function MarketListings({ onRefreshNeeded }: MarketListingsProps) {
     return <div className="text-center p-4 text-gray-500">Нет активных лотов</div>;
   }
 
-  // Группировка лотов по типу ресурса для лучшей организации
-  const groupedListings: Record<ResourceType, Listing[]> = {
-    gold: [],
-    food: [],
-    wood: [],
-    oil: [],
-    metal: [],
-    steel: [],
-    weapons: []
-  };
-  
-  listings.forEach(listing => {
-    groupedListings[listing.resourceType].push(listing);
+  // Фильтрация лотов по выбранному ресурсу, если он указан
+  const filteredListings = selectedResource 
+    ? listings.filter(listing => listing.resourceType === selectedResource) 
+    : listings;
+
+  // Удаление золота из списка ресурсов, если оно там есть
+  const resourceTypes = Object.keys(filteredListings.reduce((acc, curr) => {
+      acc[curr.resourceType] = true;
+      return acc;
+  }, {} as Record<ResourceType, boolean>));
+
+
+  const groupedListings: Record<ResourceType, Listing[]> = {};
+  resourceTypes.forEach(type => groupedListings[type as ResourceType] = []);
+  filteredListings.forEach(listing => {
+      if(listing.resourceType !== 'gold') { // Exclude gold
+        groupedListings[listing.resourceType].push(listing);
+      }
   });
+
 
   return (
     <div className="overflow-x-auto">
       <h3 className="text-lg font-medium mb-2">Активные лоты на рынке</h3>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {Object.entries(groupedListings).map(([resourceType, resourceListings]) => {
           if (resourceListings.length === 0) return null;
-          
+
           return (
             <div key={resourceType} className="border rounded-lg p-4">
               <div className="flex items-center mb-2">
                 {getResourceIcon(resourceType as ResourceType)}
                 <span className="ml-2 font-medium capitalize">{resourceType}</span>
               </div>
-              
+
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-gray-100 dark:bg-gray-800">
