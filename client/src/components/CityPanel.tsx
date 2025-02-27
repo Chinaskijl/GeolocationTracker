@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useGameStore } from '@/lib/store';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,10 +10,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/components/ui/use-toast';
 import type { City } from '@shared/schema';
 
-/**
- * Компонент панели города, отображающий информацию о выбранном городе
- * @param cityId - ID города для отображения (опционально)
- */
+
 interface CityPanelProps {
   cityId?: number;
 }
@@ -24,6 +21,7 @@ export function CityPanel({ cityId }: CityPanelProps) {
   const gameState = useGameStore((state) => state.gameState);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [loading, setLoading] = useState(false); // Added state for loading indicator
 
   // Используем useMemo для кэширования выбранного города и предотвращения бесконечных обновлений
   const selectedCity = useMemo(() => {
@@ -190,6 +188,58 @@ export function CityPanel({ cityId }: CityPanelProps) {
               )}
             </div>
           )}
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <span>Граница:</span>
+              <span>
+                {selectedCity.boundaries ? `${selectedCity.boundaries.length} точек` : 'Не определена'}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="ml-2"
+                  onClick={async () => {
+                    try {
+                      setLoading(true);
+                      toast({
+                        title: 'Обновление границ',
+                        description: `Получение актуальных границ для города ${selectedCity.name}...`,
+                      });
+
+                      const response = await fetch(`/api/cities/${selectedCity.name}/update-boundary`, {
+                        method: 'POST',
+                      });
+                      const data = await response.json();
+
+                      if (response.ok) {
+                        toast({
+                          title: 'Границы обновлены',
+                          description: `Границы города ${selectedCity.name} обновлены (${data.pointCount} точек)`,
+                        });
+                      } else {
+                        toast({
+                          title: 'Ошибка',
+                          description: data.message || 'Не удалось обновить границы города',
+                          variant: 'destructive',
+                        });
+                      }
+                    } catch (error) {
+                      console.error('Ошибка при обновлении границ:', error);
+                      toast({
+                        title: 'Ошибка',
+                        description: 'Не удалось обновить границы города',
+                        variant: 'destructive',
+                      });
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                  isLoading={loading} // Added loading state to button
+                >
+                  Обновить
+                </Button>
+              </span>
+            </div>
+          </div>
         </div>
       </ScrollArea>
     </Card>

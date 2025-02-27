@@ -6,7 +6,7 @@ import { gameLoop } from "./gameLoop";
 import { BUILDINGS } from "../client/src/lib/game";
 import { market } from "./market";
 import { Router } from 'express';
-import { loadAllCityBoundaries } from './osmService';
+import { loadAllCityBoundaries, fetchCityBoundaries } from './osmService';
 
 export const router = Router();
 
@@ -20,6 +20,51 @@ export const router = Router();
     console.error('Failed to initialize city boundaries:', error);
   }
 })();
+
+// Эндпоинт для обновления границ конкретного города
+router.post('/api/cities/:cityName/update-boundary', async (req, res) => {
+  try {
+    const { cityName } = req.params;
+    console.log(`Manual request to update boundary for ${cityName}`);
+    
+    // Получаем все города
+    const cities = await storage.getCities();
+    
+    // Находим нужный город
+    const city = cities.find(c => c.name === cityName);
+    
+    if (!city) {
+      return res.status(404).json({ message: 'City not found' });
+    }
+    
+    // Получаем новые границы для города
+    const boundaries = await fetchCityBoundaries(cityName);
+    
+    if (boundaries && boundaries.length > 0) {
+      // Обновляем границы города
+      city.boundaries = boundaries;
+      
+      // Сохраняем обновленные данные о городах
+      await storage.updateCitiesData(cities);
+      
+      // Обновляем состояние игры (широковещательная рассылка)
+      gameLoop.broadcastGameState();
+      
+      return res.json({ 
+        success: true, 
+        message: `Boundaries updated for ${cityName}`,
+        pointCount: boundaries.length
+      });
+    } else {
+      return res.status(404).json({ 
+        message: 'Could not fetch boundaries for this city'
+      });
+    }
+  } catch (error) {
+    console.error('Error updating city boundary:', error);
+    res.status(500).json({ message: 'Error updating city boundary' });
+  }
+});
 
 // Получение состояния игры
 router.get('/api/gameState', async (req, res) => {

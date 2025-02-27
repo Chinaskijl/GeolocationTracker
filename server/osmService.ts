@@ -48,21 +48,58 @@ export async function fetchCityBoundaries(cityName: string): Promise<number[][]>
       return boundariesFromCache;
     }
 
-    // Формируем запрос для получения границ города с геометрией
-    const query = `
-      [out:json];
-      area["name"="${cityName}"]->.searchArea;
-      (
-        relation(area.searchArea)["boundary"="administrative"]["admin_level"~"8|9"];
-        relation(area.searchArea)["place"="city"];
-      );
-      out geom;
-    `;
+    // Специальные запросы для крупных городов
+    let query = '';
+    
+    // Выбираем подходящий запрос в зависимости от города
+    if (cityName === 'Москва') {
+      // Для Москвы ищем с admin_level=4
+      query = `
+        [out:json];
+        area["name"="${cityName}"]->.searchArea;
+        (
+          relation(area.searchArea)["boundary"="administrative"]["admin_level"="4"];
+        );
+        out geom;
+      `;
+    } else if (cityName === 'Санкт-Петербург') {
+      // Для Санкт-Петербурга ищем с admin_level=4
+      query = `
+        [out:json];
+        area["name"="${cityName}"]->.searchArea;
+        (
+          relation(area.searchArea)["boundary"="administrative"]["admin_level"="4"];
+        );
+        out geom;
+      `;
+    } else if (cityName === 'Екатеринбург') {
+      // Для Екатеринбурга ищем по place=city
+      query = `
+        [out:json];
+        area["name"="${cityName}"]->.searchArea;
+        (
+          relation(area.searchArea)["place"="city"];
+          way(area.searchArea)["place"="city"];
+        );
+        out geom;
+      `;
+    } else {
+      // Для остальных городов используем стандартный запрос
+      query = `
+        [out:json];
+        area["name"="${cityName}"]->.searchArea;
+        (
+          relation(area.searchArea)["boundary"="administrative"]["admin_level"~"8|9"];
+          relation(area.searchArea)["place"="city"];
+        );
+        out geom;
+      `;
+    }
 
     // URL для Overpass API
     const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
 
-    console.log(`Fetching boundaries for ${cityName}...`);
+    console.log(`Fetching boundaries for ${cityName} using specialized query...`);
 
     // Отправляем запрос
     const response = await fetch(url);
@@ -74,8 +111,44 @@ export async function fetchCityBoundaries(cityName: string): Promise<number[][]>
     const data = await response.json() as OverpassResponse;
 
     if (!data.elements || data.elements.length === 0) {
-      console.warn(`No boundary data found for ${cityName}`);
-      return [];
+      console.warn(`No boundary data found for ${cityName}, trying alternative query...`);
+      
+      // Пробуем альтернативный запрос, если первый не дал результатов
+      const alternativeQuery = `
+        [out:json];
+        area["name"="${cityName}"]->.searchArea;
+        (
+          relation(area.searchArea)["boundary"="administrative"];
+          relation(area.searchArea)["place"="city"];
+          way(area.searchArea)["place"="city"];
+        );
+        out geom;
+      `;
+      
+      const alternativeUrl = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(alternativeQuery)}`;
+      const alternativeResponse = await fetch(alternativeUrl);
+      
+      if (!alternativeResponse.ok) {
+        return []; // Если и альтернативный запрос не удался, возвращаем пустой массив
+      }
+      
+      const alternativeData = await alternativeResponse.json() as OverpassResponse;
+      
+      if (!alternativeData.elements || alternativeData.elements.length === 0) {
+        console.warn(`No boundary data found with alternative query for ${cityName}`);
+        return [];
+      }
+      
+      // Обрабатываем данные из альтернативного запроса
+      const boundaries = extractBoundaryCoordinates(alternativeData);
+      
+      // Сохраняем границы в файл для кеширования
+      if (boundaries.length > 0) {
+        console.log(`Saving boundaries from alternative query for ${cityName} (${boundaries.length} points)`);
+        await saveCityBoundariesToFile(cityName, boundaries);
+      }
+      
+      return boundaries;
     }
 
     // Обрабатываем данные для получения координат границ
