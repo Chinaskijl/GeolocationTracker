@@ -1,28 +1,31 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useGameStore } from '../lib/store';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import type { City } from '@shared/schema';
 
 /**
  * Компонент панели города, отображающий информацию о выбранном городе
+ * @param cityId - ID города для отображения (опционально)
  */
 interface CityPanelProps {
   cityId?: number;
 }
 
 export function CityPanel({ cityId }: CityPanelProps) {
-  const { cities, selectedCity, selectCity } = useGameStore((state) => ({
-    cities: state.cities,
-    selectedCity: state.selectedCity,
-    selectCity: state.selectCity,
-  }));
-
-  const city = cityId 
-    ? cities.find(c => c.id === cityId) 
-    : selectedCity 
-      ? cities.find(c => c.id === selectedCity) 
-      : null;
+  const cities = useGameStore((state) => state.cities);
+  const selectedCityId = useGameStore((state) => state.selectedCity);
+  
+  // Используем useMemo для кэширования выбранного города и предотвращения бесконечных обновлений
+  const city = useMemo(() => {
+    if (cityId) {
+      return cities.find(c => c.id === cityId);
+    } else if (selectedCityId) {
+      return cities.find(c => c.id === selectedCityId);
+    }
+    return null;
+  }, [cities, cityId, selectedCityId]);
 
   if (!city) {
     return (
@@ -87,5 +90,3 @@ export function CityPanel({ cityId }: CityPanelProps) {
     </Card>
   );
 }
-
-export default CityPanel;
