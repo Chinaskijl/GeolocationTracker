@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -9,22 +10,26 @@ const territoryColors = {
   player: '#4CAF50', // Зеленый для игрока
   neutral: '#9E9E9E', // Серый для нейтральных территорий
   enemy: '#F44336', // Красный для вражеских территорий
-  selected: '#2196F3' // Синий для выбранного города
 };
 
-// Функция для создания пользовательской иконки маркера
-function createCityIcon(city: City, isSelected: boolean): L.DivIcon {
-  const size = isSelected ? 40 : 30;
-  const backgroundColor = isSelected
-    ? territoryColors.selected
-    : city.owner === 'player'
-    ? territoryColors.player
-    : city.owner === 'neutral'
-    ? territoryColors.neutral
-    : territoryColors.enemy;
-
+// Функция для создания маркера города с буквенной иконкой
+function createCityMarker(city: City, isSelected: boolean): L.DivIcon {
+  const size = isSelected ? 40 : 30; // Увеличиваем размер для выбранного города
+  
+  // Определяем цвет маркера в зависимости от владельца
+  let backgroundColor;
+  switch (city.owner) {
+    case 'player':
+      backgroundColor = '#4CAF50'; // Зеленый для игрока
+      break;
+    case 'neutral':
+      backgroundColor = '#9E9E9E'; // Серый для нейтральных
+      break;
+    default:
+      backgroundColor = '#F44336'; // Красный для врагов
+  }
+  
   return L.divIcon({
-    className: 'custom-city-icon',
     html: `
       <div style="
         width: ${size}px;
@@ -34,8 +39,8 @@ function createCityIcon(city: City, isSelected: boolean): L.DivIcon {
         display: flex;
         justify-content: center;
         align-items: center;
-        font-weight: bold;
         color: white;
+        font-weight: bold;
         border: 2px solid white;
         box-shadow: 0 0 5px rgba(0,0,0,0.5);
       ">
@@ -85,30 +90,29 @@ const Map: React.FC = () => {
     markersRef.current = [];
 
     // Создание новых маркеров для городов
-    cities.forEach(city => {
-      const isSelected = selectedCity?.id === city.id;
-      const icon = createCityIcon(city, isSelected);
+    cities.forEach((city) => {
+      const isSelected = city.id === selectedCity?.id;
+      const marker = L.marker([city.latitude, city.longitude], {
+        icon: createCityMarker(city, isSelected),
+        zIndexOffset: isSelected ? 1000 : 0
+      }).addTo(mapRef.current!);
 
-      const marker = L.marker([city.latitude, city.longitude], { icon })
-        .addTo(mapRef.current!)
-        .on('click', () => {
-          setSelectedCity(city.id);
-        });
+      marker.on('click', () => {
+        setSelectedCity(city.id);
+      });
 
-      // Добавляем название города рядом с маркером
-      const tooltip = L.tooltip({
-        permanent: true,
-        direction: 'bottom',
-        className: 'city-tooltip'
-      }).setContent(city.name);
-
-      marker.bindTooltip(tooltip);
+      // Добавление всплывающей подсказки
+      marker.bindTooltip(city.name, {
+        permanent: false,
+        direction: 'top',
+        opacity: 0.8
+      });
 
       markersRef.current.push(marker);
     });
   }, [cities, selectedCity, setSelectedCity]);
 
-  // Отображение границ территорий
+  // Отображение территорий городов
   useEffect(() => {
     if (!mapRef.current || !cities.length) return;
 
@@ -116,17 +120,10 @@ const Map: React.FC = () => {
     polygonsRef.current.forEach(polygon => polygon.remove());
     polygonsRef.current = [];
 
-    // Создание новых полигонов для границ территорий
-    cities.forEach(city => {
-      const isSelected = selectedCity?.id === city.id;
-      const color = isSelected
-        ? territoryColors.selected
-        : city.owner === 'player'
-        ? territoryColors.player
-        : city.owner === 'neutral'
-        ? territoryColors.neutral
-        : territoryColors.enemy;
-
+    // Создание полигонов для территорий городов
+    cities.forEach((city) => {
+      const color = territoryColors[city.owner as keyof typeof territoryColors];
+      
       if (city.boundaries && city.boundaries.length > 2) {
         const polygon = L.polygon(city.boundaries, {
           color: color,
@@ -169,19 +166,16 @@ const Map: React.FC = () => {
           if (processedPairs.has(pairId)) return;
           processedPairs.add(pairId);
 
-          // Создаем линию маршрута
-          const route = L.polyline(
-            [
-              [city.latitude, city.longitude],
-              [adjacentCity.latitude, adjacentCity.longitude]
-            ],
-            {
-              color: '#666',
-              weight: 2,
-              opacity: 0.7,
-              dashArray: '5, 5'
-            }
-          ).addTo(mapRef.current!);
+          // Создаем маршрут между городами
+          const route = L.polyline([
+            [city.latitude, city.longitude],
+            [adjacentCity.latitude, adjacentCity.longitude]
+          ], {
+            color: '#666',
+            weight: 2,
+            opacity: 0.6,
+            dashArray: '5, 10'
+          }).addTo(mapRef.current!);
 
           routesRef.current.push(route);
         });
@@ -189,21 +183,22 @@ const Map: React.FC = () => {
     });
   }, [cities]);
 
-  // Отображение армий в движении
+  // Отображение движущихся армий
   useEffect(() => {
-    if (!mapRef.current || !armyTransfers.length || !cities.length) return;
+    if (!mapRef.current || !cities.length || !armyTransfers) return;
 
     // Очистка существующих маркеров армий
     armyMarkersRef.current.forEach(marker => marker.remove());
     armyMarkersRef.current = [];
 
+    // Создание маркеров для движущихся армий
     armyTransfers.forEach(transfer => {
-      const fromCity = cities.find(c => c.id === transfer.fromCityId);
-      const toCity = cities.find(c => c.id === transfer.toCityId);
+      const fromCity = cities.find(city => city.id === transfer.fromCityId);
+      const toCity = cities.find(city => city.id === transfer.toCityId);
 
       if (!fromCity || !toCity) return;
 
-      // Вычисление текущей позиции армии на основе прогресса перемещения
+      // Расчет текущей позиции армии на основе прогресса перемещения
       const progress = (Date.now() - transfer.startTime) / transfer.duration;
 
       if (progress < 1) {
@@ -214,33 +209,68 @@ const Map: React.FC = () => {
         const armyMarker = L.circleMarker([currentLat, currentLng], {
           radius: 8,
           color: '#333',
-          fillColor: territoryColors.player,
+          fillColor: '#FFC107',
           fillOpacity: 0.8,
           weight: 1
         }).addTo(mapRef.current!);
 
-        armyMarker.bindTooltip(`Армия: ${transfer.size}`);
+        // Добавление всплывающей подсказки
+        armyMarker.bindTooltip(`Армия: ${transfer.size}`, {
+          permanent: false,
+          direction: 'top',
+          opacity: 0.8
+        });
 
         armyMarkersRef.current.push(armyMarker);
       }
     });
 
-    // Планируем обновление позиций армий
-    const updateTimer = setTimeout(() => {
-      // Искусственно вызываем обновление армий через изменение ссылки на массив
-      if (armyTransfers.length) {
-        const forcedUpdate = [...armyTransfers];
-        // Здесь можно было бы обновить армии, но в данном случае
-        // мы просто вызываем повторный рендер для обновления позиций
-      }
+    // Обновление позиций каждые 100мс
+    const intervalId = setInterval(() => {
+      armyMarkersRef.current.forEach(marker => marker.remove());
+      armyMarkersRef.current = [];
+
+      armyTransfers.forEach(transfer => {
+        const fromCity = cities.find(city => city.id === transfer.fromCityId);
+        const toCity = cities.find(city => city.id === transfer.toCityId);
+
+        if (!fromCity || !toCity) return;
+
+        const progress = (Date.now() - transfer.startTime) / transfer.duration;
+
+        if (progress < 1) {
+          const currentLat = fromCity.latitude + (toCity.latitude - fromCity.latitude) * progress;
+          const currentLng = fromCity.longitude + (toCity.longitude - fromCity.longitude) * progress;
+
+          const armyMarker = L.circleMarker([currentLat, currentLng], {
+            radius: 8,
+            color: '#333',
+            fillColor: '#FFC107',
+            fillOpacity: 0.8,
+            weight: 1
+          }).addTo(mapRef.current!);
+
+          armyMarker.bindTooltip(`Армия: ${transfer.size}`, {
+            permanent: false,
+            direction: 'top',
+            opacity: 0.8
+          });
+
+          armyMarkersRef.current.push(armyMarker);
+        }
+      });
     }, 100);
 
     return () => {
-      clearTimeout(updateTimer);
+      clearInterval(intervalId);
+      armyMarkersRef.current.forEach(marker => marker.remove());
+      armyMarkersRef.current = [];
     };
-  }, [armyTransfers, cities]);
+  }, [cities, armyTransfers]);
 
-  return <div id="map" className="map-container" />;
+  return (
+    <div id="map" className="map-container"></div>
+  );
 };
 
 export default Map;

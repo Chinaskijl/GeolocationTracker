@@ -1,4 +1,3 @@
-
 /* Стили для армии на карте */
 .military-icon {
   z-index: 1000 !important;
@@ -164,4 +163,25 @@
 
 .city-territory-player {
   animation: pulse-border 2s infinite;
+}
+
+/* Стили для карты */
+#map {
+  width: 100%;
+  height: 100vh;
+}
+
+.map-container {
+  width: 100%;
+  height: 100vh;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+}
+
+/* Добавляем стили для маркеров Leaflet */
+.leaflet-div-icon {
+  background: transparent;
+  border: none;
 }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import Map from '@/components/Map';
+import Map from '../components/Map';
 import { ResourcePanel } from '@/components/ResourcePanel';
 import { CityPanel } from '@/components/CityPanel';
 import { useGameStore } from '@/lib/store';
