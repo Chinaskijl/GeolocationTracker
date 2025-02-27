@@ -30,43 +30,42 @@ export function ResourcePanel() {
 
     cities.forEach(city => {
       if (city.owner === 'player') {
-        // Добавляем базовое производство города
-        if (city.resources?.gold) goldProd += city.resources.gold;
-        if (city.resources?.wood) woodProd += city.resources.wood;
-        if (city.resources?.food) foodProd += city.resources.food;
-        if (city.resources?.oil) oilProd += city.resources.oil;
+        // Добавляем базовое производство города (if it exists)
+        goldProd += city.resources?.gold || 0;
+        woodProd += city.resources?.wood || 0;
+        foodProd += city.resources?.food || 0;
+        oilProd += city.resources?.oil || 0;
+
 
         // Обработка зданий и их продукции
         city.buildings.forEach(buildingId => {
           const building = BUILDINGS.find(b => b.id === buildingId);
-          if (building) {
-            if (building.resourceProduction) {
-              const { type, amount } = building.resourceProduction;
+          if (building && building.resourceProduction) {
+            const { type, amount } = building.resourceProduction;
 
-              // Добавляем производство ресурсов от зданий
-              switch (type) {
-                case 'gold':
-                  goldProd += amount;
-                  break;
-                case 'wood':
-                  woodProd += amount;
-                  break;
-                case 'food':
-                  foodProd += amount;
-                  break;
-                case 'oil':
-                  oilProd += amount;
-                  break;
-                case 'metal':
-                  metalProd += amount;
-                  break;
-                case 'steel':
-                  steelProd += amount;
-                  break;
-                case 'weapons':
-                  weaponsProd += amount;
-                  break;
-              }
+            // Добавляем производство ресурсов от зданий
+            switch (type) {
+              case 'gold':
+                goldProd += amount;
+                break;
+              case 'wood':
+                woodProd += amount;
+                break;
+              case 'food':
+                foodProd += amount;
+                break;
+              case 'oil':
+                oilProd += amount;
+                break;
+              case 'metal':
+                metalProd += amount;
+                break;
+              case 'steel':
+                steelProd += amount;
+                break;
+              case 'weapons':
+                weaponsProd += amount;
+                break;
             }
           }
         });
