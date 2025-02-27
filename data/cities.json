@@ -38,7 +38,11 @@
       "sawmill"
     ],
     "military": 0,
-    "adjacentCities": []
+    "adjacentCities": [
+      6,
+      7,
+      8
+    ]
   },
   {
     "id": 2,
@@ -190,7 +194,9 @@
     "owner": "neutral",
     "buildings": [],
     "military": 0,
-    "adjacentCities": []
+    "adjacentCities": [
+      9
+    ]
   },
   {
     "id": 6,
@@ -228,7 +234,12 @@
     "owner": "neutral",
     "buildings": [],
     "military": 0,
-    "adjacentCities": []
+    "adjacentCities": [
+      1,
+      7,
+      8,
+      9
+    ]
   },
   {
     "id": 7,
@@ -266,7 +277,12 @@
     "owner": "neutral",
     "buildings": [],
     "military": 0,
-    "adjacentCities": []
+    "adjacentCities": [
+      1,
+      6,
+      8,
+      9
+    ]
   },
   {
     "id": 8,
@@ -304,7 +320,12 @@
     "owner": "neutral",
     "buildings": [],
     "military": 0,
-    "adjacentCities": []
+    "adjacentCities": [
+      1,
+      6,
+      7,
+      9
+    ]
   },
   {
     "id": 9,
@@ -342,6 +363,11 @@
     "owner": "neutral",
     "buildings": [],
     "military": 0,
-    "adjacentCities": []
+    "adjacentCities": [
+      5,
+      6,
+      7,
+      8
+    ]
   }
 ]
