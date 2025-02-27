@@ -1,3 +1,4 @@
+
 /* Стили для армии на карте */
 .military-icon {
   z-index: 1000 !important;
@@ -28,23 +29,6 @@
 @tailwind components;
 @tailwind utilities;
 
-.map-container {
-  width: 100%;
-  height: 85vh;
-  border-radius: 0.5rem;
-  overflow: hidden;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-}
-
-.city-tooltip {
-  background-color: rgba(0, 0, 0, 0.7);
-  border: none;
-  color: white;
-  font-weight: bold;
-  padding: 2px 5px;
-  border-radius: 3px;
-}
-
 @layer base {
   * {
     @apply border-border;
@@ -74,114 +58,10 @@
 .leaflet-div-icon.military-marker {
   background: #ff4500;
   border-radius: 50%;
-
-/* Стили для маршрутов */
-.city-route {
-  stroke-dasharray: 5, 5;
-  animation: dash 10s linear infinite;
-}
-
-@keyframes dash {
-  to {
-    stroke-dashoffset: 1000;
-  }
-}
-
-/* Стили для выделения границ */
-.city-boundary {
-  transition: all 0.3s ease;
-}
-
-.city-boundary:hover {
-  stroke-width: 4px;
-  fill-opacity: 0.6 !important;
-}
-
-.selected-city-boundary {
-  stroke-width: 4px;
-  stroke: #FFD700 !important;
-  fill-opacity: 0.7 !important;
-}
-
-/* Стили для маркеров армий */
-.army-marker {
-  border-radius: 50%;
-  width: 16px;
-  height: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  color: white;
-  box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
-  transform: translateZ(0);
-  transition: transform 0.2s ease;
-}
-
-.army-marker:hover {
-  transform: scale(1.2) translateZ(0);
-}
-
   border: 2px solid white;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
   font-weight: bold;
-}
-
-
-/* Стили для карты и маршрутов */
-.distance-label {
-  pointer-events: none;
-  z-index: 400;
-}
-
-.city-territory {
-  transition: fill-opacity 0.3s ease;
-}
-
-.city-territory:hover {
-  fill-opacity: 0.6 !important;
-}
-
-/* Пульсирующая анимация для границ захваченных городов */
-@keyframes pulse-border {
-  0% {
-    stroke-width: 2px;
-    stroke-opacity: 0.7;
-  }
-  50% {
-    stroke-width: 3px;
-    stroke-opacity: 1;
-  }
-  100% {
-    stroke-width: 2px;
-    stroke-opacity: 0.7;
-  }
-}
-
-.city-territory-player {
-  animation: pulse-border 2s infinite;
-}
-
-/* Стили для карты */
-#map {
-  width: 100%;
-  height: 100vh;
-}
-
-.map-container {
-  width: 100%;
-  height: 100vh;
-  position: absolute;
-  top: 0;
-  left: 0;
-  z-index: 1;
-}
-
-/* Добавляем стили для маркеров Leaflet */
-.leaflet-div-icon {
-  background: transparent;
-  border: none;
 }

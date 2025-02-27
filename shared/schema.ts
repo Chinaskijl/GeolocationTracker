@@ -21,8 +21,7 @@ export const cities = pgTable("cities", {
   boundaries: jsonb("boundaries").$type<[number, number][]>().notNull(),
   owner: text("owner").default("neutral"),
   buildings: jsonb("buildings").$type<string[]>().default([]).notNull(),
-  military: integer("military").default(0).notNull(),
-  adjacentCities: jsonb("adjacent_cities").$type<number[]>().default([]).notNull() // Added adjacentCities field
+  military: integer("military").default(0).notNull()
 });
 
 export const insertCitySchema = createInsertSchema(cities);
@@ -76,22 +75,4 @@ export interface Building {
     growth: number;
   };
   maxCount: number;
-}
-
-export interface ArmyTransfer {
-  id: number;
-  fromCityId: number;
-  toCityId: number;
-  amount: number;
-  startTime: number;
-  arrivalTime: number;
-  isUsingRoute?: boolean;
-}
-
-export interface CityRoute {
-  id: number;
-  fromCityId: number;
-  toCityId: number;
-  distance: number;
-  travelTime: number;
 }

@@ -9,8 +9,6 @@ interface GameStore {
   setSelectedCity: (city: City | null) => void;
   gameState: GameState;
   setGameState: (state: GameState) => void;
-  cityRoutes: [];
-  getAdjacentCities: (cityId: string) => City[];
 }
 
 // Делаем BUILDINGS доступными глобально для использования в компонентах
@@ -20,12 +18,12 @@ declare global {
   }
 }
 
-export const useGameStore = create<GameStore>((set, get) => ({
+export const useGameStore = create<GameStore>((set) => ({
   cities: [],
   setCities: (cities) => set((state) => {
     // Добавляем только новые города, обновляем существующие
     const updatedCities = [...state.cities];
-
+    
     cities.forEach(newCity => {
       const existingIndex = updatedCities.findIndex(c => c.id === newCity.id);
       if (existingIndex >= 0) {
@@ -34,7 +32,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         updatedCities.push(newCity);
       }
     });
-
+    
     return { cities: updatedCities };
   }),
   updateCity: (updatedCity) => set((state) => ({
@@ -44,7 +42,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
   })),
   selectedCity: null,
   setSelectedCity: (city) => set({ selectedCity: city }),
-  cityRoutes: [],
   gameState: {
     resources: {
       gold: 500,
@@ -55,12 +52,5 @@ export const useGameStore = create<GameStore>((set, get) => ({
     population: 0,
     military: 0
   },
-  setGameState: (state) => set({ gameState: state }),
-  getAdjacentCities: (cityId) => {
-    const { cities } = get();
-    const city = cities.find(c => c.id === cityId);
-    if (!city || !city.adjacentCities) return [];
-
-    return cities.filter(c => city.adjacentCities.includes(c.id));
-  },
+  setGameState: (state) => set({ gameState: state })
 }));
