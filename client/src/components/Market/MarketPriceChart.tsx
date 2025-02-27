@@ -1,119 +1,71 @@
-
 import { useEffect, useState } from 'react';
-import { Line } from 'react-chartjs-2';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-} from 'chart.js';
 import { ResourceType } from '@shared/schema';
 import { getResourceIcon } from '@/lib/resources';
 import { getPriceHistory } from '@/lib/api';
-
-// Регистрируем необходимые компоненты для графика
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend
-);
+import { 
+  LineChart, 
+  Line, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  Legend, 
+  ResponsiveContainer 
+} from 'recharts';
 
 interface MarketPriceChartProps {
   resourceType: ResourceType;
+  selectedResource?: ResourceType;
 }
 
 /**
  * Компонент отображения графика цен на ресурс
+ * @param resourceType - Тип ресурса для отображения графика цен
+ * @param selectedResource - Выбранный ресурс для сравнения (если задан)
  */
-export function MarketPriceChart({ resourceType }: MarketPriceChartProps) {
+export function MarketPriceChart({ resourceType, selectedResource }: MarketPriceChartProps) {
   const [priceHistory, setPriceHistory] = useState<{timestamp: number, price: number}[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Если передан selectedResource и он отличается от resourceType, используем его
+  const displayResourceType = selectedResource || resourceType;
+
   useEffect(() => {
-    let isMounted = true;
-    
-    const fetchPriceHistory = async () => {
+    const fetchPriceData = async () => {
       try {
         setLoading(true);
-        const history = await getPriceHistory(resourceType);
-        
-        if (isMounted) {
-          setPriceHistory(history);
-          setError(null);
-        }
+        const data = await getPriceHistory(displayResourceType);
+        setPriceHistory(data);
+        setError(null);
       } catch (err) {
-        console.error('Failed to fetch price history:', err);
-        if (isMounted) {
-          setError('Не удалось загрузить историю цен');
-        }
+        console.error('Error fetching price history:', err);
+        setError('Не удалось загрузить историю цен');
       } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+        setLoading(false);
       }
     };
-    
-    fetchPriceHistory();
-    
+
+    fetchPriceData();
     // Обновляем данные каждые 30 секунд
-    const interval = setInterval(fetchPriceHistory, 30000);
-    
-    return () => {
-      isMounted = false;
-      clearInterval(interval);
-    };
-  }, [resourceType]);
-  
-  // Подготавливаем данные для графика
-  const chartData = {
-    labels: priceHistory.map(item => {
-      const date = new Date(item.timestamp);
-      return `${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
-    }),
-    datasets: [
-      {
-        label: `Цена ${resourceType}`,
-        data: priceHistory.map(item => item.price),
-        borderColor: 'rgb(53, 162, 235)',
-        backgroundColor: 'rgba(53, 162, 235, 0.5)',
-      },
-    ],
-  };
-  
-  const chartOptions = {
-    responsive: true,
-    plugins: {
-      legend: {
-        position: 'top' as const,
-      },
-      title: {
-        display: true,
-        text: `График цен на ${resourceType}`,
-      },
-    },
-    scales: {
-      y: {
-        beginAtZero: false,
-      },
-    },
-  };
-  
+    const interval = setInterval(fetchPriceData, 30000);
+
+    return () => clearInterval(interval);
+  }, [displayResourceType]);
+
+  // Форматируем данные для графика
+  const chartData = priceHistory.map(item => ({
+    time: new Date(item.timestamp).toLocaleTimeString(),
+    price: item.price
+  }));
+
   return (
     <div className="bg-white p-4 rounded-lg shadow">
       <div className="flex items-center mb-2">
-        {getResourceIcon(resourceType)}
-        <h3 className="text-lg font-semibold ml-2 capitalize">{resourceType}</h3>
+        {getResourceIcon(displayResourceType)}
+        <h3 className="text-lg font-semibold ml-2 capitalize">{displayResourceType}</h3>
       </div>
-      
+
       {loading && priceHistory.length === 0 ? (
         <div className="h-40 flex items-center justify-center">
           <span>Загрузка данных...</span>
@@ -124,10 +76,29 @@ export function MarketPriceChart({ resourceType }: MarketPriceChartProps) {
         </div>
       ) : priceHistory.length === 0 ? (
         <div className="h-40 flex items-center justify-center">
-          <span>Нет данных об истории цен</span>
+          <span>Нет данных по ценам</span>
         </div>
       ) : (
-        <Line data={chartData} options={chartOptions} />
+        <div className="h-40">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart
+              data={chartData}
+              margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="time" />
+              <YAxis />
+              <Tooltip />
+              <Line 
+                type="monotone" 
+                dataKey="price" 
+                stroke="#8884d8" 
+                activeDot={{ r: 8 }} 
+                name={`Цена ${displayResourceType}`}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
       )}
     </div>
   );

@@ -1,4 +1,3 @@
-
 import { useGameStore } from '@/lib/store';
 import { Card } from '@/components/ui/card';
 import { Coins, Trees, Wheat, Droplet } from 'lucide-react';
@@ -69,7 +68,7 @@ export function ResourcePanel() {
       steel: parseFloat(steelProd.toFixed(1)),
       weapons: parseFloat(weaponsProd.toFixed(1))
     });
-    
+
     // Для отладки
     console.log("Производство ресурсов:", {
       gold: goldProd,
@@ -80,7 +79,7 @@ export function ResourcePanel() {
       steel: steelProd,
       weapons: weaponsProd
     });
-    
+
     setFoodConsumption(foodCons);
   }, [cities, gameState]);
 

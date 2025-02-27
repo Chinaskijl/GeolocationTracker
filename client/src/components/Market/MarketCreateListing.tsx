@@ -14,6 +14,7 @@ import { ResourceType } from '@shared/schema';
 import { getResourceIcon } from '@/lib/resources';
 import { showNotification } from '@/lib/notifications';
 import { createListing } from '@/lib/api';
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 /**
  * Компонент создания нового объявления на рынке
@@ -28,14 +29,15 @@ interface MarketCreateListingProps {
 /**
  * Компонент создания нового объявления на рынке
  */
-export function MarketCreateListing({ onSuccess, onResourceSelect }: MarketCreateListingProps) {
+export function MarketCreateListing({ onSuccess }: MarketCreateListingProps) {
   const { gameState } = useGameStore();
-  // Исключаем золото из списка ресурсов для продажи
-  const availableResources: ResourceType[] = ['food', 'wood', 'oil', 'metal', 'steel', 'weapons'];
-  const [resourceType, setResourceType] = useState<ResourceType>(availableResources[0]);
+  const [resourceType, setResourceType] = useState<ResourceType>('food');
   const [amount, setAmount] = useState<number>(1);
   const [pricePerUnit, setPricePerUnit] = useState<number>(10);
   const [listingType, setListingType] = useState<'buy' | 'sell'>('sell');
+
+  // Список ресурсов без золота (т.к. это основная валюта)
+  const availableResources: ResourceType[] = ['food', 'wood', 'oil', 'metal', 'steel', 'weapons'];
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -97,30 +99,20 @@ export function MarketCreateListing({ onSuccess, onResourceSelect }: MarketCreat
       <div className="space-y-4">
         <div className="space-y-2">
           <Label>Тип объявления</Label>
-          <div className="flex space-x-4 mt-1 mb-3">
-            <div className="flex items-center">
-              <input
-                type="radio"
-                id="sell"
-                name="listingType"
-                className="mr-2" 
-                checked={listingType === 'sell'}
-                onChange={() => setListingType('sell')}
-              />
-              <Label htmlFor="sell" className="cursor-pointer">Продажа</Label>
-            </div>
-            <div className="flex items-center">
-              <input
-                type="radio"
-                id="buy"
-                name="listingType"
-                className="mr-2"
-                checked={listingType === 'buy'}
-                onChange={() => setListingType('buy')}
-              />
-              <Label htmlFor="buy" className="cursor-pointer">Покупка</Label>
-            </div>
-          </div>
+          <RadioGroup 
+              value={listingType} 
+              onValueChange={(value) => setListingType(value as 'buy' | 'sell')}
+              className="flex space-x-4 mt-1 mb-3"
+            >
+              <div className="flex items-center">
+                <RadioGroupItem value="sell" id="sell" className="mr-2" />
+                <Label htmlFor="sell" className="cursor-pointer">Продажа</Label>
+              </div>
+              <div className="flex items-center">
+                <RadioGroupItem value="buy" id="buy" className="mr-2" />
+                <Label htmlFor="buy" className="cursor-pointer">Покупка</Label>
+              </div>
+            </RadioGroup>
 
           <div className="space-y-2">
             <Label htmlFor="resourceType">Ресурс</Label>
