@@ -32,6 +32,11 @@ export async function initDb() {
     
     // Проверка и создание начальных данных
     await initializeGameData();
+    
+    // Обновляем границы городов при инициализации
+    const { updateAllCityBoundaries } = require('./osmService');
+    await updateAllCityBoundaries();
+    
     console.log("Database initialization completed successfully");
   } catch (error) {
     console.error("Database initialization error:", error);

@@ -215,21 +215,7 @@ export function CityPanel() {
 
         {selectedCity.owner === 'neutral' && (
           <div className="space-y-2">
-            <h3 className="font-medium">Административные действия</h3>
-            <Button
-              variant="outline"
-              onClick={async () => {
-                try {
-                  await apiRequest('POST', `/api/cities/${selectedCity.id}/update-boundary`, {});
-                  await queryClient.invalidateQueries({ queryKey: ['cities'] });
-                  toast({
-                    title: 'Границы обновлены',
-                    description: `Границы города ${selectedCity.name} успешно обновлены.`,
-                  });
-                } catch (error) {
-                  toast({
-                    title: 'Ошибка',
-                    description: `Не удалось обновить границы города ${selectedCity.name}.`,
+            <h3 className="font-medium">Административные действия</h3>ectedCity.name}.`,
                     variant: 'destructive',
                   });
                 }

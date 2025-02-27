@@ -98,27 +98,33 @@ function extractBoundaryCoordinates(data: OverpassResponse): number[][] {
     // Собираем все внешние пути (outer)
     const outerMembers = boundaryRelation.members.filter(m => m.role === 'outer' && m.geometry);
     
+    // Здесь создаем один замкнутый полигон из всех внешних частей
+    let allPoints: Array<{lat: number; lon: number}> = [];
+    
     for (const member of outerMembers) {
       if (member.geometry) {
-        // Преобразуем геометрию в формат [lat, lon]
-        const ring = member.geometry.map(point => [point.lat, point.lon]);
-        
-        // Добавляем только если есть достаточно точек для формирования полигона
-        if (ring.length > 3) {
-          // Убедимся, что полигон замкнут
-          if (ring[0][0] !== ring[ring.length - 1][0] || ring[0][1] !== ring[ring.length - 1][1]) {
-            ring.push([ring[0][0], ring[0][1]]);
-          }
-          
-          // Добавляем координаты в результат
-          coordinates.push(...ring);
-        }
+        // Собираем все точки из всех внешних частей
+        allPoints = allPoints.concat(member.geometry);
       }
+    }
+    
+    // Если есть точки, формируем полигон
+    if (allPoints.length > 3) {
+      // Преобразуем геометрию в формат [lat, lon]
+      const polygon = allPoints.map(point => [point.lat, point.lon]);
+      
+      // Убедимся, что полигон замкнут
+      if (polygon[0][0] !== polygon[polygon.length - 1][0] || 
+          polygon[0][1] !== polygon[polygon.length - 1][1]) {
+        polygon.push([polygon[0][0], polygon[0][1]]);
+      }
+      
+      return polygon;
     }
   }
   
   // Если не удалось собрать координаты из геометрии, возвращаем пустой массив
-  return coordinates.length > 0 ? coordinates : [];
+  return [];
 }
 
 /**
@@ -146,10 +152,18 @@ export async function updateAllCityBoundaries(): Promise<void> {
     console.log('Starting update of all city boundaries...');
     // Получаем текущие данные о городах
     const cities = await storage.getCities();
+    let boundaryCities = false;
     
     // Обновляем границы для каждого города
     for (const city of cities) {
       try {
+        // Пропускаем города, у которых уже есть границы
+        if (city.boundaries && city.boundaries.length > 10) {
+          console.log(`City ${city.name} already has boundaries with ${city.boundaries.length} points`);
+          boundaryCities = true;
+          continue;
+        }
+        
         console.log(`Processing city: ${city.name}`);
         // Пытаемся получить реальные границы из OSM
         const boundaries = await fetchCityBoundaries(city.name);
@@ -158,6 +172,7 @@ export async function updateAllCityBoundaries(): Promise<void> {
           console.log(`Got real boundaries for ${city.name} with ${boundaries.length} points`);
           // Обновляем границы города
           city.boundaries = boundaries;
+          boundaryCities = true;
         } else {
           console.log(`Using simple boundary for ${city.name}`);
           // Если не удалось получить границы, создаем простую границу
@@ -170,9 +185,13 @@ export async function updateAllCityBoundaries(): Promise<void> {
       }
     }
     
-    // Сохраняем обновленные данные о городах
-    await storage.updateCitiesData(cities);
-    console.log('City boundaries updated successfully');
+    // Сохраняем обновленные данные о городах только если есть изменения
+    if (!boundaryCities) {
+      await storage.updateCitiesData(cities);
+      console.log('City boundaries updated successfully');
+    } else {
+      console.log('No boundary updates needed');
+    }
   } catch (error) {
     console.error('Error updating city boundaries:', error);
   }

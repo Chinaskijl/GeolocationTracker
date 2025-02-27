@@ -124,29 +124,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/military/transfer", async (req, res) => {
     try {
       const { fromCityId, toCityId, amount } = req.body;
-      
+
       // Получаем города
       const cities = await storage.getCities();
       const fromCity = cities.find(c => c.id === Number(fromCityId));
       const toCity = cities.find(c => c.id === Number(toCityId));
-      
+
       if (!fromCity || !toCity) {
         return res.status(404).json({ message: 'City not found' });
       }
-      
+
       // Проверяем наличие необходимого количества военных
       if (!fromCity.military || fromCity.military < amount) {
         return res.status(400).json({ message: 'Insufficient military units' });
       }
-      
+
       // Уменьшаем количество военных в исходном городе
       await storage.updateCity(Number(fromCityId), {
         military: fromCity.military - amount
       });
-      
+
       // Рассчитываем время перемещения
       const travelTime = calculateTravelTime(fromCity, toCity);
-      
+
       // Создаем передвижение армии
       const armyTransfer = {
         id: Date.now(),
@@ -157,10 +157,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         arrivalTime: Date.now() + travelTime,
         owner: fromCity.owner
       };
-      
+
       // Сохраняем информацию о перемещении армии в хранилище
       await storage.addArmyTransfer(armyTransfer);
-      
+
       // Уведомляем всех клиентов о начале перемещения армии
       const militaryTransferData = {
         type: 'MILITARY_TRANSFER_START',
@@ -181,23 +181,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         duration: travelTime,
         startTime: Date.now()
       };
-      
+
       // Отправляем через WebSocket
       for (const client of wss.clients) {
         if (client.readyState === WebSocket.OPEN) {
           client.send(JSON.stringify(militaryTransferData));
         }
       }
-      
+
       // Запускаем таймер для обработки прибытия армии
       setTimeout(async () => {
         try {
           // Получаем актуальное состояние целевого города
           const updatedCities = await storage.getCities();
           const currentToCity = updatedCities.find(c => c.id === Number(toCityId));
-          
+
           if (!currentToCity) return;
-          
+
           // Обновляем целевой город
           if (currentToCity.owner === fromCity.owner) {
             // Если город принадлежит тому же игроку, просто добавляем военных
@@ -207,7 +207,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           } else {
             // Если город не принадлежит игроку, происходит атака
             const defenseStrength = currentToCity.military || 0;
-            
+
             if (amount > defenseStrength) {
               // Атака успешна, захватываем город
               await storage.updateCity(Number(toCityId), {
@@ -223,10 +223,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
               });
             }
           }
-          
+
           // Удаляем перемещение из хранилища
           await storage.removeArmyTransfer(armyTransfer.id);
-          
+
           // Уведомляем клиентов о завершении перемещения
           const transferCompleteData = {
             type: 'MILITARY_TRANSFER_COMPLETE',
@@ -234,23 +234,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
             toCity: toCityId,
             result: currentToCity.owner === fromCity.owner ? 'reinforced' : (amount > defenseStrength ? 'captured' : 'failed')
           };
-          
+
           for (const client of wss.clients) {
             if (client.readyState === WebSocket.OPEN) {
               client.send(JSON.stringify(transferCompleteData));
             }
           }
-          
+
           // Обновляем игровое состояние у всех клиентов
           gameLoop.broadcastGameState();
-          
+
         } catch (error) {
           console.error('Error processing military arrival:', error);
         }
       }, travelTime);
-      
+
       res.json({ success: true, travelTime });
-      
+
     } catch (error) {
       console.error('Error transferring military:', error);
       res.status(500).json({ message: 'Failed to transfer military' });
@@ -278,7 +278,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // API эндпоинты для рыночной системы
-  
+
   // Получение списка лотов
   app.get("/api/market/listings", (_req, res) => {
     try {
@@ -289,13 +289,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Failed to get listings' });
     }
   });
-  
+
   // Получение истории цен
   app.get("/api/market/prices/:resourceType", (req, res) => {
     try {
       const { resourceType } = req.params;
       const days = req.query.days ? Number(req.query.days) : undefined;
-      
+
       const prices = market.getPriceHistory(resourceType as any, days);
       res.json(prices);
     } catch (error) {
@@ -303,13 +303,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Failed to get price history' });
     }
   });
-  
+
   // Получение истории транзакций
   app.get("/api/market/transactions", (req, res) => {
     try {
       const limit = req.query.limit ? Number(req.query.limit) : undefined;
       const transactions = market.getTransactions();
-      
+
       // Если указан лимит, возвращаем только последние N транзакций
       const result = limit ? transactions.slice(-limit) : transactions;
       res.json(result);
@@ -323,14 +323,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/market/create-listing", async (req, res) => {
     try {
       const { resourceType, amount, pricePerUnit, type } = req.body;
-      
+
       const result = await market.createPlayerListing({
         resourceType,
         amount: Number(amount),
         pricePerUnit: Number(pricePerUnit),
         type
       });
-      
+
       if (result) {
         // Обновляем игровое состояние у всех клиентов
         gameLoop.broadcastGameState();
@@ -348,16 +348,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/market/purchase", async (req, res) => {
     try {
       const { listingId } = req.body;
-      
+
       const result = await market.buyListing(Number(listingId), 'player');
-      
+
       if (result) {
         // Обновляем игровое состояние у всех клиентов
         gameLoop.broadcastGameState();
-        
+
         // Обеспечиваем обновление состояния игры у клиента, который совершил покупку
         const gameState = await storage.getGameState();
-        
+
         res.json({ success: true, gameState });
       } else {
         res.status(400).json({ message: 'Failed to buy listing' });
@@ -372,9 +372,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/market/cancel", async (req, res) => {
     try {
       const { listingId } = req.body;
-      
+
       const result = await market.cancelListing(Number(listingId));
-      
+
       if (result) {
         // Обновляем игровое состояние у всех клиентов
         gameLoop.broadcastGameState();
@@ -392,16 +392,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/market/purchase-listing", async (req, res) => {
     try {
       const { listingId } = req.body;
-      
+
       const result = await market.purchaseListing(listingId);
-      
+
       if (result) {
         // Получаем обновленное состояние игры
         const gameState = await storage.getGameState();
-        
+
         // Обновляем игровое состояние у всех клиентов
         gameLoop.broadcastGameState();
-        
+
         res.json({ success: true, gameState });
       } else {
         res.status(400).json({ message: 'Failed to purchase listing' });
@@ -428,12 +428,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { resource } = req.params;
       const { days } = req.query;
-      
+
       const priceHistory = market.getPriceHistory(
         resource as any, 
         days ? Number(days) : undefined
       );
-      
+
       res.json(priceHistory);
     } catch (error) {
       console.error('Ошибка при получении истории цен:', error);
@@ -453,17 +453,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Эндпоинт для обновления границ конкретного города
-  app.post("/api/cities/:id/update-boundary", async (req, res) => {
-    try {
-      const { id } = req.params;
-      const city = await updateCityBoundary(Number(id));
-      res.json(city);
-    } catch (error) {
-      console.error('Ошибка при обновлении границ города:', error);
-      res.status(500).json({ message: 'Failed to update city boundary' });
-    }
-  });
+  // Маршрут для обновления границ города удален, границы инициализируются автоматически
 
   return httpServer;
 }
