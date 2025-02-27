@@ -1,14 +1,13 @@
-
 @import "tailwindcss/base";
 @import "tailwindcss/components";
 @import "tailwindcss/utilities";
 
-/* Стили для карты и маркеров */
+/* Стили для контейнера карты */
 .map-container {
+  height: 100vh;
   width: 100%;
-  height: 100%;
-  min-height: 500px;
   z-index: 1;
+  background-color: #f5f5f5;
 }
 
 /* Стили для маркеров городов */
@@ -42,6 +41,20 @@
 .city-icon.ai {
   background-color: #ff3333;
 }
+
+/* Стили для иконок маркеров */
+.player-icon {
+  filter: hue-rotate(120deg);
+}
+
+.ai-icon {
+  filter: hue-rotate(0deg);
+}
+
+.neutral-icon {
+  filter: grayscale(100%);
+}
+
 
 /* Стиль для всплывающих подсказок */
 .city-tooltip {
@@ -152,7 +165,24 @@ button:disabled {
   display: block;
 }
 
+/* Стили для анимации перемещения армий */
+.army-transfer-arrow {
+  font-size: 20px;
+  font-weight: bold;
+  color: #f44336;
+  transform: rotate(90deg);
+}
+
+/* Убедимся, что все элементы Leaflet отображаются корректно */
 .leaflet-container {
   width: 100%;
   height: 100%;
+}
+
+.leaflet-control-zoom {
+  margin-top: 10px !important;
+}
+
+.leaflet-popup-content {
+  padding: 5px;
 }
