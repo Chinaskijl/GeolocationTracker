@@ -223,10 +223,6 @@ export function CityPanel() {
             >
               Обновить границы города
             </UpdateBoundariesButton>
-              }}
-              className="w-full mb-2"
-            >
-              Обновить границы города
             </UpdateBoundariesButton>
             <Button 
               onClick={handleCapture}
