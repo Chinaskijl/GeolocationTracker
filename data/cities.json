@@ -32,8 +32,11 @@
         37.5
       ]
     ],
-    "owner": "neutral",
-    "buildings": [],
+    "owner": "player",
+    "buildings": [
+      "sawmill",
+      "house"
+    ],
     "military": 0
   },
   {
