@@ -5,6 +5,7 @@ import { BUILDINGS } from '@/lib/game';
 import { apiRequest } from '@/lib/queryClient';
 import { Progress } from '@/components/ui/progress';
 import { useQueryClient } from '@tanstack/react-query';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export function CityPanel() {
   const { selectedCity, gameState, cities } = useGameStore();
@@ -42,14 +43,12 @@ export function CityPanel() {
     try {
       console.log(`Attempting to capture city ${selectedCity.id}`);
 
-      // Если нет столицы, позволяем захватить любой город
       if (!hasCapital) {
         await apiRequest('POST', `/api/cities/${selectedCity.id}/capture`, {
           owner: 'player'
         });
         console.log('Capital city captured successfully');
       } else if (gameState.military >= selectedCity.maxPopulation / 4) {
-        // Для захвата других городов требуются военные
         console.log('Military strength:', gameState.military);
         console.log('Required strength:', selectedCity.maxPopulation / 4);
         await apiRequest('POST', `/api/cities/${selectedCity.id}/capture`, {
@@ -84,8 +83,8 @@ export function CityPanel() {
   const playerCities = cities.filter(city => city.owner === 'player' && city.id !== selectedCity.id);
 
   return (
-    <Card className="fixed bottom-4 left-4 p-4 z-[1000] w-96">
-      <div className="flex flex-col gap-4">
+    <Card className="fixed bottom-4 left-4 w-96 max-h-[80vh] overflow-hidden z-[1000]">
+      <div className="p-4 space-y-4">
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-bold">{selectedCity.name}</h2>
           <span className={`px-2 py-1 rounded-full text-sm ${
@@ -162,43 +161,43 @@ export function CityPanel() {
         {selectedCity.owner === 'player' && (
           <div className="space-y-2">
             <h3 className="font-medium">Строительство</h3>
-            <div className="grid grid-cols-1 gap-2">
-              {BUILDINGS.map(building => {
-                const buildingCount = selectedCity.buildings.filter(b => b === building.id).length;
-                const atLimit = buildingCount >= building.maxCount;
+            <ScrollArea className="h-60 w-full rounded-md border">
+              <div className="p-4 space-y-4">
+                {BUILDINGS.map(building => {
+                  const buildingCount = selectedCity.buildings.filter(b => b === building.id).length;
+                  const atLimit = buildingCount >= building.maxCount;
 
-                return (
-                  <Button
-                    key={building.id}
-                    variant="outline"
-                    onClick={() => handleBuild(building.id)}
-                    className="w-full p-6 h-auto"
-                    disabled={!canAffordBuilding(gameState, building) || atLimit}
-                  >
-                    <div className="w-full space-y-4">
-                      <div className="flex justify-between items-center">
-                        <span className="text-lg font-medium">{building.name}</span>
-                        <span className="text-sm text-gray-500">
-                          {buildingCount}/{building.maxCount}
-                        </span>
-                      </div>
-                      <div className="text-sm text-left text-gray-600 space-y-1">
-                        {building.resourceProduction && (
-                          <div>+{building.resourceProduction.amount} {building.resourceProduction.type}/сек</div>
-                        )}
-                        {building.population?.growth && (
-                          <div>+{building.population.growth} население/сек</div>
-                        )}
-                        {building.military?.production && (
-                          <div>+{building.military.production} военные/сек (-{building.military.populationUse} население)</div>
-                        )}
-                      </div>
-                      <div className="border-t pt-4">
-                        <div className="flex flex-wrap gap-3">
+                  return (
+                    <Button
+                      key={building.id}
+                      variant="outline"
+                      onClick={() => handleBuild(building.id)}
+                      className="w-full p-4 h-auto"
+                      disabled={!canAffordBuilding(gameState, building) || atLimit}
+                    >
+                      <div className="w-full space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-lg font-medium">{building.name}</span>
+                          <span className="text-sm text-gray-500">
+                            {buildingCount}/{building.maxCount}
+                          </span>
+                        </div>
+                        <div className="text-sm text-left text-gray-600">
+                          {building.resourceProduction && (
+                            <div>+{building.resourceProduction.amount} {building.resourceProduction.type}/сек</div>
+                          )}
+                          {building.population?.growth && (
+                            <div>+{building.population.growth} население/сек</div>
+                          )}
+                          {building.military?.production && (
+                            <div>+{building.military.production} военные/сек (-{building.military.populationUse} население)</div>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-2 pt-2 border-t">
                           {Object.entries(building.cost).map(([resource, amount]) => (
                             <span
                               key={resource}
-                              className={`text-sm px-3 py-1.5 rounded-full ${
+                              className={`text-sm px-2 py-1 rounded ${
                                 gameState.resources[resource as keyof typeof gameState.resources] >= amount
                                   ? 'bg-green-100 text-green-800'
                                   : 'bg-red-100 text-red-800'
@@ -209,11 +208,11 @@ export function CityPanel() {
                           ))}
                         </div>
                       </div>
-                    </div>
-                  </Button>
-                );
-              })}
-            </div>
+                    </Button>
+                  );
+                })}
+              </div>
+            </ScrollArea>
           </div>
         )}
 

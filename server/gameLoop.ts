@@ -18,11 +18,11 @@ export class GameLoop {
   }
 
   private broadcast(message: any) {
-    this.clients.forEach(client => {
-      if (client.readyState === WebSocket.OPEN) {
+    for (const client of this.clients) {
+      if (client.readyState === 1) { // WebSocket.OPEN
         client.send(JSON.stringify(message));
       }
-    });
+    }
   }
 
   async tick() {
