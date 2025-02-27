@@ -1,11 +1,12 @@
-
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { Listing, ResourceType } from '@/shared/marketTypes';
-import { getResourceIcon, getResourceName } from '@/lib/resources';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Listing, ResourceType } from '@shared/marketTypes';
+import { getResourceIcon } from '@/lib/resources';
+import { useGameStore } from '@/stores/gameStore';
+import { getResourceName } from '@/lib/resources';
 
 /**
- * Параметры компонента для отображения списка лотов на рынке
+ * Пропсы компонента для отображения списка лотов на рынке
  */
 interface MarketListingsProps {
   onListingPurchased?: () => void;
@@ -40,146 +41,154 @@ export function MarketListings({ onListingPurchased, selectedResource = 'food' }
   const fetchListings = async () => {
     setLoading(true);
     try {
-      const response = await axios.get('/api/market/listings');
-      setListings(response.data);
+      const response = await fetch('/api/market/listings');
+      if (!response.ok) {
+        throw new Error('Failed to fetch listings');
+      }
+      const data = await response.json();
+      setListings(data);
       setError(null);
     } catch (err) {
+      setError('Ошибка при загрузке лотов');
       console.error('Ошибка при загрузке лотов:', err);
-      setError('Не удалось загрузить лоты. Пожалуйста, попробуйте позже.');
     } finally {
       setLoading(false);
     }
   };
 
-  /**
-   * Загрузка лотов при монтировании компонента
-   */
+  // Загрузка лотов при монтировании компонента и при изменении выбранного ресурса
   useEffect(() => {
     fetchListings();
+    // Устанавливаем интервал для периодического обновления лотов
+    const intervalId = setInterval(fetchListings, 10000); // Обновление каждые 10 секунд
 
-    // Настраиваем интервал для периодического обновления лотов
-    const interval = setInterval(fetchListings, 10000); // Каждые 10 секунд
-
-    // Очищаем интервал при размонтировании компонента
-    return () => clearInterval(interval);
-  }, []);
+    return () => clearInterval(intervalId); // Очистка при размонтировании
+  }, [currentResource]);
 
   /**
-   * Обработчик покупки лота
+   * Обработка покупки/продажи лота
    */
-  const handlePurchase = async (listingId: string) => {
+  const handlePurchase = async (listingId: number) => {
     try {
-      await axios.post(`/api/market/purchase/${listingId}`);
-      
-      // Обновляем список лотов после успешной покупки
+      const response = await fetch('/api/market/purchase', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ listingId }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to purchase listing');
+      }
+
+      // Обновляем список лотов
       fetchListings();
-      
-      // Вызываем коллбэк, если он предоставлен
+
+      // Вызываем callback если он предоставлен
       if (onListingPurchased) {
         onListingPurchased();
       }
     } catch (err) {
+      setError(`Ошибка при покупке лота: ${err instanceof Error ? err.message : String(err)}`);
       console.error('Ошибка при покупке лота:', err);
-      setError('Не удалось купить лот. Возможно, у вас недостаточно ресурсов или лот уже продан.');
     }
   };
 
   /**
-   * Обработчик выбора ресурса
+   * Изменение выбранного ресурса для фильтрации
    */
-  const handleResourceSelect = (resource: ResourceType) => {
+  const handleResourceChange = (resource: ResourceType) => {
     setCurrentResource(resource);
   };
 
-  /**
-   * Фильтрация лотов по выбранному ресурсу
-   */
-  const filteredListings = listings.filter(listing => listing.resourceType === currentResource);
+  // Фильтрация лотов по выбранному типу ресурса
+  const filteredListings = currentResource === 'all' 
+    ? listings 
+    : listings.filter(listing => listing.resourceType === currentResource);
 
   return (
-    <div className="bg-white rounded-lg shadow p-4">
-      <h2 className="text-xl font-semibold mb-4">Активные лоты на рынке</h2>
-      
-      {/* Кнопки выбора ресурса */}
+    <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+      <h2 className="text-xl font-bold mb-4 text-white">Активные лоты на рынке</h2>
+
+      {/* Фильтр по типу ресурса */}
       <div className="mb-4 flex flex-wrap gap-2">
+        <button
+          onClick={() => handleResourceChange('all' as ResourceType)}
+          className={`px-3 py-1 rounded-md text-sm ${
+            currentResource === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+          }`}
+        >
+          Все ресурсы
+        </button>
+
         {resources.map((resource) => (
           <button
             key={resource}
-            onClick={() => handleResourceSelect(resource)}
-            className={`flex items-center px-3 py-1.5 rounded-full text-sm ${
-              currentResource === resource
-                ? 'bg-blue-500 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            onClick={() => handleResourceChange(resource)}
+            className={`flex items-center gap-1 px-3 py-1 rounded-md text-sm ${
+              currentResource === resource ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
             }`}
           >
-            <span className="mr-1">{getResourceIcon(resource)}</span>
-            <span className="capitalize">{getResourceName(resource)}</span>
+            {getResourceIcon(resource)} {getResourceName(resource)}
           </button>
         ))}
       </div>
 
-      {/* Отображение ошибки, если она есть */}
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+        <div className="bg-red-600 text-white p-3 rounded-md mb-4">
           {error}
         </div>
       )}
 
-      {/* Отображение индикатора загрузки */}
-      {loading && (
-        <div className="text-center py-4">
-          <svg className="animate-spin h-5 w-5 text-blue-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
+      {loading ? (
+        <div className="text-center py-8">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-500 border-r-transparent"></div>
+          <p className="mt-2 text-gray-300">Загрузка лотов...</p>
         </div>
-      )}
-
-      {/* Отображение лотов */}
-      {!loading && filteredListings.length === 0 && (
-        <div className="text-center py-4 text-gray-500">
-          Нет активных лотов для {getResourceName(currentResource)}
+      ) : filteredListings.length === 0 ? (
+        <div className="text-center py-8 text-gray-300">
+          <p>Нет активных лотов для выбранного ресурса</p>
         </div>
-      )}
-
-      {!loading && filteredListings.length > 0 && (
+      ) : (
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full bg-gray-700 rounded-lg overflow-hidden">
+            <thead className="bg-gray-600">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Тип
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                  Тип лота
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                   Ресурс
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                   Количество
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                   Цена за единицу
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                   Общая стоимость
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                   Действие
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-600">
               {filteredListings.map((listing) => (
-                <tr key={listing.id}>
+                <tr key={listing.id} className="hover:bg-gray-600">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      listing.type === 'sell' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
+                    <span className={`inline-block px-2 py-1 text-xs rounded-full ${
+                      listing.type === 'sell' ? 'bg-green-700 text-green-100' : 'bg-blue-700 text-blue-100'
                     }`}>
                       {listing.type === 'sell' ? 'Продажа' : 'Покупка'}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <span className="mr-2">{getResourceIcon(listing.resourceType)}</span>
+                    <div className="flex items-center gap-1">
+                      {getResourceIcon(listing.resourceType)}
                       <span>{getResourceName(listing.resourceType)}</span>
                     </div>
                   </td>
@@ -209,184 +218,6 @@ export function MarketListings({ onListingPurchased, selectedResource = 'food' }
                         Продать
                       </button>
                     )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  );
-}
-import React, { useState, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Listing, ResourceType } from '@shared/marketTypes';
-import { getResourceIcon } from '@/lib/resources';
-import { useGameStore } from '@/lib/store';
-
-interface MarketListingsProps {
-  selectedResource?: string;
-  onListingPurchased?: () => void;
-}
-
-/**
- * Компонент для отображения списка лотов на рынке
- * 
- * @param selectedResource - Выбранный ресурс для фильтрации
- * @param onListingPurchased - Callback для обновления родительского компонента после покупки лота
- */
-export function MarketListings({ selectedResource, onListingPurchased }: MarketListingsProps) {
-  const { setGameState } = useGameStore();
-  const queryClient = useQueryClient();
-  const [filter, setFilter] = useState<'all' | 'buy' | 'sell'>('all');
-  
-  // Получение списка лотов
-  const { data: listings = [], isLoading, error, refetch } = useQuery<Listing[]>({
-    queryKey: ['/api/market/listings'],
-    queryFn: async () => {
-      const response = await fetch('/api/market/listings');
-      if (!response.ok) {
-        throw new Error('Failed to fetch listings');
-      }
-      return response.json();
-    }
-  });
-
-  // Мутация для покупки/продажи лота
-  const purchaseMutation = useMutation({
-    mutationFn: async (listingId: number) => {
-      const response = await fetch('/api/market/purchase-listing', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ listingId })
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to purchase listing');
-      }
-      
-      return response.json();
-    },
-    onSuccess: (data) => {
-      // Обновляем состояние игры из полученных данных
-      if (data.gameState) {
-        setGameState(data.gameState);
-      }
-      
-      // Инвалидируем кеш для обновления списка лотов
-      queryClient.invalidateQueries({ queryKey: ['/api/market/listings'] });
-      
-      // Вызываем callback для обновления родительского компонента
-      if (onListingPurchased) {
-        onListingPurchased();
-      }
-    }
-  });
-
-  // Фильтрация лотов
-  const filteredListings = listings.filter(listing => {
-    // Фильтр по типу операции
-    if (filter !== 'all' && listing.type !== filter) {
-      return false;
-    }
-    
-    // Фильтр по типу ресурса
-    if (selectedResource && listing.resourceType !== selectedResource) {
-      return false;
-    }
-    
-    return true;
-  });
-
-  // Обработчик покупки/продажи лота
-  const handlePurchaseListing = (listingId: number) => {
-    purchaseMutation.mutate(listingId);
-  };
-
-  // Отображение имени владельца в более читаемом формате
-  const getOwnerName = (owner: string) => {
-    return owner === 'player' ? 'Игрок' : 'ИИ';
-  };
-
-  return (
-    <div className="bg-white rounded-lg shadow p-4">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold">Доступные лоты</h2>
-        
-        {/* Фильтры лотов */}
-        <div className="flex gap-2">
-          <button
-            onClick={() => setFilter('all')}
-            className={`px-3 py-1 rounded-md text-sm ${
-              filter === 'all' ? 'bg-blue-500 text-white' : 'bg-gray-100 hover:bg-gray-200'
-            }`}
-          >
-            Все
-          </button>
-          <button
-            onClick={() => setFilter('buy')}
-            className={`px-3 py-1 rounded-md text-sm ${
-              filter === 'buy' ? 'bg-blue-500 text-white' : 'bg-gray-100 hover:bg-gray-200'
-            }`}
-          >
-            Покупка
-          </button>
-          <button
-            onClick={() => setFilter('sell')}
-            className={`px-3 py-1 rounded-md text-sm ${
-              filter === 'sell' ? 'bg-blue-500 text-white' : 'bg-gray-100 hover:bg-gray-200'
-            }`}
-          >
-            Продажа
-          </button>
-        </div>
-      </div>
-      
-      {isLoading ? (
-        <div className="text-center p-4">Загрузка лотов...</div>
-      ) : error ? (
-        <div className="text-center p-4 text-red-500">Ошибка загрузки лотов</div>
-      ) : filteredListings.length === 0 ? (
-        <div className="text-center p-4 text-gray-500">Нет доступных лотов</div>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-gray-100">
-                <th className="p-2 text-left">Ресурс</th>
-                <th className="p-2 text-right">Тип</th>
-                <th className="p-2 text-right">Количество</th>
-                <th className="p-2 text-right">Цена за ед.</th>
-                <th className="p-2 text-right">Всего</th>
-                <th className="p-2 text-center">Продавец</th>
-                <th className="p-2 text-right">Действия</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredListings.map((listing) => (
-                <tr key={listing.id} className="border-b hover:bg-gray-50">
-                  <td className="p-2 flex items-center">
-                    {getResourceIcon(listing.resourceType)}
-                    <span className="ml-2 capitalize">{listing.resourceType}</span>
-                  </td>
-                  <td className="p-2 text-right">
-                    {listing.type === 'sell' ? 'Продажа' : 'Покупка'}
-                  </td>
-                  <td className="p-2 text-right">{listing.amount}</td>
-                  <td className="p-2 text-right">{listing.pricePerUnit}</td>
-                  <td className="p-2 text-right">{listing.amount * listing.pricePerUnit}</td>
-                  <td className="p-2 text-center">{getOwnerName(listing.owner)}</td>
-                  <td className="p-2 text-right">
-                    <button
-                      onClick={() => handlePurchaseListing(listing.id)}
-                      disabled={purchaseMutation.isPending}
-                      className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded"
-                    >
-                      {listing.type === 'sell' ? 'Купить' : 'Продать'}
-                    </button>
                   </td>
                 </tr>
               ))}
