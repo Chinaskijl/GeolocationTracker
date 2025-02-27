@@ -115,16 +115,7 @@ export class GameLoop {
       console.log('Updated game state:', newGameState);
       await storage.setGameState(newGameState);
 
-      // Отправка обновлений клиентам
-      this.broadcast({ 
-        type: 'GAME_UPDATE',
-        gameState: newGameState
-      });
-
-      this.broadcast({
-        type: 'CITIES_UPDATE',
-        cities: cities.filter(city => city.owner === 'player')
-      });
+      // Обновления будут отправлены через broadcastGameState
 
     } catch (error) {
       console.error('Error in game loop:', error);
@@ -132,7 +123,42 @@ export class GameLoop {
   }
 
   start() {
-    setInterval(() => this.tick(), this.tickInterval);
+    // Используем более частые обновления
+    this.tickInterval = 1000; // обновление каждую секунду
+    
+    // Инициализируем счетчик для регулярной отправки обновлений клиентам
+    let updateCounter = 0;
+    
+    setInterval(() => {
+      this.tick();
+      
+      // Отправляем обновление всех клиентов каждую итерацию
+      updateCounter++;
+      if (updateCounter >= 1) { // каждую секунду
+        updateCounter = 0;
+        this.broadcastGameState();
+      }
+    }, this.tickInterval);
+  }
+  
+  // Отдельный метод для отправки текущего состояния игры всем клиентам
+  async broadcastGameState() {
+    try {
+      const gameState = await storage.getGameState();
+      const cities = await storage.getCities();
+      
+      this.broadcast({ 
+        type: 'GAME_UPDATE',
+        gameState: gameState
+      });
+
+      this.broadcast({
+        type: 'CITIES_UPDATE',
+        cities: cities.filter(city => city.owner === 'player')
+      });
+    } catch (error) {
+      console.error('Error broadcasting game state:', error);
+    }
   }
 }
 

@@ -40,6 +40,24 @@ export default function Game() {
     ws.onopen = () => {
       console.log('WebSocket connected');
     };
+    
+    ws.onmessage = (event) => {
+      try {
+        const message = JSON.parse(event.data);
+        
+        if (message.type === 'GAME_UPDATE' && message.gameState) {
+          console.log('Received game state update:', message.gameState);
+          setGameState(message.gameState);
+        }
+        
+        if (message.type === 'CITIES_UPDATE' && message.cities) {
+          console.log('Received cities update:', message.cities);
+          setCities(message.cities);
+        }
+      } catch (error) {
+        console.error('Failed to parse WebSocket message:', error);
+      }
+    };
 
     ws.onmessage = (event) => {
       try {
