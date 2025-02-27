@@ -118,6 +118,112 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Новый эндпоинт для отправки армии между городами
+  app.post("/api/military/transfer", async (req, res) => {
+    try {
+      const { fromCityId, toCityId, amount } = req.body;
+      
+      // Получаем города
+      const cities = await storage.getCities();
+      const fromCity = cities.find(c => c.id === Number(fromCityId));
+      const toCity = cities.find(c => c.id === Number(toCityId));
+      
+      if (!fromCity || !toCity) {
+        return res.status(404).json({ message: 'City not found' });
+      }
+      
+      // Проверяем наличие необходимого количества военных
+      if (!fromCity.military || fromCity.military < amount) {
+        return res.status(400).json({ message: 'Insufficient military units' });
+      }
+      
+      // Уменьшаем количество военных в исходном городе
+      await storage.updateCity(Number(fromCityId), {
+        military: fromCity.military - amount
+      });
+      
+      // Рассчитываем время перемещения
+      const travelTime = calculateTravelTime(fromCity, toCity);
+      
+      // Уведомляем всех клиентов о начале перемещения армии
+      const militaryTransferData = {
+        type: 'MILITARY_TRANSFER_START',
+        fromCity,
+        toCity,
+        amount,
+        duration: travelTime,
+        startTime: Date.now()
+      };
+      
+      // Отправляем через WebSocket
+      for (const client of wss.clients) {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify(militaryTransferData));
+        }
+      }
+      
+      // Запускаем таймер для обработки прибытия армии
+      setTimeout(async () => {
+        try {
+          // Получаем актуальное состояние целевого города
+          const updatedCities = await storage.getCities();
+          const currentToCity = updatedCities.find(c => c.id === Number(toCityId));
+          
+          if (!currentToCity) return;
+          
+          // Обновляем целевой город
+          if (currentToCity.owner === fromCity.owner) {
+            // Если город принадлежит тому же игроку, просто добавляем военных
+            await storage.updateCity(Number(toCityId), {
+              military: (currentToCity.military || 0) + amount
+            });
+          } else {
+            // Если город не принадлежит игроку, происходит атака
+            const defenseStrength = currentToCity.military || 0;
+            
+            if (amount > defenseStrength) {
+              // Атака успешна, захватываем город
+              await storage.updateCity(Number(toCityId), {
+                owner: fromCity.owner,
+                military: amount - defenseStrength
+              });
+            } else {
+              // Атака отбита, уменьшаем количество защитников
+              await storage.updateCity(Number(toCityId), {
+                military: defenseStrength - amount
+              });
+            }
+          }
+          
+          // Уведомляем клиентов о завершении перемещения
+          const transferCompleteData = {
+            type: 'MILITARY_TRANSFER_COMPLETE',
+            toCity: toCityId,
+            result: currentToCity.owner === fromCity.owner ? 'reinforced' : (amount > defenseStrength ? 'captured' : 'failed')
+          };
+          
+          for (const client of wss.clients) {
+            if (client.readyState === WebSocket.OPEN) {
+              client.send(JSON.stringify(transferCompleteData));
+            }
+          }
+          
+          // Обновляем игровое состояние у всех клиентов
+          gameLoop.broadcastGameState();
+          
+        } catch (error) {
+          console.error('Error processing military arrival:', error);
+        }
+      }, travelTime);
+      
+      res.json({ success: true, travelTime });
+      
+    } catch (error) {
+      console.error('Error transferring military:', error);
+      res.status(500).json({ message: 'Failed to transfer military' });
+    }
+  });
+
   app.get("/api/game-state", async (_req, res) => {
     try {
       const state = await storage.getGameState();
@@ -154,4 +260,14 @@ function calculateDistance(city1: any, city2: any): number {
 
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
   return R * c;
+}
+
+// Рассчитываем время перемещения на основе расстояния
+// Скорость армии: 100 км/ч для простоты расчетов
+function calculateTravelTime(city1: any, city2: any): number {
+  const distance = calculateDistance(city1, city2);
+  const speed = 100; // км/ч
+  // Время в миллисекундах для анимации
+  // Минимум 5 секунд, максимум 30 секунд для игрового баланса
+  return Math.min(Math.max(Math.round(distance / speed * 3600 * 1000), 5000), 30000);
 }

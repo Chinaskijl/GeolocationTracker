@@ -1,3 +1,30 @@
+
+/* Стили для армии на карте */
+.military-icon {
+  z-index: 1000 !important;
+}
+
+.military-icon div {
+  transition: transform 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.military-icon div:hover {
+  transform: scale(1.1);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+}
+
+/* Анимация пульсации для маркера армии */
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.military-icon div {
+  animation: pulse 1.5s infinite ease-in-out;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

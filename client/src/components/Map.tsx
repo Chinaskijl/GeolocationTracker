@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import 'leaflet-polylinedecorator';
 import { useGameStore } from '@/lib/store';
 import { TERRITORY_COLORS } from '@/lib/game';
 
@@ -11,6 +12,7 @@ interface MilitaryMovement {
   marker: L.Marker;
   startTime: number;
   duration: number;
+  pathLine?: L.Polyline;
 }
 
 export function Map() {
@@ -133,13 +135,22 @@ export function Map() {
           icon: militaryIcon
         }).addTo(mapRef.current!);
 
+        const pathLine = L.polyline([
+          [fromCity.latitude, fromCity.longitude],
+          [toCity.latitude, toCity.longitude]
+        ], {
+          color: 'blue',
+          weight: 3
+        }).addTo(mapRef.current!);
+
         militaryMovementsRef.current.push({
           fromCity,
           toCity,
           amount,
           marker,
           startTime: Date.now(),
-          duration
+          duration,
+          pathLine
         });
 
         // Start animation if not already running
@@ -165,12 +176,19 @@ export function Map() {
 
       if (progress >= 1) {
         movement.marker.remove();
+        if (movement.pathLine) movement.pathLine.remove();
         return false;
       }
 
       const lat = movement.fromCity.latitude + (movement.toCity.latitude - movement.fromCity.latitude) * progress;
       const lng = movement.fromCity.longitude + (movement.toCity.longitude - movement.fromCity.longitude) * progress;
       movement.marker.setLatLng([lat, lng]);
+      if (movement.pathLine) {
+        movement.pathLine.setLatLngs([
+          [movement.fromCity.latitude, movement.fromCity.longitude],
+          [lat, lng]
+        ]);
+      }
 
       return true;
     });

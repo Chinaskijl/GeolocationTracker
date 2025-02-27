@@ -6,6 +6,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { Progress } from '@/components/ui/progress';
 import { useQueryClient } from '@tanstack/react-query';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { toast } from '@/components/ui/use-toast';
 
 export function CityPanel() {
   const { selectedCity, gameState, cities } = useGameStore();
@@ -34,27 +35,27 @@ export function CityPanel() {
 
       console.log('Building successful, invalidating queries');
       await queryClient.invalidateQueries({ queryKey: ['/api/cities'] });
-      
+
       // Явно получаем обновленные данные с сервера
       const updatedCities = await queryClient.fetchQuery({ 
         queryKey: ['/api/cities'],
         staleTime: 0
       });
-      
+
       console.log('Received updated cities after building:', updatedCities);
-      
+
       // Находим обновленный город в полученных данных
       const updatedCity = updatedCities.find(city => city.id === selectedCity.id);
-      
+
       if (updatedCity) {
         console.log('Updated city data:', updatedCity);
-        
+
         // Обновляем список городов
         useGameStore.getState().setCities(updatedCities);
-        
+
         // Обновляем выбранный город
         useGameStore.getState().setSelectedCity(updatedCity);
-        
+
         // Проверяем, обновились ли данные как ожидалось
         console.log('Updated selected city in store:', useGameStore.getState().selectedCity);
       } else {
@@ -89,20 +90,71 @@ export function CityPanel() {
     }
   };
 
-  const handleTransferMilitary = async (toCityId: number) => {
+  const handleTransferMilitary = async (targetCityId: number) => {
     try {
-      const amount = Math.floor(selectedCity.military || 0);
-      if (amount <= 0) return;
+      // По умолчанию отправляем половину имеющихся войск
+      const amount = Math.ceil((selectedCity.military || 0) / 2);
 
-      await apiRequest('POST', `/api/cities/${selectedCity.id}/transfer-military`, {
-        fromCityId: selectedCity.id,
-        toCityId,
-        amount
+      if (!amount) {
+        toast({
+          title: "Ошибка",
+          description: "Недостаточно военных для отправки",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Запрос на сервер для отправки армии
+      const response = await fetch('/api/military/transfer', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          fromCityId: selectedCity.id,
+          toCityId: targetCityId,
+          amount
+        }),
       });
 
-      queryClient.invalidateQueries({ queryKey: ['/api/cities'] });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Не удалось отправить армию');
+      }
+
+      const result = await response.json();
+
+      toast({
+        title: "Войска отправлены",
+        description: `${amount} военных отправлены из ${selectedCity.name}`,
+      });
+
+      // Обновляем состояние текущего города
+      useGameStore.getState().setSelectedCity({
+        ...selectedCity,
+        military: (selectedCity.military || 0) - amount
+      });
+
+      // Обновляем список городов
+      const updatedCities = cities.map(city => {
+        if (city.id === selectedCity.id) {
+          return {
+            ...city,
+            military: (city.military || 0) - amount
+          };
+        }
+        return city;
+      });
+
+      useGameStore.getState().setCities(updatedCities);
+
     } catch (error) {
       console.error('Failed to transfer military:', error);
+      toast({
+        title: "Ошибка",
+        description: error instanceof Error ? error.message : "Не удалось отправить армию",
+        variant: "destructive"
+      });
     }
   };
 
