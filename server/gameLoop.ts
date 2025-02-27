@@ -74,9 +74,14 @@ export class GameLoop {
 
             // Производство военных
             if (building.military) {
-              cityMilitaryGrowth += building.military.production * deltaTime;
-              cityPopulationUsed += building.military.populationUse;
-              console.log(`Military production: +${building.military.production * deltaTime}, Population used: -${building.military.populationUse}`);
+              // Проверяем, есть ли достаточно населения для производства военных
+              if (city.population >= building.military.populationUse) {
+                cityMilitaryGrowth += building.military.production * deltaTime;
+                cityPopulationUsed += building.military.populationUse;
+                console.log(`Military production: +${building.military.production * deltaTime}, Population used: -${building.military.populationUse}`);
+              } else {
+                console.log(`Недостаточно населения для производства военных в ${city.name}`);
+              }
             }
           });
 

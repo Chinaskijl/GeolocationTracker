@@ -251,6 +251,123 @@ export class MemStorage implements IStorage {
       ],
       military: 50
     });
+    
+    // Добавляем маленькие города
+    this.cities.set(11, {
+      id: 11,
+      name: "Тверь",
+      latitude: 56.8587,
+      longitude: 35.9175,
+      population: 1500,
+      maxPopulation: 20000,
+      resources: {
+        wood: 6,
+        food: 5
+      },
+      boundaries: [
+        [56.89, 35.89],
+        [56.91, 35.95],
+        [56.84, 35.97],
+        [56.82, 35.91],
+        [56.89, 35.89]
+      ],
+      owner: "neutral",
+      buildings: [],
+      military: 0
+    });
+    
+    this.cities.set(12, {
+      id: 12,
+      name: "Рязань",
+      latitude: 54.6295,
+      longitude: 39.7422,
+      population: 2000,
+      maxPopulation: 25000,
+      resources: {
+        food: 8,
+        gold: 3
+      },
+      boundaries: [
+        [54.66, 39.71],
+        [54.68, 39.77],
+        [54.61, 39.79],
+        [54.59, 39.73],
+        [54.66, 39.71]
+      ],
+      owner: "neutral",
+      buildings: [],
+      military: 0
+    });
+    
+    this.cities.set(13, {
+      id: 13,
+      name: "Тула",
+      latitude: 54.2044,
+      longitude: 37.6178,
+      population: 1800,
+      maxPopulation: 22000,
+      resources: {
+        gold: 7,
+        oil: 2
+      },
+      boundaries: [
+        [54.23, 37.59],
+        [54.25, 37.65],
+        [54.18, 37.67],
+        [54.16, 37.61],
+        [54.23, 37.59]
+      ],
+      owner: "neutral",
+      buildings: [],
+      military: 0
+    });
+    
+    this.cities.set(14, {
+      id: 14,
+      name: "Калуга",
+      latitude: 54.5141,
+      longitude: 36.2673,
+      population: 1200,
+      maxPopulation: 18000,
+      resources: {
+        wood: 9,
+        food: 4
+      },
+      boundaries: [
+        [54.54, 36.24],
+        [54.56, 36.3],
+        [54.49, 36.32],
+        [54.47, 36.26],
+        [54.54, 36.24]
+      ],
+      owner: "neutral",
+      buildings: [],
+      military: 0
+    });
+    
+    this.cities.set(15, {
+      id: 15,
+      name: "Смоленск",
+      latitude: 54.7825,
+      longitude: 32.0529,
+      population: 2200,
+      maxPopulation: 28000,
+      resources: {
+        wood: 8,
+        food: 6,
+        gold: 2
+      },
+      boundaries: [
+        [54.81, 32.02],
+        [54.83, 32.08],
+        [54.76, 32.1],
+        [54.74, 32.04],
+        [54.81, 32.02]
+      ],
+      owner: "neutral",
+      buildings: [],
+      military: 0
+    });
   }
 
   async getCities(): Promise<City[]> {
