@@ -12,6 +12,45 @@ export const BUILDINGS: Building[] = [
     maxCount: 3
   },
   {
+    id: 'metal_factory',
+    name: 'Завод металла',
+    cost: { wood: 250, gold: 150 },
+    resourceProduction: {
+      type: 'metal',
+      amount: 2
+    },
+    maxCount: 3
+  },
+  {
+    id: 'steel_factory',
+    name: 'Завод стали',
+    cost: { wood: 350, gold: 100 },
+    resourceProduction: {
+      type: 'steel',
+      amount: 1
+    },
+    resourceConsumption: {
+      type: 'metal',
+      amount: 5
+    },
+    maxCount: 3
+  },
+  {
+    id: 'weapons_factory',
+    name: 'Станок для оружия',
+    cost: { wood: 150 },
+    resourceProduction: {
+      type: 'weapons',
+      amount: 1
+    },
+    resourceConsumption: {
+      type: 'steel',
+      amount: 1,
+      wood: 15
+    },
+    maxCount: 3
+  },
+  {
     id: 'house',
     name: 'Жилой дом',
     cost: { wood: 250, gold: 200 },

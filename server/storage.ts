@@ -64,7 +64,10 @@ async function initializeGameData() {
       gold: 500,
       wood: 500,
       food: 500,
-      oil: 500
+      oil: 500,
+      metal: 0,
+      steel: 0,
+      weapons: 0
     },
     population: 0,
     military: 0
@@ -249,7 +252,10 @@ class Storage {
           gold: 500,
           wood: 200,
           food: 300,
-          oil: 100
+          oil: 100,
+          metal: 0,
+          steel: 0,
+          weapons: 0
         },
         population: 100,
         military: 0

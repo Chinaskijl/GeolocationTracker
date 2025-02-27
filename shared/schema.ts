@@ -14,6 +14,9 @@ export const cities = pgTable("cities", {
     wood?: number;
     food?: number;
     oil?: number;
+    metal?: number;
+    steel?: number;
+    weapons?: number;
   }>().notNull(),
   boundaries: jsonb("boundaries").$type<[number, number][]>().notNull(),
   owner: text("owner").default("neutral"),
@@ -31,6 +34,9 @@ export interface GameState {
     wood: number;
     food: number;
     oil: number;
+    metal: number;
+    steel: number;
+    weapons: number;
   };
   population: number;
   military: number;
@@ -46,8 +52,19 @@ export interface Building {
     oil?: number;
   };
   resourceProduction?: {
-    type: 'gold' | 'wood' | 'food' | 'oil';
+    type: 'gold' | 'wood' | 'food' | 'oil' | 'metal' | 'steel' | 'weapons';
     amount: number;
+  };
+  resourceConsumption?: {
+    type?: 'gold' | 'wood' | 'food' | 'oil' | 'metal' | 'steel' | 'weapons';
+    amount?: number;
+    wood?: number;
+    gold?: number;
+    food?: number;
+    oil?: number;
+    metal?: number;
+    steel?: number;
+    weapons?: number;
   };
   military?: {
     production: number;
