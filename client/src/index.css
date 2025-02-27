@@ -47,11 +47,30 @@
 /* Стили для границ территорий */
 .territory-polygon {
   transition: all 0.3s ease;
+  filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.5));
 }
 
 .territory-polygon:hover {
-  filter: brightness(1.1);
+  filter: brightness(1.1) drop-shadow(0 0 3px rgba(0, 0, 0, 0.7));
   stroke-width: 4px !important;
+  stroke-opacity: 1 !important;
+}
+
+/* Стили для нейтральных территорий */
+.neutral-territory {
+  animation: territoryPulse 3s infinite ease-in-out;
+}
+
+@keyframes territoryPulse {
+  0% { stroke-opacity: 0.5; stroke-width: 2px; }
+  50% { stroke-opacity: 0.8; stroke-width: 3px; }
+  100% { stroke-opacity: 0.5; stroke-width: 2px; }
+}
+
+/* Улучшенные стили для полигонов территорий */
+.leaflet-interactive {
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .territory-tooltip {

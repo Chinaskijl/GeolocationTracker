@@ -68,6 +68,9 @@ export function Map() {
     cities.forEach(city => {
       const color = TERRITORY_COLORS[city.owner as keyof typeof TERRITORY_COLORS];
 
+      // Создаем соединения между территориями
+      const connections = createTerritoryConnections(cities);
+
       // Add territory polygon with improved styling
       const polygon = L.polygon(city.boundaries, {
         color,
@@ -78,14 +81,14 @@ export function Map() {
         dashArray: city.owner === 'neutral' ? '5, 5' : null,
         className: 'territory-polygon'
       }).addTo(mapRef.current!);
-      
+
       // Добавляем всплывающую подсказку с названием территории
       polygon.bindTooltip(city.name, { 
         permanent: false,
         direction: 'center',
         className: 'territory-tooltip'
       });
-      
+
       polygonsRef.current.push(polygon);
 
       // Create custom HTML element for city info
@@ -223,3 +226,8 @@ export function getResourceIcon(resource: string): string {
     default: return '📦';
   }
 }
+
+// Placeholder implementation.  Replace with actual connection logic.
+const createTerritoryConnections = (cities: any[]): any[] => {
+  return []; //Return an empty array for now.
+};
