@@ -200,17 +200,15 @@ export function Map() {
   return <div id="map" className="w-full h-screen" />;
 }
 
-function getResourceIcon(resource: string): string {
+export function getResourceIcon(resource: string): string {
   switch (resource) {
     case 'gold': return '💰';
     case 'wood': return '🌲';
-    case 'food': return '🌾';
-    case 'oil': return '💧';
-    case 'metal': return '⚙️';
+    case 'food': return '🍗';
+    case 'oil': return '🛢️';
+    case 'metal': return '⛏️';
     case 'steel': return '🔩';
     case 'weapons': return '⚔️';
-    default: return '❓';
-  }🛢️';
     default: return '📦';
   }
 }
