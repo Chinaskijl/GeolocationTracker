@@ -32,8 +32,13 @@ export function CityPanel() {
       });
       
       // Обновляем текущий выбранный город на основе полученного ответа
-      if (response) {
-        useGameStore.getState().setSelectedCity(response);
+      if (response && response.id) {
+        // Получаем актуальные данные о городе
+        const cities = useGameStore.getState().cities;
+        const updatedCity = cities.find(city => city.id === selectedCity.id);
+        if (updatedCity) {
+          useGameStore.getState().setSelectedCity(updatedCity);
+        }
       }
 
       console.log('Building successful, invalidating queries');
