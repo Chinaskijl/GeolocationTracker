@@ -1,100 +1,118 @@
 
 /**
- * Сервис для получения и обработки границ городов из OpenStreetMap через Overpass API
+ * Утилиты для работы с границами городов
  */
 
-// Функция для выполнения запроса к Overpass API
-export async function fetchCityBoundaries(cityName: string): Promise<GeoJSON.FeatureCollection> {
-  try {
-    // Формируем запрос для получения границ города
-    const query = `
-      [out:json];
-      area["name"="${cityName}"][admin_level~"8|9"]->.searchArea;
-      (
-        relation(area.searchArea)["admin_level"~"8|9"];
-      );
-      out body;
-      >;
-      out skel qt;
-    `;
-    
-    // URL для Overpass API
-    const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
-    
-    // Отправляем запрос
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Ошибка получения данных: ${response.statusText}`);
+import { apiRequest } from './queryClient';
+
+/**
+ * Интерфейс GeoJSON для полигонов
+ */
+interface GeoJSONPolygon {
+  type: "FeatureCollection";
+  features: Array<{
+    type: "Feature";
+    properties: Record<string, any>;
+    geometry: {
+      type: "Polygon";
+      coordinates: number[][][];
     }
-    
-    // Преобразуем ответ в JSON
-    const data = await response.json();
-    
-    // Преобразуем данные Overpass в формат GeoJSON
-    return convertOverpassToGeoJSON(data);
-  } catch (error) {
-    console.error('Ошибка при получении границ города:', error);
-    throw error;
-  }
+  }>;
 }
 
-// Функция для преобразования данных Overpass в формат GeoJSON
-function convertOverpassToGeoJSON(overpassData: any): GeoJSON.FeatureCollection {
-  // Создаем пустую GeoJSON коллекцию
-  const geoJSON: GeoJSON.FeatureCollection = {
-    type: 'FeatureCollection',
+/**
+ * Преобразует массив координат [lat, lon] в GeoJSON полигон
+ * @param boundaries Массив координат в формате [lat, lon]
+ * @param properties Дополнительные свойства для объекта GeoJSON
+ * @returns Объект GeoJSON с полигоном
+ */
+export function boundariesToGeoJSON(boundaries: number[][], properties: Record<string, any> = {}): GeoJSONPolygon {
+  if (!boundaries || boundaries.length < 3) {
+    return {
+      type: "FeatureCollection",
+      features: []
+    };
+  }
+  
+  // Для GeoJSON нужно преобразовать [lat, lon] в [lon, lat]
+  // и убедиться, что полигон замкнут (первая и последняя точки совпадают)
+  const coordinates = boundaries.map(point => [point[1], point[0]]);
+  
+  // Проверяем, замкнут ли полигон, если нет - замыкаем его
+  if (coordinates[0][0] !== coordinates[coordinates.length - 1][0] || 
+      coordinates[0][1] !== coordinates[coordinates.length - 1][1]) {
+    coordinates.push([coordinates[0][0], coordinates[0][1]]);
+  }
+  
+  return {
+    type: "FeatureCollection",
+    features: [
+      {
+        type: "Feature",
+        properties,
+        geometry: {
+          type: "Polygon",
+          coordinates: [coordinates]
+        }
+      }
+    ]
+  };
+}
+
+/**
+ * Преобразует ответ от Overpass API в GeoJSON
+ * @param data Данные от Overpass API
+ * @returns Объект GeoJSON
+ */
+export function overpassToGeoJSON(data: any): GeoJSONPolygon {
+  // Инициализируем пустой GeoJSON
+  const geoJSON: GeoJSONPolygon = {
+    type: "FeatureCollection",
     features: []
   };
   
-  // Проверяем наличие данных
-  if (!overpassData.elements || overpassData.elements.length === 0) {
-    return geoJSON;
-  }
-  
-  // Ищем отношения (relation) с ролью "boundary"
-  const boundaries = overpassData.elements.filter((el: any) => 
+  // Находим все отношения с границами
+  const boundaries = data.elements.filter((el: any) => 
     el.type === 'relation' && 
     el.tags && 
-    (el.tags.boundary === 'administrative' || el.tags.type === 'boundary')
+    (el.tags.boundary === 'administrative' || el.tags.place === 'city')
   );
   
-  // Извлекаем и обрабатываем данные о точках и путях
-  const nodes: Record<string, [number, number]> = {};
-  const ways: Record<string, number[][]> = {};
-  
-  // Сначала обрабатываем все узлы
-  overpassData.elements.forEach((el: any) => {
-    if (el.type === 'node' && el.lat && el.lon) {
-      nodes[el.id] = [el.lat, el.lon];
-    }
-  });
-  
-  // Затем обрабатываем пути
-  overpassData.elements.forEach((el: any) => {
-    if (el.type === 'way' && el.nodes) {
-      ways[el.id] = el.nodes.map((nodeId: number) => nodes[nodeId]).filter(Boolean);
-    }
-  });
-  
-  // Создаем GeoJSON объекты для каждой границы
+  // Обрабатываем каждую границу
   boundaries.forEach((boundary: any) => {
-    if (!boundary.members) return;
+    // Собираем все узлы
+    const nodes: Record<number, [number, number]> = {};
+    data.elements.forEach((el: any) => {
+      if (el.type === 'node' && el.lat !== undefined && el.lon !== undefined) {
+        nodes[el.id] = [el.lon, el.lat]; // GeoJSON использует [lon, lat]
+      }
+    });
     
+    // Собираем пути
+    const ways: Record<number, number[][]> = {};
+    data.elements.forEach((el: any) => {
+      if (el.type === 'way' && el.nodes) {
+        ways[el.id] = el.nodes
+          .map((nodeId: number) => nodes[nodeId])
+          .filter(Boolean);
+      }
+    });
+    
+    // Собираем внешние кольца (outer)
+    const outerRings: number[][][] = [];
     const coordinates: number[][][] = [];
-    const outerRings: number[][] = [];
     
-    // Строим внешние кольца из путей с ролью "outer"
     boundary.members
       .filter((member: any) => member.type === 'way' && member.role === 'outer')
       .forEach((member: any) => {
         if (ways[member.ref]) {
-          outerRings.push(...ways[member.ref]);
+          outerRings.push(ways[member.ref]);
         }
       });
     
     // Если есть внешние кольца, создаем полигон
     if (outerRings.length > 0) {
-      coordinates.push(outerRings);
+      coordinates.push(outerRings[0]); // Берем первое кольцо
       
       // Добавляем объект в GeoJSON
       geoJSON.features.push({
@@ -111,8 +129,12 @@ function convertOverpassToGeoJSON(overpassData: any): GeoJSON.FeatureCollection 
   return geoJSON;
 }
 
-// Функция для получения упрощенных границ из имеющихся данных,
-// если API недоступен или нет данных для города
+/**
+ * Функция для получения упрощенных границ из имеющихся данных,
+ * если API недоступен или нет данных для города
+ * @param cityCoords Координаты города [lat, lon]
+ * @returns Массив координат, образующих многоугольник
+ */
 export function getSimpleBoundary(cityCoords: [number, number]): number[][] {
   // Создаем квадрат вокруг координат города
   const delta = 0.05; // размер области
@@ -125,33 +147,31 @@ export function getSimpleBoundary(cityCoords: [number, number]): number[][] {
   ];
 }
 
-// Функция для обновления границ в данных о городе
-export async function updateCityBoundaries(cities: any[]): Promise<any[]> {
-  // Создаем копию массива городов
-  const updatedCities = [...cities];
-  
-  // Обновляем информацию о границах для каждого города
-  for (const city of updatedCities) {
-    try {
-      // Пытаемся получить реальные границы из OSM
-      const geoJSON = await fetchCityBoundaries(city.name);
-      
-      // Если получили данные и есть хотя бы один полигон
-      if (geoJSON.features.length > 0 && 
-          geoJSON.features[0].geometry.type === 'Polygon') {
-        // Берем первый полигон и его внешнее кольцо
-        const coordinates = geoJSON.features[0].geometry.coordinates[0];
-        city.boundaries = coordinates;
-      } else {
-        // Если данных нет, создаем простую границу
-        city.boundaries = getSimpleBoundary([city.latitude, city.longitude]);
-      }
-    } catch (error) {
-      console.warn(`Не удалось получить границы для города ${city.name}:`, error);
-      // В случае ошибки используем простую границу
-      city.boundaries = getSimpleBoundary([city.latitude, city.longitude]);
-    }
+/**
+ * Обновляет границы всех городов через API
+ * @returns Обновленный массив городов
+ */
+export async function updateAllCityBoundaries(): Promise<any[]> {
+  try {
+    const updatedCities = await apiRequest('POST', '/api/cities/update-boundaries', {});
+    return updatedCities;
+  } catch (error) {
+    console.error('Ошибка при обновлении границ городов:', error);
+    throw error;
   }
-  
-  return updatedCities;
+}
+
+/**
+ * Обновляет границы конкретного города через API
+ * @param cityId ID города
+ * @returns Обновленные данные о городе
+ */
+export async function updateCityBoundary(cityId: number): Promise<any> {
+  try {
+    const updatedCity = await apiRequest('POST', `/api/cities/${cityId}/update-boundary`, {});
+    return updatedCity;
+  } catch (error) {
+    console.error(`Ошибка при обновлении границ города ${cityId}:`, error);
+    throw error;
+  }
 }
