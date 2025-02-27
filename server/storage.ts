@@ -1,24 +1,31 @@
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
-import { migrate } from "drizzle-orm/postgres-js/migrator";
-import { cities } from "../shared/schema";
-import * as schema from "../shared/schema";
-import path from "path";
 
-// Соединение с базой данных
-const connectionString = process.env.DATABASE_URL || "postgres://postgres:postgres@localhost:5432/postgres";
-const client = postgres(connectionString);
-export const db = drizzle(client, { schema });
+import fs from 'fs/promises';
+import path from 'path';
+import { cities } from "../shared/schema";
+import type { City, GameState } from "../shared/schema";
+
+// Путь к файлам хранилища
+const CITIES_FILE = path.join(__dirname, "../data/cities.json");
+const GAME_STATE_FILE = path.join(__dirname, "../data/game-state.json");
+
+// Создаем директорию для данных, если ее нет
+async function ensureDataDir() {
+  const dataDir = path.join(__dirname, "../data");
+  try {
+    await fs.mkdir(dataDir, { recursive: true });
+  } catch (err) {
+    console.error("Error creating data directory:", err);
+  }
+}
 
 // Инициализация базы данных
 export async function initDb() {
   try {
-    // Запуск миграций
-    await migrate(db, { migrationsFolder: path.join(__dirname, "../drizzle") });
-    console.log("Migrations completed successfully");
-
+    await ensureDataDir();
+    
     // Проверка и создание начальных данных
     await initializeGameData();
+    console.log("Database initialization completed successfully");
   } catch (error) {
     console.error("Database initialization error:", error);
   }
@@ -27,7 +34,14 @@ export async function initDb() {
 // Функция для инициализации данных игры
 async function initializeGameData() {
   // Проверяем наличие городов
-  const existingCities = await db.select().from(cities);
+  let existingCities: City[] = [];
+  try {
+    const citiesData = await fs.readFile(CITIES_FILE, 'utf8');
+    existingCities = JSON.parse(citiesData);
+  } catch (error) {
+    // Файл не существует или другая ошибка при чтении
+    console.log("Cities file not found, will create initial cities");
+  }
 
   if (existingCities.length === 0) {
     // Создаем начальные города
@@ -36,7 +50,15 @@ async function initializeGameData() {
   }
 
   // Проверяем наличие состояния игры
-  const gameState = await getGameState();
+  let gameState: GameState | null = null;
+  try {
+    const gameStateData = await fs.readFile(GAME_STATE_FILE, 'utf8');
+    gameState = JSON.parse(gameStateData);
+  } catch (error) {
+    // Файл не существует или другая ошибка при чтении
+    console.log("Game state file not found, will create initial game state");
+  }
+
   if (!gameState) {
     // Создаем начальное состояние игры
     console.log("Creating initial game state...");
@@ -56,8 +78,9 @@ async function initializeGameData() {
 // Функция для создания начальных городов
 async function createInitialCities() {
   // Крупные города
-  await db.insert(cities).values([
+  const initialCities: City[] = [
     {
+      id: 1,
       name: "Москва",
       latitude: 55.7558,
       longitude: 37.6173,
@@ -66,9 +89,11 @@ async function createInitialCities() {
       resources: {},
       boundaries: [[55.8, 37.5], [55.9, 37.7], [55.7, 37.8], [55.6, 37.6], [55.8, 37.5]],
       owner: "player",
-      buildings: []
+      buildings: [],
+      military: 0
     },
     {
+      id: 2,
       name: "Санкт-Петербург",
       latitude: 59.9343,
       longitude: 30.3351,
@@ -77,9 +102,11 @@ async function createInitialCities() {
       resources: { food: 8, oil: 3 },
       boundaries: [[60.0, 30.2], [60.1, 30.4], [59.9, 30.5], [59.8, 30.3], [60.0, 30.2]],
       owner: "neutral",
-      buildings: []
+      buildings: [],
+      military: 0
     },
     {
+      id: 3,
       name: "Новосибирск",
       latitude: 55.0084,
       longitude: 82.9357,
@@ -88,46 +115,137 @@ async function createInitialCities() {
       resources: { gold: 7, wood: 5 },
       boundaries: [[55.1, 82.8], [55.2, 83.0], [55.0, 83.1], [54.9, 82.9], [55.1, 82.8]],
       owner: "neutral",
-      buildings: []
+      buildings: [],
+      military: 0
+    },
+    {
+      id: 4,
+      name: "Екатеринбург",
+      latitude: 56.8389,
+      longitude: 60.6057,
+      population: 0,
+      maxPopulation: 70000,
+      resources: { oil: 6, gold: 4 },
+      boundaries: generateBoundaries(56.8389, 60.6057),
+      owner: "neutral",
+      buildings: [],
+      military: 0
+    },
+    {
+      id: 5,
+      name: "Казань",
+      latitude: 55.7887,
+      longitude: 49.1221,
+      population: 0,
+      maxPopulation: 65000,
+      resources: { wood: 8, food: 5 },
+      boundaries: generateBoundaries(55.7887, 49.1221),
+      owner: "neutral",
+      buildings: [],
+      military: 0
+    },
+    // Маленькие города
+    {
+      id: 6,
+      name: "Владимир",
+      latitude: 56.1290,
+      longitude: 40.4056,
+      population: 0,
+      maxPopulation: 2000,
+      resources: { wood: 4, food: 2 },
+      boundaries: generateBoundaries(56.1290, 40.4056),
+      owner: "neutral",
+      buildings: [],
+      military: 0
+    },
+    {
+      id: 7,
+      name: "Суздаль",
+      latitude: 56.4279,
+      longitude: 40.4493,
+      population: 0,
+      maxPopulation: 1500,
+      resources: { food: 3, gold: 1 },
+      boundaries: generateBoundaries(56.4279, 40.4493),
+      owner: "neutral",
+      buildings: [],
+      military: 0
     }
-  ]);
+  ];
+
+  await saveCities(initialCities);
+}
+
+// Сохранение городов в файл
+async function saveCities(citiesData: City[]) {
+  try {
+    await fs.writeFile(CITIES_FILE, JSON.stringify(citiesData, null, 2));
+  } catch (error) {
+    console.error("Error saving cities:", error);
+    throw error;
+  }
+}
+
+// Сохранение состояния игры в файл
+async function saveGameState(gameState: GameState) {
+  try {
+    await fs.writeFile(GAME_STATE_FILE, JSON.stringify(gameState, null, 2));
+  } catch (error) {
+    console.error("Error saving game state:", error);
+    throw error;
+  }
 }
 
 // Хранилище для данных игры
 class Storage {
-  private gameState: any = null;
+  private gameState: GameState | null = null;
+  private cities: City[] = [];
   private armyTransfers: any[] = []; // Массив для отслеживания передвижений армий
+  private citiesLoaded = false;
+
+  // Загрузка городов из файла
+  private async loadCities() {
+    if (this.citiesLoaded) return;
+    
+    try {
+      const citiesData = await fs.readFile(CITIES_FILE, 'utf8');
+      this.cities = JSON.parse(citiesData);
+      this.citiesLoaded = true;
+    } catch (error) {
+      console.error("Error loading cities:", error);
+      this.cities = [];
+    }
+  }
 
   async getCities() {
-    return db.select().from(cities);
+    await this.loadCities();
+    return [...this.cities]; // Возвращаем копию массива городов
   }
 
   async updateCity(id: number, data: any) {
-    const result = await db.update(cities)
-      .set(data)
-      .where(schema.cities.id.eq(id))
-      .returning();
+    await this.loadCities();
+    
+    const cityIndex = this.cities.findIndex(city => city.id === id);
+    if (cityIndex === -1) {
+      throw new Error(`City with id ${id} not found`);
+    }
 
-    return result[0];
+    // Обновляем город
+    const updatedCity = { ...this.cities[cityIndex], ...data };
+    this.cities[cityIndex] = updatedCity;
+
+    // Сохраняем обновленные города
+    await saveCities(this.cities);
+
+    return updatedCity;
   }
 
   async getGameState() {
     if (this.gameState) return this.gameState;
 
-    // Если состояние не в памяти, получаем из базы данных или создаем новое
-    const filePath = path.join(__dirname, "../game-state.json");
     try {
-      this.gameState = {
-        resources: {
-          gold: 500,
-          wood: 200,
-          food: 300,
-          oil: 100
-        },
-        population: 100,
-        military: 0
-      };
-      return this.gameState;
+      const gameStateData = await fs.readFile(GAME_STATE_FILE, 'utf8');
+      this.gameState = JSON.parse(gameStateData);
     } catch (error) {
       console.error("Error reading game state:", error);
       this.gameState = {
@@ -140,12 +258,14 @@ class Storage {
         population: 100,
         military: 0
       };
-      return this.gameState;
     }
+
+    return this.gameState;
   }
 
-  async setGameState(state: any) {
+  async setGameState(state: GameState) {
     this.gameState = state;
+    await saveGameState(state);
     return this.gameState;
   }
 
@@ -166,39 +286,6 @@ class Storage {
 }
 
 export const storage = new Storage();
-
-// Исправление заполнения городов для генерации
-async function initializeGame() {
-  // Очищаем и заполняем базу данных
-  await db.delete(cities);
-
-  // Генерируем крупные города
-  await db.insert(cities).values([
-    {
-      name: "Москва",
-      latitude: 55.7558,
-      longitude: 37.6173,
-      population: 20000,
-      maxPopulation: 150000,
-      resources: {},
-      boundaries: generateBoundaries(55.7558, 37.6173),
-      owner: "player",
-      buildings: []
-    },
-    {
-      name: "Санкт-Петербург",
-      latitude: 59.9343,
-      longitude: 30.3351,
-      population: 0, // Нейтральный город, население = 0
-      maxPopulation: 100000,
-      resources: { food: 8, oil: 3 },
-      boundaries: generateBoundaries(59.9343, 30.3351),
-      owner: "neutral",
-      buildings: []
-    },
-  ]);
-}
-
 
 function generateBoundaries(latitude: number, longitude: number): number[][] {
   const offset = 0.1;

@@ -151,28 +151,28 @@ export class GameLoop {
   start() {
     // Используем более частые обновления
     this.tickInterval = 1000; // обновление каждую секунду
-    
+
     // Инициализируем счетчик для регулярной отправки обновлений клиентам
     let updateCounter = 0;
-    
+
     setInterval(() => {
       this.tick();
-      
+
       // Добавляем ход ИИ
       aiPlayer.makeDecisions();
-      
+
       // Всегда отправляем обновления клиентам при каждом тике
       this.broadcastGameState();
     }, this.tickInterval);
   }
-  
+
   // Отдельный метод для отправки текущего состояния игры всем клиентам
   async broadcastGameState() {
     try {
       const gameState = await storage.getGameState();
       const cities = await storage.getCities();
       const armyTransfers = await storage.getArmyTransfers();
-      
+
       this.broadcast({ 
         type: 'GAME_UPDATE',
         gameState: gameState
@@ -182,7 +182,7 @@ export class GameLoop {
         type: 'CITIES_UPDATE',
         cities: cities // Отправляем все города для полного обновления
       });
-      
+
       // Отправляем информацию о передвижениях армий
       if (armyTransfers.length > 0) {
         this.broadcast({
