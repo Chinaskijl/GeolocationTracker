@@ -2,6 +2,12 @@
 @import "tailwindcss/components";
 @import "tailwindcss/utilities";
 
+#map-container {
+  width: 100%;
+  height: 100vh;
+  z-index: 1;
+}
+
 /* Стили для контейнера карты */
 .map-container {
   height: 100vh;

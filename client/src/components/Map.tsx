@@ -4,98 +4,78 @@ import 'leaflet/dist/leaflet.css';
 import { useGameStore } from '../lib/store';
 import { City } from '../../../shared/schema';
 
+// Исправляем пути к иконкам Leaflet
+import markerIcon from 'leaflet/dist/images/marker-icon.png';
+import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
+import markerShadow from 'leaflet/dist/images/marker-shadow.png';
+
 // Определение цветов для территорий разных владельцев
-const OWNER_COLORS = {
-  player: '#4CAF50',  // зеленый для игрока
-  ai: '#FF5722',      // оранжевый для ИИ
-  neutral: '#9E9E9E'  // серый для нейтральных
+const ownerColors = {
+  neutral: '#808080', // серый для нейтральных городов
+  player: '#0000FF', // синий для городов игрока
+  ai: '#FF0000',     // красный для городов ИИ
 };
 
-// Настройка иконок маркеров для городов
-const setupIcons = () => {
-  // Настройка дефолтной иконки
-  delete L.Icon.Default.prototype._getIconUrl;
-  L.Icon.Default.mergeOptions({
-    iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
-    iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
-    shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
-  });
+// Необходимо исправить иконки по умолчанию
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconUrl: markerIcon,
+  iconRetinaUrl: markerIcon2x,
+  shadowUrl: markerShadow,
+});
 
-  // Создаем кастомные иконки для разных владельцев
-  return {
-    player: new L.Icon({
-      iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
-      iconSize: [25, 41],
-      iconAnchor: [12, 41],
-      popupAnchor: [1, -34],
-      shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
-      shadowSize: [41, 41],
-      className: 'player-icon'
-    }),
-    ai: new L.Icon({
-      iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
-      iconSize: [25, 41],
-      iconAnchor: [12, 41],
-      popupAnchor: [1, -34],
-      shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
-      shadowSize: [41, 41],
-      className: 'ai-icon'
-    }),
-    neutral: new L.Icon({
-      iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
-      iconSize: [25, 41],
-      iconAnchor: [12, 41],
-      popupAnchor: [1, -34],
-      shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
-      shadowSize: [41, 41],
-      className: 'neutral-icon'
-    })
-  };
-};
-
-export const Map: React.FC = () => {
+const Map: React.FC = () => {
   const { cities, selectedCity, setSelectedCity, gameState, armyTransfers } = useGameStore();
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<L.Marker[]>([]);
   const polygonsRef = useRef<L.Polygon[]>([]);
   const linesRef = useRef<L.Polyline[]>([]);
-  const [mapLoaded, setMapLoaded] = useState(false);
+  const [mapInitialized, setMapInitialized] = useState(false);
 
-  // Инициализация карты при монтировании компонента
+  // Инициализация карты
   useEffect(() => {
     if (!mapRef.current) {
-      const map = L.map('map', {
-        center: [55.7558, 37.6173], // Москва как начальная точка
-        zoom: 5,
+      console.log('Initializing map...');
+      // Центр карты на территории России
+      const initialPosition = [55.7558, 37.6173]; // Москва
+      const initialZoom = 5;
+
+      const map = L.map('map-container', {
+        center: initialPosition,
+        zoom: initialZoom,
         zoomControl: true,
         attributionControl: true
       });
 
-      // Добавляем тайлы OpenStreetMap
+      // Добавляем тайловый слой
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        attribution: '© OpenStreetMap contributors',
+        maxZoom: 18
       }).addTo(map);
 
       mapRef.current = map;
-      setupIcons(); // Настраиваем иконки
-      setMapLoaded(true);
+      console.log('Map initialized');
+      setMapInitialized(true);
     }
 
-    // Очистка при размонтировании
+    // Удаляем карту при размонтировании компонента
     return () => {
       if (mapRef.current) {
+        console.log('Cleaning up map...');
         mapRef.current.remove();
         mapRef.current = null;
       }
     };
   }, []);
 
-  // Обновление маркеров городов и границ при изменении данных
+  // Отрисовка городов на карте
   useEffect(() => {
-    if (!mapRef.current || !cities || !mapLoaded) return;
+    if (!mapRef.current || !mapInitialized || !cities || cities.length === 0) {
+      console.log('Skipping city rendering, map not ready or no cities', {mapRef: !!mapRef.current, mapInitialized, citiesCount: cities?.length});
+      return;
+    }
 
-    const map = mapRef.current;
-    const icons = setupIcons();
+    console.log('Rendering cities on map:', cities.length);
 
     // Очищаем предыдущие маркеры и полигоны
     markersRef.current.forEach(marker => marker.remove());
@@ -106,69 +86,45 @@ export const Map: React.FC = () => {
     polygonsRef.current = [];
     linesRef.current = [];
 
-    // Создаем новые маркеры для городов и полигоны для границ
-    const newMarkers: L.Marker[] = [];
-    const newPolygons: L.Polygon[] = [];
-    const newLines: L.Polyline[] = [];
-    const cityConnections: [number, number][][] = [];
+    // Добавляем маркеры и полигоны для каждого города
+    cities.forEach((city) => {
+      // Создаем маркер
+      const marker = L.marker([city.latitude, city.longitude])
+        .addTo(mapRef.current!);
 
-    // Добавляем границы городов
-    cities.forEach(city => {
-      // Создаем полигон для границы города
-      if (city.boundaries && city.boundaries.length > 0) {
-        const color = OWNER_COLORS[city.owner as keyof typeof OWNER_COLORS] || OWNER_COLORS.neutral;
+      marker.bindPopup(`<b>${city.name}</b><br>Население: ${city.population}/${city.maxPopulation}<br>Владелец: ${city.owner}<br>Ресурсы: ${Object.entries(city.resources).map(([key, value]) => `${key}: ${value}`).join(', ')}`);
 
-        const polygon = L.polygon(city.boundaries, {
-          color,
-          fillColor: color,
-          fillOpacity: 0.2,
-          weight: 2,
-          dashArray: city.owner === 'player' ? '' : '5, 5',
-        }).addTo(map);
-
-        polygon.bindTooltip(`${city.name} (${city.owner})`);
-
-        // Обработчик клика по границе
-        polygon.on('click', () => {
-          setSelectedCity(city);
-        });
-
-        newPolygons.push(polygon);
-      }
-
-      // Создаем маркер для города
-      const marker = L.marker(
-        [city.latitude, city.longitude], 
-        { 
-          icon: icons[city.owner as keyof typeof icons] || icons.neutral,
-          title: city.name
-        }
-      ).addTo(map);
-
-      // Добавляем всплывающую подсказку
-      marker.bindPopup(`
-        <div>
-          <h3>${city.name}</h3>
-          <p>Население: ${city.population} / ${city.maxPopulation}</p>
-          <p>Владелец: ${city.owner}</p>
-          <p>Ресурсы: ${Object.entries(city.resources)
-            .map(([key, value]) => `${key}: ${value}`)
-            .join(', ')}</p>
-        </div>
-      `);
-
-      // Обработчик клика по маркеру
       marker.on('click', () => {
         setSelectedCity(city);
       });
 
-      newMarkers.push(marker);
+      markersRef.current.push(marker);
 
-      // Запоминаем центр города для построения соединений
-      cityConnections.push([city.latitude, city.longitude]);
+      // Создаем территориальный полигон если есть границы
+      if (city.boundaries && city.boundaries.length > 0) {
+        const color = ownerColors[city.owner as keyof typeof ownerColors] || ownerColors.neutral;
+
+        const polygon = L.polygon(city.boundaries, {
+          color: color,
+          fillColor: color,
+          fillOpacity: 0.2,
+          weight: 2,
+          dashArray: city.owner === 'player' ? '' : '5, 5',
+        }).addTo(mapRef.current!);
+
+        polygon.bindTooltip(`${city.name} (${city.owner})`);
+
+        polygon.on('click', () => {
+          setSelectedCity(city);
+        });
+
+        polygonsRef.current.push(polygon);
+      }
     });
 
     // Добавляем соединительные линии между городами для построения связанных границ
+    const cityConnections: [number, number][][] = [];
+    cities.forEach(city => cityConnections.push([city.latitude, city.longitude]));
     for (let i = 0; i < cityConnections.length; i++) {
       for (let j = i + 1; j < cityConnections.length; j++) {
         const cityA = cities[i];
@@ -176,7 +132,7 @@ export const Map: React.FC = () => {
 
         // Проверяем, что города принадлежат одному владельцу
         if (cityA.owner === cityB.owner) {
-          const color = OWNER_COLORS[cityA.owner as keyof typeof OWNER_COLORS] || OWNER_COLORS.neutral;
+          const color = ownerColors[cityA.owner as keyof typeof ownerColors] || ownerColors.neutral;
           const line = L.polyline([
             [cityA.latitude, cityA.longitude],
             [cityB.latitude, cityB.longitude]
@@ -185,12 +141,13 @@ export const Map: React.FC = () => {
             weight: 1.5,
             dashArray: '3, 5',
             opacity: 0.6
-          }).addTo(map);
+          }).addTo(mapRef.current!);
 
-          newLines.push(line);
+          linesRef.current.push(line);
         }
       }
     }
+
 
     // Отображаем перемещения армий, если они есть
     if (armyTransfers && armyTransfers.length > 0) {
@@ -207,7 +164,7 @@ export const Map: React.FC = () => {
             weight: 3,
             dashArray: '10, 10',
             opacity: 0.8
-          }).addTo(map);
+          }).addTo(mapRef.current!);
 
           // Добавляем стрелку анимацией
           const arrowIcon = L.divIcon({
@@ -221,35 +178,32 @@ export const Map: React.FC = () => {
             (fromCity.longitude + toCity.longitude) / 2
           ];
 
-          const marker = L.marker(midPoint as [number, number], { icon: arrowIcon }).addTo(map);
+          const marker = L.marker(midPoint as [number, number], { icon: arrowIcon }).addTo(mapRef.current!);
           marker.bindTooltip(`Перемещение армии: ${transfer.amount}`);
 
-          newMarkers.push(marker);
-          newLines.push(line);
+          markersRef.current.push(marker);
+          linesRef.current.push(line);
         }
       });
     }
 
-    // Сохраняем новые маркеры и полигоны
-    markersRef.current = newMarkers;
-    polygonsRef.current = newPolygons;
-    linesRef.current = newLines;
-
-    // Если город выбран, центрируем на нем карту
+    // Подсветка выбранного города
     if (selectedCity) {
-      map.setView([selectedCity.latitude, selectedCity.longitude], 7);
+      const selectedMarker = markersRef.current.find(marker => {
+        const city = cities.find(city => city.id === selectedCity.id);
+        return city && marker.getLatLng().equals(L.latLng(city.latitude, city.longitude));
+      });
+      if (selectedMarker) {
+        mapRef.current.setView([selectedCity.latitude, selectedCity.longitude], 7);
+        selectedMarker.openPopup();
+      }
     }
+  }, [cities, selectedCity, armyTransfers, mapInitialized, setSelectedCity]);
 
-  }, [cities, selectedCity, armyTransfers, mapLoaded, setSelectedCity]);
 
-  // Эффект для центрирования карты на выбранном городе
-  useEffect(() => {
-    if (mapRef.current && selectedCity) {
-      mapRef.current.setView([selectedCity.latitude, selectedCity.longitude], 7);
-    }
-  }, [selectedCity]);
-
-  return <div id="map" className="map-container" />;
+  return (
+    <div id="map-container" className="w-full h-full"></div>
+  );
 };
 
 export default Map;
