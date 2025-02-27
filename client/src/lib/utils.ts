@@ -22,3 +22,9 @@ export function calculateDistance(city1: any, city2: any): number {
 export function cn(...classes: any[]) {
   return classes.filter(Boolean).join(' ');
 }
+import { type ClassValue, clsx } from "clsx"
+import { twMerge } from "tailwind-merge"
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs))
+}
