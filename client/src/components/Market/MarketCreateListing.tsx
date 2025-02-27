@@ -25,10 +25,13 @@ interface MarketCreateListingProps {
  */
 export function MarketCreateListing({ onSuccess }: MarketCreateListingProps) {
   const { gameState } = useGameStore();
-  const [resourceType, setResourceType] = useState<ResourceType>('gold');
+  const [resourceType, setResourceType] = useState<ResourceType>('food');
   const [amount, setAmount] = useState<number>(1);
   const [pricePerUnit, setPricePerUnit] = useState<number>(10);
   const [listingType, setListingType] = useState<'buy' | 'sell'>('sell');
+
+  // Список ресурсов без золота (т.к. это основная валюта)
+  const availableResources: ResourceType[] = ['food', 'wood', 'oil', 'metal', 'steel', 'weapons'];
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -129,6 +132,34 @@ export function MarketCreateListing({ onSuccess }: MarketCreateListingProps) {
           </div>
           
           <div className="space-y-2">
+            <Label>Тип объявления</Label>
+            <div className="flex space-x-4 mt-1 mb-3">
+              <div className="flex items-center">
+                <input
+                  type="radio"
+                  id="sell"
+                  name="listingType"
+                  className="mr-2"
+                  checked={listingType === 'sell'}
+                  onChange={() => setListingType('sell')}
+                />
+                <Label htmlFor="sell" className="cursor-pointer">Продажа</Label>
+              </div>
+              <div className="flex items-center">
+                <input
+                  type="radio"
+                  id="buy"
+                  name="listingType"
+                  className="mr-2"
+                  checked={listingType === 'buy'}
+                  onChange={() => setListingType('buy')}
+                />
+                <Label htmlFor="buy" className="cursor-pointer">Покупка</Label>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="resourceType">Ресурс</Label>
             <Select 
               value={resourceType} 
@@ -138,7 +169,7 @@ export function MarketCreateListing({ onSuccess }: MarketCreateListingProps) {
                 <SelectValue placeholder="Выберите ресурс" />
               </SelectTrigger>
               <SelectContent>
-                {resources.map((resource) => (
+                {availableResources.map((resource) => (
                   <SelectItem key={resource} value={resource}>
                     <span className="flex items-center">
                       {getResourceIcon(resource)}

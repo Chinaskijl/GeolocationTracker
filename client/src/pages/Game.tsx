@@ -61,8 +61,12 @@ const MarketPanel = ({ open, onClose }) => {
             <div className="bg-white rounded-lg shadow p-4">
               <h2 className="text-xl font-semibold mb-4">Графики цен</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <MarketPriceChart resourceType="gold" />
                 <MarketPriceChart resourceType="food" />
+                <MarketPriceChart resourceType="wood" />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <MarketPriceChart resourceType="oil" />
+                <MarketPriceChart resourceType="metal" />
               </div>
             </div>
 
