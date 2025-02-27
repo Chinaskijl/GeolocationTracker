@@ -93,7 +93,7 @@ export function CityPanel() {
             selectedCity.owner === 'neutral' ? 'bg-gray-100 text-gray-800' :
             'bg-red-100 text-red-800'
           }`}>
-            {selectedCity.owner === 'player' ? 'Ваш город' : 
+            {selectedCity.owner === 'player' ? 'Ваш город' :
              selectedCity.owner === 'neutral' ? 'Нейтральный' : 'Враг'}
           </span>
         </div>
@@ -172,17 +172,17 @@ export function CityPanel() {
                     key={building.id}
                     variant="outline"
                     onClick={() => handleBuild(building.id)}
-                    className="w-full p-4"
+                    className="w-full p-6 h-auto"
                     disabled={!canAffordBuilding(gameState, building) || atLimit}
                   >
-                    <div className="w-full space-y-2">
+                    <div className="w-full space-y-4">
                       <div className="flex justify-between items-center">
-                        <span className="font-medium">{building.name}</span>
+                        <span className="text-lg font-medium">{building.name}</span>
                         <span className="text-sm text-gray-500">
                           {buildingCount}/{building.maxCount}
                         </span>
                       </div>
-                      <div className="text-xs text-left text-gray-600">
+                      <div className="text-sm text-left text-gray-600 space-y-1">
                         {building.resourceProduction && (
                           <div>+{building.resourceProduction.amount} {building.resourceProduction.type}/сек</div>
                         )}
@@ -193,12 +193,12 @@ export function CityPanel() {
                           <div>+{building.military.production} военные/сек (-{building.military.populationUse} население)</div>
                         )}
                       </div>
-                      <div className="border-t pt-2 mt-2">
-                        <div className="flex flex-wrap gap-2">
+                      <div className="border-t pt-4">
+                        <div className="flex flex-wrap gap-3">
                           {Object.entries(building.cost).map(([resource, amount]) => (
                             <span
                               key={resource}
-                              className={`text-xs px-2 py-1 rounded ${
+                              className={`text-sm px-3 py-1.5 rounded-full ${
                                 gameState.resources[resource as keyof typeof gameState.resources] >= amount
                                   ? 'bg-green-100 text-green-800'
                                   : 'bg-red-100 text-red-800'
