@@ -52,7 +52,7 @@ const MarketPanel = ({ open, onClose }) => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Левая панель - создание лота */}
           <div className="md:col-span-1">
-              <MarketCreateListing onSuccess={handleListingCreated} />
+            <MarketCreateListing onSuccess={handleListingCreated} />
           </div>
 
           {/* Правая панель - графики и история */}
