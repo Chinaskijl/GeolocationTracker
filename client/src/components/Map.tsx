@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -102,7 +101,7 @@ export const Map: React.FC = () => {
     markersRef.current.forEach(marker => marker.remove());
     polygonsRef.current.forEach(polygon => polygon.remove());
     linesRef.current.forEach(line => line.remove());
-    
+
     markersRef.current = [];
     polygonsRef.current = [];
     linesRef.current = [];
@@ -118,7 +117,7 @@ export const Map: React.FC = () => {
       // Создаем полигон для границы города
       if (city.boundaries && city.boundaries.length > 0) {
         const color = OWNER_COLORS[city.owner as keyof typeof OWNER_COLORS] || OWNER_COLORS.neutral;
-        
+
         const polygon = L.polygon(city.boundaries, {
           color,
           fillColor: color,
@@ -128,7 +127,7 @@ export const Map: React.FC = () => {
         }).addTo(map);
 
         polygon.bindTooltip(`${city.name} (${city.owner})`);
-        
+
         // Обработчик клика по границе
         polygon.on('click', () => {
           setSelectedCity(city);
@@ -145,7 +144,7 @@ export const Map: React.FC = () => {
           title: city.name
         }
       ).addTo(map);
-      
+
       // Добавляем всплывающую подсказку
       marker.bindPopup(`
         <div>
@@ -157,14 +156,14 @@ export const Map: React.FC = () => {
             .join(', ')}</p>
         </div>
       `);
-      
+
       // Обработчик клика по маркеру
       marker.on('click', () => {
         setSelectedCity(city);
       });
-      
+
       newMarkers.push(marker);
-      
+
       // Запоминаем центр города для построения соединений
       cityConnections.push([city.latitude, city.longitude]);
     });
@@ -174,7 +173,7 @@ export const Map: React.FC = () => {
       for (let j = i + 1; j < cityConnections.length; j++) {
         const cityA = cities[i];
         const cityB = cities[j];
-        
+
         // Проверяем, что города принадлежат одному владельцу
         if (cityA.owner === cityB.owner) {
           const color = OWNER_COLORS[cityA.owner as keyof typeof OWNER_COLORS] || OWNER_COLORS.neutral;
@@ -187,7 +186,7 @@ export const Map: React.FC = () => {
             dashArray: '3, 5',
             opacity: 0.6
           }).addTo(map);
-          
+
           newLines.push(line);
         }
       }
@@ -198,7 +197,7 @@ export const Map: React.FC = () => {
       armyTransfers.forEach(transfer => {
         const fromCity = cities.find(c => c.id === transfer.fromCityId);
         const toCity = cities.find(c => c.id === transfer.toCityId);
-        
+
         if (fromCity && toCity) {
           const line = L.polyline([
             [fromCity.latitude, fromCity.longitude],
@@ -209,22 +208,22 @@ export const Map: React.FC = () => {
             dashArray: '10, 10',
             opacity: 0.8
           }).addTo(map);
-          
+
           // Добавляем стрелку анимацией
           const arrowIcon = L.divIcon({
             html: '➤',
             className: 'army-transfer-arrow',
             iconSize: [20, 20]
           });
-          
+
           const midPoint = [
             (fromCity.latitude + toCity.latitude) / 2,
             (fromCity.longitude + toCity.longitude) / 2
           ];
-          
+
           const marker = L.marker(midPoint as [number, number], { icon: arrowIcon }).addTo(map);
           marker.bindTooltip(`Перемещение армии: ${transfer.amount}`);
-          
+
           newMarkers.push(marker);
           newLines.push(line);
         }
@@ -252,3 +251,5 @@ export const Map: React.FC = () => {
 
   return <div id="map" className="map-container" />;
 };
+
+export default Map;
