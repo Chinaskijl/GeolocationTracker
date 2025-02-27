@@ -219,3 +219,181 @@ export function MarketListings({ onListingPurchased, selectedResource = 'food' }
     </div>
   );
 }
+import React, { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Listing, ResourceType } from '@shared/marketTypes';
+import { getResourceIcon } from '@/lib/resources';
+import { useGameStore } from '@/lib/store';
+
+interface MarketListingsProps {
+  selectedResource?: string;
+  onListingPurchased?: () => void;
+}
+
+/**
+ * Компонент для отображения списка лотов на рынке
+ * 
+ * @param selectedResource - Выбранный ресурс для фильтрации
+ * @param onListingPurchased - Callback для обновления родительского компонента после покупки лота
+ */
+export function MarketListings({ selectedResource, onListingPurchased }: MarketListingsProps) {
+  const { setGameState } = useGameStore();
+  const queryClient = useQueryClient();
+  const [filter, setFilter] = useState<'all' | 'buy' | 'sell'>('all');
+  
+  // Получение списка лотов
+  const { data: listings = [], isLoading, error, refetch } = useQuery<Listing[]>({
+    queryKey: ['/api/market/listings'],
+    queryFn: async () => {
+      const response = await fetch('/api/market/listings');
+      if (!response.ok) {
+        throw new Error('Failed to fetch listings');
+      }
+      return response.json();
+    }
+  });
+
+  // Мутация для покупки/продажи лота
+  const purchaseMutation = useMutation({
+    mutationFn: async (listingId: number) => {
+      const response = await fetch('/api/market/purchase-listing', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ listingId })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to purchase listing');
+      }
+      
+      return response.json();
+    },
+    onSuccess: (data) => {
+      // Обновляем состояние игры из полученных данных
+      if (data.gameState) {
+        setGameState(data.gameState);
+      }
+      
+      // Инвалидируем кеш для обновления списка лотов
+      queryClient.invalidateQueries({ queryKey: ['/api/market/listings'] });
+      
+      // Вызываем callback для обновления родительского компонента
+      if (onListingPurchased) {
+        onListingPurchased();
+      }
+    }
+  });
+
+  // Фильтрация лотов
+  const filteredListings = listings.filter(listing => {
+    // Фильтр по типу операции
+    if (filter !== 'all' && listing.type !== filter) {
+      return false;
+    }
+    
+    // Фильтр по типу ресурса
+    if (selectedResource && listing.resourceType !== selectedResource) {
+      return false;
+    }
+    
+    return true;
+  });
+
+  // Обработчик покупки/продажи лота
+  const handlePurchaseListing = (listingId: number) => {
+    purchaseMutation.mutate(listingId);
+  };
+
+  // Отображение имени владельца в более читаемом формате
+  const getOwnerName = (owner: string) => {
+    return owner === 'player' ? 'Игрок' : 'ИИ';
+  };
+
+  return (
+    <div className="bg-white rounded-lg shadow p-4">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-semibold">Доступные лоты</h2>
+        
+        {/* Фильтры лотов */}
+        <div className="flex gap-2">
+          <button
+            onClick={() => setFilter('all')}
+            className={`px-3 py-1 rounded-md text-sm ${
+              filter === 'all' ? 'bg-blue-500 text-white' : 'bg-gray-100 hover:bg-gray-200'
+            }`}
+          >
+            Все
+          </button>
+          <button
+            onClick={() => setFilter('buy')}
+            className={`px-3 py-1 rounded-md text-sm ${
+              filter === 'buy' ? 'bg-blue-500 text-white' : 'bg-gray-100 hover:bg-gray-200'
+            }`}
+          >
+            Покупка
+          </button>
+          <button
+            onClick={() => setFilter('sell')}
+            className={`px-3 py-1 rounded-md text-sm ${
+              filter === 'sell' ? 'bg-blue-500 text-white' : 'bg-gray-100 hover:bg-gray-200'
+            }`}
+          >
+            Продажа
+          </button>
+        </div>
+      </div>
+      
+      {isLoading ? (
+        <div className="text-center p-4">Загрузка лотов...</div>
+      ) : error ? (
+        <div className="text-center p-4 text-red-500">Ошибка загрузки лотов</div>
+      ) : filteredListings.length === 0 ? (
+        <div className="text-center p-4 text-gray-500">Нет доступных лотов</div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="p-2 text-left">Ресурс</th>
+                <th className="p-2 text-right">Тип</th>
+                <th className="p-2 text-right">Количество</th>
+                <th className="p-2 text-right">Цена за ед.</th>
+                <th className="p-2 text-right">Всего</th>
+                <th className="p-2 text-center">Продавец</th>
+                <th className="p-2 text-right">Действия</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredListings.map((listing) => (
+                <tr key={listing.id} className="border-b hover:bg-gray-50">
+                  <td className="p-2 flex items-center">
+                    {getResourceIcon(listing.resourceType)}
+                    <span className="ml-2 capitalize">{listing.resourceType}</span>
+                  </td>
+                  <td className="p-2 text-right">
+                    {listing.type === 'sell' ? 'Продажа' : 'Покупка'}
+                  </td>
+                  <td className="p-2 text-right">{listing.amount}</td>
+                  <td className="p-2 text-right">{listing.pricePerUnit}</td>
+                  <td className="p-2 text-right">{listing.amount * listing.pricePerUnit}</td>
+                  <td className="p-2 text-center">{getOwnerName(listing.owner)}</td>
+                  <td className="p-2 text-right">
+                    <button
+                      onClick={() => handlePurchaseListing(listing.id)}
+                      disabled={purchaseMutation.isPending}
+                      className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded"
+                    >
+                      {listing.type === 'sell' ? 'Купить' : 'Продать'}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}

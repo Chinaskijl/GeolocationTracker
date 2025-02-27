@@ -393,7 +393,7 @@ class Market {
       gameState.resources.gold -= totalPrice;
       gameState.resources[listing.resourceType] = (gameState.resources[listing.resourceType] || 0) + listing.amount;
 
-      await storage.saveGameState(gameState);
+      await storage.setGameState(gameState);
 
       // Создаем запись о транзакции
       this.createTransaction({
@@ -409,8 +409,7 @@ class Market {
 
       console.log(`Успешная покупка лота ${listingId}. Ресурс: ${listing.resourceType}, Количество: ${listing.amount}, Цена: ${totalPrice}`);
       return true;
-    } 
-    else if (listing.type === 'buy') {
+    } else if (listing.type === 'buy') {
       // Игрок продает ресурс
       const totalPrice = listing.amount * listing.pricePerUnit;
 
@@ -424,7 +423,7 @@ class Market {
       gameState.resources[listing.resourceType] -= listing.amount;
       gameState.resources.gold += totalPrice; // Важно: добавляем золото при продаже
 
-      await storage.saveGameState(gameState);
+      await storage.setGameState(gameState);
 
       // Создаем запись о транзакции
       this.createTransaction({

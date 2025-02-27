@@ -343,8 +343,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Покупка лота
-  app.post("/api/market/buy", async (req, res) => {
+  // Покупка или продажа лота
+  app.post("/api/market/purchase", async (req, res) => {
     try {
       const { listingId } = req.body;
       
@@ -353,7 +353,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (result) {
         // Обновляем игровое состояние у всех клиентов
         gameLoop.broadcastGameState();
-        res.json({ success: true });
+        
+        // Обеспечиваем обновление состояния игры у клиента, который совершил покупку
+        const gameState = await storage.getGameState();
+        
+        res.json({ success: true, gameState });
       } else {
         res.status(400).json({ message: 'Failed to buy listing' });
       }
@@ -380,6 +384,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Ошибка при отмене лота:', error);
       res.status(500).json({ message: 'Failed to cancel listing' });
+    }
+  });
+
+  // Обработка покупки лота (новый эндпоинт)
+  app.post("/api/market/purchase-listing", async (req, res) => {
+    try {
+      const { listingId } = req.body;
+      
+      const result = await market.purchaseListing(listingId);
+      
+      if (result) {
+        // Получаем обновленное состояние игры
+        const gameState = await storage.getGameState();
+        
+        // Обновляем игровое состояние у всех клиентов
+        gameLoop.broadcastGameState();
+        
+        res.json({ success: true, gameState });
+      } else {
+        res.status(400).json({ message: 'Failed to purchase listing' });
+      }
+    } catch (error) {
+      console.error('Ошибка при покупке/продаже лота:', error);
+      res.status(500).json({ message: 'Failed to purchase listing' });
     }
   });
 
