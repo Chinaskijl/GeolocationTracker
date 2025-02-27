@@ -162,7 +162,7 @@ export class GameLoop {
 
       this.broadcast({
         type: 'CITIES_UPDATE',
-        cities: cities.filter(city => city.owner === 'player' || city.owner === 'enemy')
+        cities: cities // Отправляем все города для полного обновления
       });
     } catch (error) {
       console.error('Error broadcasting game state:', error);

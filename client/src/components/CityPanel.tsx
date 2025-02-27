@@ -164,6 +164,7 @@ export function CityPanel() {
             <ScrollArea className="h-60 w-full rounded-md border">
               <div className="p-4 space-y-4">
                 {BUILDINGS.map(building => {
+                  // Обновляем чтение количества зданий напрямую из выбранного города
                   const buildingCount = selectedCity.buildings.filter(b => b === building.id).length;
                   const atLimit = buildingCount >= building.maxCount || building.maxCount === 0;
 
@@ -264,4 +265,40 @@ function canAffordBuilding(gameState: any, building: any): boolean {
   return Object.entries(building.cost).every(
     ([resource, amount]) => gameState.resources[resource as keyof typeof gameState.resources] >= amount
   );
+}
+function canAffordBuilding(gameState: GameState, building: Building): boolean {
+  return Object.entries(building.cost).every(
+    ([resource, amount]) => gameState.resources[resource as keyof typeof gameState.resources] >= amount
+  );
+}
+
+// Добавим функцию handleBuild с корректным обновлением
+async function handleBuild(buildingId: string) {
+  if (!selectedCity) return;
+  
+  try {
+    const response = await fetch(`/api/cities/${selectedCity.id}/build`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ buildingId })
+    });
+    
+    if (response.ok) {
+      const updatedCity = await response.json();
+      // Обновляем локальное состояние города
+      updateCity(updatedCity);
+      setSelectedCity(updatedCity);
+      
+      // Обновляем состояние игры
+      const gameStateResponse = await fetch('/api/game-state');
+      if (gameStateResponse.ok) {
+        const newGameState = await gameStateResponse.json();
+        setGameState(newGameState);
+      }
+    }
+  } catch (error) {
+    console.error('Error building:', error);
+  }
 }

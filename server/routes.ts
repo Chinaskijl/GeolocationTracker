@@ -79,10 +79,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         resources: newResources
       });
 
-      // Добавление здания в город
+      // Обновление города
       const updatedCity = await storage.updateCity(Number(id), {
         buildings: [...city.buildings, buildingId]
       });
+
+      // Немедленная отправка обновленных данных через WebSocket
+      gameLoop.broadcastGameState();
 
       res.json(updatedCity);
     } catch (error) {
