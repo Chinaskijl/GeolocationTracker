@@ -1,8 +1,8 @@
-
 import { useGameStore } from '@/lib/store';
 import { Card } from '@/components/ui/card';
 import { Coins, Trees, Wheat, Droplet } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { BUILDINGS } from '@/lib/game';
 
 export function ResourcePanel() {
   const { gameState, cities } = useGameStore();
@@ -26,39 +26,55 @@ export function ResourcePanel() {
     let metalProd = 0;
     let steelProd = 0;
     let weaponsProd = 0;
-    let popCount = 0;
+    let foodCons = 0;
 
     cities.forEach(city => {
       if (city.owner === 'player') {
-        popCount += city.population;
-
         // Добавляем базовое производство города
-        if (city.resources.gold) goldProd += city.resources.gold;
-        if (city.resources.wood) woodProd += city.resources.wood;
-        if (city.resources.food) foodProd += city.resources.food;
-        if (city.resources.oil) oilProd += city.resources.oil;
+        if (city.resources?.gold) goldProd += city.resources.gold;
+        if (city.resources?.wood) woodProd += city.resources.wood;
+        if (city.resources?.food) foodProd += city.resources.food;
+        if (city.resources?.oil) oilProd += city.resources.oil;
 
-        // Обрабатываем здания
+        // Обработка зданий и их продукции
         city.buildings.forEach(buildingId => {
-          const building = getBuilding(buildingId);
-          if (building?.resourceProduction) {
-            const { type, amount } = building.resourceProduction;
-            switch (type) {
-              case 'gold': goldProd += amount; break;
-              case 'wood': woodProd += amount; break;
-              case 'food': foodProd += amount; break;
-              case 'oil': oilProd += amount; break;
-              case 'metal': metalProd += amount; break;
-              case 'steel': steelProd += amount; break;
-              case 'weapons': weaponsProd += amount; break;
+          const building = BUILDINGS.find(b => b.id === buildingId);
+          if (building) {
+            if (building.resourceProduction) {
+              const { type, amount } = building.resourceProduction;
+
+              // Добавляем производство ресурсов от зданий
+              switch (type) {
+                case 'gold':
+                  goldProd += amount;
+                  break;
+                case 'wood':
+                  woodProd += amount;
+                  break;
+                case 'food':
+                  foodProd += amount;
+                  break;
+                case 'oil':
+                  oilProd += amount;
+                  break;
+                case 'metal':
+                  metalProd += amount;
+                  break;
+                case 'steel':
+                  steelProd += amount;
+                  break;
+                case 'weapons':
+                  weaponsProd += amount;
+                  break;
+              }
             }
           }
         });
+
+        // Рассчитываем потребление еды населением
+        foodCons += city.population * 0.1; // Предполагаемый коэффициент потребления
       }
     });
-
-    // Потребление еды населением
-    const foodCons = Math.round(popCount * 0.1);
 
     setResourceProduction({
       gold: goldProd,
@@ -69,7 +85,7 @@ export function ResourcePanel() {
       steel: steelProd,
       weapons: weaponsProd
     });
-    
+
     setFoodConsumption(foodCons);
   }, [cities, gameState]);
 
@@ -129,10 +145,10 @@ export function ResourcePanel() {
               {resource.value}
               {resource.name === 'Food' ? (
                 <span className={`ml-1 text-xs ${resource.production - resource.consumption >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                  ({resource.production - resource.consumption >= 0 ? '+' : ''}{resource.production - resource.consumption})
+                  ({resource.production - resource.consumption >= 0 ? '+' : ''}{Math.round((resource.production - resource.consumption) * 10) / 10})
                 </span>
               ) : (
-                <span className="ml-1 text-xs text-green-500">(+{resource.production})</span>
+                <span className="ml-1 text-xs text-green-500">(+{Math.round(resource.production * 10) / 10})</span>
               )}
             </span>
           </div>
@@ -155,109 +171,4 @@ export function ResourcePanel() {
       </div>
     </Card>
   );
-}
-
-// Вспомогательная функция для получения информации о здании
-function getBuilding(id: string) {
-  const buildings = [
-    {
-      id: 'farm',
-      name: 'Ферма',
-      cost: { wood: 100, gold: 50 },
-      resourceProduction: {
-        type: 'food',
-        amount: 5
-      },
-      maxCount: 5
-    },
-    {
-      id: 'mine',
-      name: 'Рудник',
-      cost: { wood: 150, gold: 100 },
-      resourceProduction: {
-        type: 'gold',
-        amount: 5
-      },
-      maxCount: 3
-    },
-    {
-      id: 'lumbermill',
-      name: 'Лесопилка',
-      cost: { wood: 50, gold: 100 },
-      resourceProduction: {
-        type: 'wood',
-        amount: 8
-      },
-      maxCount: 3
-    },
-    {
-      id: 'house',
-      name: 'Жилой дом',
-      cost: { wood: 200, gold: 50 },
-      population: {
-        housing: 100,
-        growth: 2
-      },
-      maxCount: 10
-    },
-    {
-      id: 'oilwell',
-      name: 'Нефтяная скважина',
-      cost: { wood: 300, gold: 200 },
-      resourceProduction: {
-        type: 'oil',
-        amount: 3
-      },
-      maxCount: 3
-    },
-    {
-      id: 'barracks',
-      name: 'Казармы',
-      cost: { wood: 250, gold: 150 },
-      military: {
-        production: 1,
-        populationUse: 1
-      },
-      maxCount: 1
-    },
-    {
-      id: 'metal_factory',
-      name: 'Завод металла',
-      cost: { wood: 250, gold: 150 },
-      resourceProduction: {
-        type: 'metal',
-        amount: 2
-      },
-      maxCount: 2
-    },
-    {
-      id: 'steel_factory',
-      name: 'Завод стали',
-      cost: { wood: 350, gold: 100 },
-      resourceProduction: {
-        type: 'steel',
-        amount: 1
-      },
-      resourceConsumption: {
-        metal: 5
-      },
-      maxCount: 2
-    },
-    {
-      id: 'weapons_factory',
-      name: 'Оружейный станок',
-      cost: { wood: 150 },
-      resourceProduction: {
-        type: 'weapons',
-        amount: 1
-      },
-      resourceConsumption: {
-        wood: 15,
-        steel: 1
-      },
-      maxCount: 3
-    }
-  ];
-
-  return buildings.find(b => b.id === id);
 }
