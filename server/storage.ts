@@ -19,6 +19,7 @@ async function ensureDataDir() {
   const dataDir = path.join(__dirname, "../data");
   try {
     await fs.mkdir(dataDir, { recursive: true });
+    console.log(`Создана директория для данных: ${dataDir}`);
   } catch (err) {
     console.error("Error creating data directory:", err);
   }
@@ -39,46 +40,35 @@ export async function initDb() {
 
 // Функция для инициализации данных игры
 async function initializeGameData() {
+  await ensureDataDir();
+
   // Проверяем наличие городов
   let existingCities: City[] = [];
   try {
     const citiesData = await fs.readFile(CITIES_FILE, 'utf8');
     existingCities = JSON.parse(citiesData);
+    console.log(`Загружены существующие города: ${existingCities.length}`);
   } catch (error) {
     // Файл не существует или другая ошибка при чтении
     console.log("Cities file not found, will create initial cities");
   }
 
-  if (existingCities.length === 0) {
-    // Создаем начальные города
-    console.log("Creating initial cities...");
-    await createInitialCities();
-  }
+  // Создаем начальные города в любом случае, так как они пропали
+  console.log("Creating initial cities...");
+  await createInitialCities();
 
-  // Проверяем наличие состояния игры
-  let gameState: GameState | null = null;
-  try {
-    const gameStateData = await fs.readFile(GAME_STATE_FILE, 'utf8');
-    gameState = JSON.parse(gameStateData);
-  } catch (error) {
-    // Файл не существует или другая ошибка при чтении
-    console.log("Game state file not found, will create initial game state");
-  }
-
-  if (!gameState) {
-    // Создаем начальное состояние игры
-    console.log("Creating initial game state...");
-    await setGameState({
-      resources: {
-        gold: 500,
-        wood: 200,
-        food: 300,
-        oil: 100
-      },
-      population: 100,
-      military: 0
-    });
-  }
+  // Создаем начальное состояние игры
+  console.log("Creating initial game state...");
+  await saveGameState({
+    resources: {
+      gold: 500,
+      wood: 200,
+      food: 500, // Исправляем количество еды на 500
+      oil: 100
+    },
+    population: 0, // Исправляем население на 0
+    military: 0
+  });
 }
 
 // Функция для создания начальных городов

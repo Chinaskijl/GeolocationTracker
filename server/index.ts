@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { initDb } from './storage'; // Importing the database initialization function
 
 const app = express();
 app.use(express.json());
@@ -47,6 +48,11 @@ app.use((req, res, next) => {
 
 (async () => {
   try {
+    // Database initialization before server starts
+    console.log("Initializing database...");
+    await initDb();
+    console.log("Database initialized successfully");
+
     const server = await registerRoutes(app);
 
     // Error handling middleware
