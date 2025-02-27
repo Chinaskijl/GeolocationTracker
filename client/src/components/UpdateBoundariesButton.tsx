@@ -5,81 +5,37 @@ import { useToast } from '@/components/ui/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { useGameStore } from '@/lib/store';
 
-interface UpdateBoundariesButtonProps {
-  cityId?: number;
-  className?: string;
-  children?: React.ReactNode;
-  onClick?: () => Promise<void>;
-}
-
-/**
- * Кнопка для обновления границ городов
- * Может работать как для всех городов, так и для конкретного
- */
-export function UpdateBoundariesButton({ 
-  cityId, 
-  className = "",
-  children,
-  onClick
-}: UpdateBoundariesButtonProps) {
+export function UpdateBoundariesButton() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = React.useState(false);
   const { setGameState } = useGameStore();
 
   const handleUpdateBoundaries = async () => {
-    if (onClick) {
-      await onClick();
-      return;
-    }
-    
     try {
       setIsLoading(true);
-      
-      // Уведомление о начале процесса
       toast({
         title: 'Обновление границ',
-        description: cityId 
-          ? 'Получение актуальных границ города...' 
-          : 'Получение актуальных границ всех городов...',
+        description: 'Получение актуальных границ городов из OpenStreetMap...',
       });
 
-      let updatedData;
-      
-      // В зависимости от наличия cityId обновляем либо все города, либо конкретный
-      if (cityId) {
-        updatedData = await apiRequest('POST', `/api/cities/${cityId}/updateBoundaries`, {});
-      } else {
-        updatedData = await apiRequest('POST', '/api/cities/update-boundaries', {});
-      }
+      // Отправляем запрос на обновление границ всех городов
+      const updatedCities = await apiRequest('POST', '/api/cities/update-boundaries', {});
       
       // Обновляем состояние игры с новыми границами
-      if (Array.isArray(updatedData)) {
-        // Если обновлялись все города
-        setGameState(prev => ({
-          ...prev,
-          cities: updatedData
-        }));
-      } else {
-        // Если обновлялся один город
-        setGameState(prev => ({
-          ...prev,
-          cities: prev.cities.map(city => 
-            city.id === cityId ? updatedData : city
-          )
-        }));
-      }
+      setGameState(prev => ({
+        ...prev,
+        cities: updatedCities
+      }));
 
       toast({
         title: 'Границы обновлены',
-        description: cityId 
-          ? `Границы города успешно обновлены.`
-          : 'Границы всех городов успешно обновлены.',
+        description: 'Границы городов успешно обновлены.',
       });
     } catch (error) {
       console.error('Ошибка при обновлении границ:', error);
       toast({
         title: 'Ошибка',
-        description: 'Не удалось обновить границы. Попробуйте позже.',
+        description: 'Не удалось обновить границы городов.',
         variant: 'destructive',
       });
     } finally {
@@ -88,12 +44,13 @@ export function UpdateBoundariesButton({
   };
 
   return (
-    <Button
-      onClick={handleUpdateBoundaries}
+    <Button 
+      variant="outline" 
+      onClick={handleUpdateBoundaries} 
       disabled={isLoading}
-      className={className}
+      className="w-full"
     >
-      {isLoading ? 'Обновление...' : children || 'Обновить границы'}
+      {isLoading ? 'Обновление...' : 'Обновить границы городов'}
     </Button>
   );
 }

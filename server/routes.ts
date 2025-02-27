@@ -119,45 +119,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Failed to capture city' });
     }
   });
-  
-  // Эндпоинт для обновления границ конкретного города
-  app.post("/api/cities/:id/updateBoundaries", async (req, res) => {
-    try {
-      const { id } = req.params;
-      const cityId = Number(id);
-      
-      // Получаем информацию о городе
-      const cities = await storage.getCities();
-      const city = cities.find(c => c.id === cityId);
-      
-      if (!city) {
-        return res.status(404).json({ message: 'City not found' });
-      }
-      
-      // Обновляем границы города
-      const updatedCity = await updateCityBoundary(cityId);
-      
-      res.json(updatedCity);
-    } catch (error) {
-      console.error('Error updating city boundaries:', error);
-      res.status(500).json({ message: 'Failed to update city boundaries' });
-    }
-  });
-  
-  // Эндпоинт для обновления границ всех городов
-  app.post("/api/cities/update-boundaries", async (req, res) => {
-    try {
-      await updateAllCityBoundaries();
-      
-      // Получаем обновленные данные о городах
-      const cities = await storage.getCities();
-      
-      res.json(cities);
-    } catch (error) {
-      console.error('Error updating all city boundaries:', error);
-      res.status(500).json({ message: 'Failed to update city boundaries' });
-    }
-  });
 
   // Новый эндпоинт для отправки армии между городами
   app.post("/api/military/transfer", async (req, res) => {
@@ -492,21 +453,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Маршрут для обновления границ конкретного города
-  app.post("/api/cities/:id/updateBoundaries", async (req, res) => {
-    try {
-      const { id } = req.params;
-      const cityId = Number(id);
-      
-      // Обновляем границы конкретного города
-      const updatedCity = await updateCityBoundary(cityId);
-      
-      res.json(updatedCity);
-    } catch (error) {
-      console.error('Ошибка при обновлении границ города:', error);
-      res.status(500).json({ message: 'Failed to update city boundary' });
-    }
-  });
+  // Маршрут для обновления границ города удален, границы инициализируются автоматически
 
   return httpServer;
 }
