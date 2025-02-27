@@ -1,130 +1,158 @@
-/* Стили для армии на карте */
-.military-icon {
-  z-index: 1000 !important;
+
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
+/* Стили для карты и маркеров */
+.map-container {
+  width: 100%;
+  height: 100%;
+  min-height: 500px;
+  z-index: 1;
 }
 
-.military-icon div {
-  transition: transform 0.2s;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-}
-
-.military-icon div:hover {
-  transform: scale(1.1);
-  box-shadow: 0 2px 5px rgba(0,0,0,0.5);
-}
-
-/* Анимация пульсации для маркера армии */
-@keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); }
-}
-
-.military-icon div {
-  animation: pulse 1.5s infinite ease-in-out;
-}
-
-/* Стили для границ и территорий */
-.territory-border {
-  stroke-dasharray: 5, 5;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  animation: border-pulse 3s infinite ease-in-out;
-}
-
-@keyframes border-pulse {
-  0% { stroke-opacity: 0.5; }
-  50% { stroke-opacity: 0.8; }
-  100% { stroke-opacity: 0.5; }
-}
-
-/* Стили для меток расстояния */
-.distance-label {
-  background: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(0, 0, 0, 0.2);
-  border-radius: 3px;
-  padding: 2px 5px;
-  font-size: 10px;
-  white-space: nowrap;
-  pointer-events: none;
-  text-align: center;
-}
-
-.distance-label div {
-  color: #333;
-  font-weight: bold;
-  text-shadow: 0px 0px 2px white;
-}
-
-/* Стили для топографических линий */
-.topographic-line {
-  fill: none;
-  stroke-dasharray: 2, 2;
-  animation: topo-fade 10s infinite ease-in-out;
-}
-
-@keyframes topo-fade {
-  0% { stroke-opacity: 0.2; }
-  50% { stroke-opacity: 0.5; }
-  100% { stroke-opacity: 0.2; }
-}
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-@layer base {
-  * {
-    @apply border-border;
-  }
-
-  body {
-    @apply font-sans antialiased bg-background text-foreground;
-  }
-}
-
-/* Стили для маркеров военных перемещений */
-.military-movement-tooltip {
-  background: rgba(0, 0, 0, 0.8);
-  color: white;
-  border: none;
-  border-radius: 5px;
-  padding: 5px;
-  font-size: 12px;
-  width: auto;
-  white-space: nowrap;
-}
-
-.military-tooltip {
-  text-align: center;
-}
-
-.leaflet-div-icon.military-marker {
-  background: #ff4500;
-  border-radius: 50%;
-  border: 2px solid white;
+/* Стили для маркеров городов */
+.city-marker {
   display: flex;
-  align-items: center;
   justify-content: center;
-  color: white;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.city-marker.selected {
+  transform: scale(1.2);
+}
+
+.city-icon {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.2);
+}
+
+.city-icon.player {
+  background-color: #3388ff;
+}
+
+.city-icon.neutral {
+  background-color: #999999;
+}
+
+.city-icon.ai {
+  background-color: #ff3333;
+}
+
+/* Стиль для всплывающих подсказок */
+.city-tooltip {
+  padding: 5px;
+}
+
+.city-tooltip h3 {
+  margin: 0;
+  font-weight: bold;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 3px;
+  margin-bottom: 3px;
+}
+
+.city-tooltip p {
+  margin: 2px 0;
+}
+
+/* Общие стили */
+body, html {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+}
+
+/* Стили панели информации */
+.info-panel {
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 5px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  padding: 15px;
+  margin: 10px;
+  max-width: 300px;
+}
+
+.info-panel h2 {
+  margin-top: 0;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 5px;
+}
+
+/* Стили для ресурсов */
+.resource-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+}
+
+.resource-name {
   font-weight: bold;
 }
 
-.city-info {
-  padding: 10px;
+/* Стили для кнопок */
+button {
+  padding: 5px 10px;
+  margin: 5px 0;
+  border: none;
+  background-color: #4a90e2;
+  color: white;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+button:hover {
+  background-color: #357ab8;
+}
+
+button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+/* Стили для панелей вкладок */
+.tabs-container {
+  border-bottom: 1px solid #ddd;
+  margin-bottom: 15px;
+}
+
+.tab {
+  display: inline-block;
+  padding: 8px 15px;
+  border: 1px solid transparent;
+  border-bottom: none;
+  cursor: pointer;
+  margin-right: 5px;
+}
+
+.tab.active {
+  border-color: #ddd;
+  border-radius: 5px 5px 0 0;
   background-color: white;
-  border-radius: 5px;
-  box-shadow: 0 1px 5px rgba(0,0,0,0.65);
-  max-width: 250px;
 }
 
-.distance-label {
-  z-index: 400;
-  pointer-events: none;
-  font-size: 9px;
-  color: #444;
+.tab-content {
+  display: none;
+  padding: 10px 0;
 }
 
-.leaflet-interactive {
-  transition: fillOpacity 0.2s ease-in-out, stroke-opacity 0.2s ease-in-out;
+.tab-content.active {
+  display: block;
+}
+
+.leaflet-container {
+  width: 100%;
+  height: 100%;
 }
