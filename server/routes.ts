@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { WebSocket, WebSocketServer } from "ws";
 import type { GameState } from "@shared/schema";
-import { BUILDINGS } from "../client/src/lib/game";
+import { BUILDINGS, POPULATION_FOOD_CONSUMPTION } from "../client/src/lib/game";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
@@ -29,36 +29,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  app.get("/api/cities", async (_req, res) => {
+  // Start resource production interval
+  setInterval(async () => {
     try {
       const cities = await storage.getCities();
-      res.json(cities);
-    } catch (error) {
-      console.error('Error fetching cities:', error);
-      res.status(500).json({ message: 'Failed to fetch cities' });
-    }
-  });
+      const gameState = await storage.getGameState();
+      let totalFoodConsumption = 0;
+      let populationGrowth = 0;
+      let militaryGrowth = 0;
+      let populationUsed = 0;
 
-  app.post("/api/cities/:id/capture", async (req, res) => {
-    try {
-      const { id } = req.params;
-      const { owner } = req.body;
+      // Calculate production from all buildings in all player cities
+      cities.forEach(city => {
+        if (city.owner === 'player') {
+          city.buildings.forEach(buildingId => {
+            const building = BUILDINGS.find(b => b.id === buildingId);
+            if (!building) return;
 
-      const city = await storage.updateCity(Number(id), { owner });
+            // Resource production
+            if (building.resourceProduction) {
+              const { type, amount } = building.resourceProduction;
+              gameState.resources[type] += amount;
+            }
 
-      // Broadcast update to all clients
-      wss.clients.forEach(client => {
-        if (client.readyState === WebSocket.OPEN) {
-          client.send(JSON.stringify({ type: 'CITY_UPDATE', city }));
+            // Population growth from houses
+            if (building.population?.growth) {
+              populationGrowth += building.population.growth;
+            }
+
+            // Military production and population use from barracks
+            if (building.military) {
+              militaryGrowth += building.military.production;
+              populationUsed += building.military.populationUse;
+            }
+          });
         }
       });
 
-      res.json(city);
+      // Calculate food consumption
+      totalFoodConsumption = gameState.population * POPULATION_FOOD_CONSUMPTION;
+
+      // Update resources and population
+      const newGameState = {
+        ...gameState,
+        resources: {
+          ...gameState.resources,
+          food: Math.max(0, gameState.resources.food - totalFoodConsumption)
+        },
+        population: Math.max(0, gameState.population + populationGrowth - populationUsed),
+        military: gameState.military + militaryGrowth
+      };
+
+      await storage.setGameState(newGameState);
+
+      // Broadcast game state update
+      wss.clients.forEach(client => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify({ 
+            type: 'GAME_UPDATE',
+            gameState: newGameState
+          }));
+        }
+      });
     } catch (error) {
-      console.error('Error capturing city:', error);
-      res.status(500).json({ message: 'Failed to capture city' });
+      console.error('Error in resource production interval:', error);
     }
-  });
+  }, 1000); // Update every second
 
   app.post("/api/cities/:id/build", async (req, res) => {
     try {
@@ -76,6 +112,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const building = BUILDINGS.find(b => b.id === buildingId);
       if (!building) {
         return res.status(404).json({ message: 'Building not found' });
+      }
+
+      // Check building limit
+      const existingBuildingCount = city.buildings.filter(b => b === buildingId).length;
+      if (existingBuildingCount >= building.maxCount) {
+        return res.status(400).json({ message: 'Building limit reached' });
       }
 
       // Get current game state
@@ -129,6 +171,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error building:', error);
       res.status(500).json({ message: 'Failed to build' });
+    }
+  });
+
+  app.get("/api/cities", async (_req, res) => {
+    try {
+      const cities = await storage.getCities();
+      res.json(cities);
+    } catch (error) {
+      console.error('Error fetching cities:', error);
+      res.status(500).json({ message: 'Failed to fetch cities' });
+    }
+  });
+
+  app.post("/api/cities/:id/capture", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { owner } = req.body;
+
+      const city = await storage.updateCity(Number(id), { owner });
+
+      // Broadcast update to all clients
+      wss.clients.forEach(client => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify({ type: 'CITY_UPDATE', city }));
+        }
+      });
+
+      res.json(city);
+    } catch (error) {
+      console.error('Error capturing city:', error);
+      res.status(500).json({ message: 'Failed to capture city' });
     }
   });
 

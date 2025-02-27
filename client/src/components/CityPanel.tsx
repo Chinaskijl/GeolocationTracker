@@ -11,9 +11,6 @@ export function CityPanel() {
   if (!selectedCity) return null;
 
   const handleBuild = async (buildingId: string) => {
-    const building = BUILDINGS.find(b => b.id === buildingId);
-    if (!building) return;
-
     try {
       await apiRequest('POST', `/api/cities/${selectedCity.id}/build`, {
         buildingId
@@ -88,24 +85,45 @@ export function CityPanel() {
           <div className="space-y-2">
             <h3 className="font-medium">Строительство</h3>
             <div className="grid grid-cols-1 gap-2">
-              {BUILDINGS.map(building => (
-                <Button
-                  key={building.id}
-                  variant="outline"
-                  onClick={() => handleBuild(building.id)}
-                  className="w-full flex justify-between items-center"
-                  disabled={!canAffordBuilding(gameState, building)}
-                >
-                  <span>{building.name}</span>
-                  <span className="text-sm">
-                    {Object.entries(building.cost).map(([resource, amount]) => (
-                      <span key={resource} className="ml-2">
-                        {getResourceIcon(resource)} {amount}
+              {BUILDINGS.map(building => {
+                const buildingCount = selectedCity.buildings.filter(b => b === building.id).length;
+                const atLimit = buildingCount >= building.maxCount;
+
+                return (
+                  <Button
+                    key={building.id}
+                    variant="outline"
+                    onClick={() => handleBuild(building.id)}
+                    className="w-full flex flex-col items-start p-2 gap-1"
+                    disabled={!canAffordBuilding(gameState, building) || atLimit}
+                  >
+                    <div className="flex justify-between w-full">
+                      <span>{building.name}</span>
+                      <span className="text-sm text-gray-500">
+                        {buildingCount}/{building.maxCount}
                       </span>
-                    ))}
-                  </span>
-                </Button>
-              ))}
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      {building.resourceProduction && (
+                        <span>+{building.resourceProduction.amount} {building.resourceProduction.type}/сек </span>
+                      )}
+                      {building.population?.growth && (
+                        <span>+{building.population.growth} население/сек </span>
+                      )}
+                      {building.military?.production && (
+                        <span>+{building.military.production} военные/сек (-{building.military.populationUse} население) </span>
+                      )}
+                    </div>
+                    <div className="text-sm">
+                      {Object.entries(building.cost).map(([resource, amount]) => (
+                        <span key={resource} className="mr-2">
+                          {getResourceIcon(resource)} {amount}
+                        </span>
+                      ))}
+                    </div>
+                  </Button>
+                );
+              })}
             </div>
           </div>
         )}
@@ -114,17 +132,25 @@ export function CityPanel() {
           <div className="space-y-2">
             <h3 className="font-medium">Постройки</h3>
             <div className="space-y-1">
-              {selectedCity.buildings.map(buildingId => {
+              {selectedCity.buildings.map((buildingId, index) => {
                 const building = BUILDINGS.find(b => b.id === buildingId);
                 if (!building) return null;
                 return (
-                  <div key={buildingId} className="flex justify-between items-center">
+                  <div key={`${buildingId}-${index}`} className="flex justify-between items-center">
                     <span>{building.name}</span>
-                    {building.resourceProduction && (
-                      <span>
-                        {getResourceIcon(building.resourceProduction.type)} +{building.resourceProduction.amount}
-                      </span>
-                    )}
+                    <div>
+                      {building.resourceProduction && (
+                        <span>
+                          {getResourceIcon(building.resourceProduction.type)} +{building.resourceProduction.amount}
+                        </span>
+                      )}
+                      {building.population?.growth && (
+                        <span className="ml-2">👥 +{building.population.growth}</span>
+                      )}
+                      {building.military?.production && (
+                        <span className="ml-2">⚔️ +{building.military.production}</span>
+                      )}
+                    </div>
                   </div>
                 );
               })}

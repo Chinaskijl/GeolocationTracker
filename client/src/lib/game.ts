@@ -3,28 +3,43 @@ import type { Building } from '@shared/schema';
 export const BUILDINGS: Building[] = [
   {
     id: 'sawmill',
-    name: 'Sawmill',
-    cost: { wood: 700 },
+    name: 'Лесорубка',
+    cost: { wood: 250 },
     resourceProduction: {
       type: 'wood',
       amount: 10
-    }
-  },
-  {
-    id: 'barracks',
-    name: 'Barracks',
-    cost: { wood: 700 },
-    military: {
-      production: 50 // per minute
-    }
+    },
+    maxCount: 3
   },
   {
     id: 'house',
-    name: 'House',
-    cost: { wood: 300, gold: 200 },
+    name: 'Жилой дом',
+    cost: { wood: 250, gold: 200 },
     population: {
-      housing: 1000
-    }
+      housing: 1000,
+      growth: 3 // per second
+    },
+    maxCount: 5
+  },
+  {
+    id: 'barracks',
+    name: 'Бараки',
+    cost: { wood: 700 },
+    military: {
+      production: 1, // per second
+      populationUse: 1
+    },
+    maxCount: 2
+  },
+  {
+    id: 'farm',
+    name: 'Ферма',
+    cost: { wood: 300, gold: 150 },
+    resourceProduction: {
+      type: 'food',
+      amount: 10
+    },
+    maxCount: 3
   }
 ];
 
@@ -34,3 +49,6 @@ export const TERRITORY_COLORS = {
   enemy: '#ef4444', // red
   ally: '#22c55e', // green
 };
+
+// Constants for resource consumption
+export const POPULATION_FOOD_CONSUMPTION = 0.1; // food per population per second

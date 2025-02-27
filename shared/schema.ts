@@ -50,8 +50,11 @@ export interface Building {
   };
   military?: {
     production: number;
+    populationUse: number;
   };
   population?: {
     housing: number;
+    growth: number;
   };
+  maxCount: number;
 }
