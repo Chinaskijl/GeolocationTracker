@@ -31,14 +31,22 @@ export function CityPanel() {
         buildingId
       });
       
-      // Обновляем текущий выбранный город на основе полученного ответа
+      // Обновляем локальное состояние города и выбранного города
       if (response && response.id) {
-        // Получаем актуальные данные о городе
-        const cities = useGameStore.getState().cities;
-        const updatedCity = cities.find(city => city.id === selectedCity.id);
-        if (updatedCity) {
-          useGameStore.getState().setSelectedCity(updatedCity);
-        }
+        // Обновляем выбранный город с новыми данными от сервера
+        useGameStore.getState().setSelectedCity({
+          ...selectedCity,
+          buildings: [...selectedCity.buildings, buildingId]
+        });
+        
+        // Обеспечиваем согласованность с состоянием хранилища
+        const citiesState = useGameStore.getState().cities;
+        const updatedCities = citiesState.map(city => 
+          city.id === selectedCity.id 
+            ? { ...city, buildings: [...city.buildings, buildingId] } 
+            : city
+        );
+        useGameStore.getState().setCities(updatedCities);
       }
 
       console.log('Building successful, invalidating queries');
