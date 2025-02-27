@@ -32,11 +32,8 @@
         37.5
       ]
     ],
-    "owner": "player",
-    "buildings": [
-      "steel_factory",
-      "weapons_factory"
-    ],
+    "owner": "neutral",
+    "buildings": [],
     "military": 0
   },
   {
