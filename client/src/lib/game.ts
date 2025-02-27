@@ -19,7 +19,7 @@ export const BUILDINGS: Building[] = [
       type: 'metal',
       amount: 2
     },
-    maxCount: 3
+    maxCount: 2
   },
   {
     id: 'steel_factory',
@@ -33,7 +33,7 @@ export const BUILDINGS: Building[] = [
       type: 'metal',
       amount: 5
     },
-    maxCount: 3
+    maxCount: 2
   },
   {
     id: 'weapons_factory',
