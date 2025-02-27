@@ -4,7 +4,7 @@ import 'leaflet/dist/leaflet.css';
 import 'leaflet-polylinedecorator';
 import { useGameStore } from '@/lib/store';
 import { TERRITORY_COLORS } from '@/lib/game';
-import { fetchCityBoundaries, createCityConnections } from '../lib/osm'; // Added import
+import { fetchCityBoundaries, createCityConnections } from '../lib/osm';
 
 
 interface MilitaryMovement {
@@ -60,37 +60,80 @@ export function Map() {
   useEffect(() => {
     if (!mapRef.current) return;
 
-    // Clean up existing markers and polygons
+    // Clear existing markers and polygons
     markersRef.current.forEach(marker => marker.remove());
     polygonsRef.current.forEach(polygon => polygon.remove());
     markersRef.current = [];
     polygonsRef.current = [];
 
-    // Add new markers and polygons
-    cities.forEach(city => {
-      const color = TERRITORY_COLORS[city.owner as keyof typeof TERRITORY_COLORS];
+    // Создаем линии соединения между городами
+    const cityConnections = createCityConnections(cities);
 
-      // Создаем соединения между территориями
-      const connections = createCityConnections(cities); // Using the new function here.
+    // Создаем границы городов с более естественными формами
+    cities.forEach(async (city) => {
+      // Создаем цвет территории
+      const color = TERRITORY_COLORS[city.owner as keyof typeof TERRITORY_COLORS] || '#cccccc';
 
-      // Add territory polygon with improved styling
-      const polygon = L.polygon(city.boundaries, {
+      // Используем более сложные формы вместо простых квадратов
+      // Добавляем случайные отклонения для более естественных границ
+      const createNaturalBoundary = (baseCoords: [number, number][]) => {
+        // Клонируем базовые координаты, чтобы не изменять оригинал
+        const enhancedCoords = [...baseCoords];
+
+        // Добавляем промежуточные точки для создания более сложной формы
+        const result: [number, number][] = [];
+
+        for (let i = 0; i < enhancedCoords.length - 1; i++) {
+          const [lat1, lng1] = enhancedCoords[i];
+          const [lat2, lng2] = enhancedCoords[i + 1];
+
+          // Добавляем исходную точку
+          result.push([lat1, lng1]);
+
+          // Добавляем промежуточные точки с небольшим случайным отклонением
+          const segments = 3; // Количество промежуточных сегментов
+          for (let j = 1; j < segments; j++) {
+            const ratio = j / segments;
+            const baseLat = lat1 + (lat2 - lat1) * ratio;
+            const baseLng = lng1 + (lng2 - lng1) * ratio;
+
+            // Добавляем случайное отклонение (±0.02 градуса)
+            const randomLat = baseLat + (Math.random() - 0.5) * 0.04;
+            const randomLng = baseLng + (Math.random() - 0.5) * 0.04;
+
+            result.push([randomLat, randomLng]);
+          }
+        }
+
+        // Добавляем последнюю точку, чтобы замкнуть многоугольник
+        result.push(enhancedCoords[enhancedCoords.length - 1]);
+        return result;
+      };
+
+      // Создаем более естественные границы для каждого города
+      const naturalBoundaries = createNaturalBoundary(city.boundaries);
+
+      // Создаем полигон с более естественными границами
+      const polygon = L.polygon(naturalBoundaries, {
         color,
         fillColor: color,
         fillOpacity: 0.3,
-        weight: 2.5,
-        smoothFactor: 1.5,
-        dashArray: city.owner === 'neutral' ? '5, 5' : null,
-        className: 'territory-polygon'
+        weight: 2,
+        className: 'territory-tooltip',
+        smoothFactor: 1.5 // Сглаживаем линии для более плавного вида
       }).addTo(mapRef.current!);
 
-      // Добавляем всплывающую подсказку с названием территории
-      polygon.bindTooltip(city.name, { 
-        permanent: false,
-        direction: 'center',
-        className: 'territory-tooltip'
-      });
+      // Добавляем стилизованный контур границы
+      const borderStyle = {
+        color: color,
+        weight: 3,
+        opacity: 0.7,
+        dashArray: '5, 7', // Пунктирная линия для границы
+        smoothFactor: 1.5
+      };
 
+      const border = L.polyline(naturalBoundaries, borderStyle).addTo(mapRef.current!);
+      polygonsRef.current.push(border);
       polygonsRef.current.push(polygon);
 
       // Create custom HTML element for city info
@@ -122,6 +165,32 @@ export function Map() {
         .on('click', () => setSelectedCity(city));
 
       markersRef.current.push(marker);
+    });
+
+    // Рисуем соединения между городами
+    cityConnections.forEach(connection => {
+      const { city1, city2 } = connection;
+      const color = '#555555'; // Цвет для соединений
+
+      // Создаем изогнутую линию между городами
+      const latlngs = [
+        [city1.latitude, city1.longitude],
+        [
+          (city1.latitude + city2.latitude) / 2 + (Math.random() - 0.5) * 0.5,
+          (city1.longitude + city2.longitude) / 2 + (Math.random() - 0.5) * 0.5
+        ],
+        [city2.latitude, city2.longitude]
+      ];
+
+      const connectionLine = L.polyline(latlngs, {
+        color: color,
+        weight: 2,
+        opacity: 0.6,
+        smoothFactor: 1.5,
+        dashArray: '10, 10', // Пунктирная линия
+      }).addTo(mapRef.current!);
+
+      polygonsRef.current.push(connectionLine);
     });
 
     return () => {

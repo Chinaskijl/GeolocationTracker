@@ -128,3 +128,72 @@
   color: white;
   font-weight: bold;
 }
+
+/* Для карты */
+#map {
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+}
+
+/* Стилизация Leaflet */
+.leaflet-popup-content-wrapper {
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.leaflet-popup-content {
+  margin: 0.5rem;
+  color: #374151;
+}
+
+.leaflet-popup-tip {
+  background-color: white;
+}
+
+.custom-div-icon {
+  background: transparent;
+  border: none;
+}
+
+/* Улучшенные стили для границ городов */
+.territory-tooltip {
+  transition: all 0.3s ease;
+}
+
+.territory-tooltip:hover {
+  opacity: 0.8 !important;
+  filter: saturate(1.5);
+}
+
+/* Стили для линий соединений между городами */
+.city-connection {
+  stroke-dasharray: 5, 10;
+  animation: dash 30s linear infinite;
+}
+
+@keyframes dash {
+  to {
+    stroke-dashoffset: 1000;
+  }
+}
+
+/* Стили для городских маркеров */
+.leaflet-marker-icon {
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.leaflet-marker-icon:hover {
+  transform: scale(1.05);
+  filter: drop-shadow(0 0 5px rgba(0, 0, 0, 0.3));
+  z-index: 1000 !important;
+}
+
+/* Улучшенные стили для полигонов */
+.leaflet-interactive {
+  transition: opacity 0.3s ease, stroke-width 0.3s ease;
+}
+
+.leaflet-interactive:hover {
+  stroke-width: 3px;
+}
