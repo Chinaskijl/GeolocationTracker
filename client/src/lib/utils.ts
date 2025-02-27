@@ -1,9 +1,10 @@
-import { clsx, type ClassValue } from "clsx"
+import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
+
 export function calculateDistance(city1: any, city2: any): number {
   const R = 6371; // Радиус Земли в км
   const lat1 = city1.latitude * Math.PI / 180;
@@ -17,14 +18,4 @@ export function calculateDistance(city1: any, city2: any): number {
 
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
   return R * c; // Расстояние в км
-}
-
-export function cn(...classes: any[]) {
-  return classes.filter(Boolean).join(' ');
-}
-import { type ClassValue, clsx } from "clsx"
-import { twMerge } from "tailwind-merge"
-
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
 }
