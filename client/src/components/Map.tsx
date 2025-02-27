@@ -1,209 +1,214 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { useGameStore } from '../lib/store';
-import { City } from '../../../shared/schema';
+import 'leaflet-polylinedecorator';
+import { useGameStore } from '@/lib/store';
+import { TERRITORY_COLORS } from '@/lib/game';
 
-// Исправляем пути к иконкам Leaflet
-import markerIcon from 'leaflet/dist/images/marker-icon.png';
-import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
-import markerShadow from 'leaflet/dist/images/marker-shadow.png';
+interface MilitaryMovement {
+  fromCity: any;
+  toCity: any;
+  amount: number;
+  marker: L.Marker;
+  startTime: number;
+  duration: number;
+  pathLine?: L.Polyline;
+}
 
-// Определение цветов для территорий разных владельцев
-const ownerColors = {
-  neutral: '#808080', // серый для нейтральных городов
-  player: '#0000FF', // синий для городов игрока
-  ai: '#FF0000',     // красный для городов ИИ
-};
-
-// Необходимо исправить иконки по умолчанию
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconUrl: markerIcon,
-  iconRetinaUrl: markerIcon2x,
-  shadowUrl: markerShadow,
-});
-
-const Map: React.FC = () => {
-  const { cities, selectedCity, setSelectedCity, gameState, armyTransfers } = useGameStore();
+export function Map() {
   const mapRef = useRef<L.Map | null>(null);
-  const markersRef = useRef<L.Marker[]>([]);
-  const polygonsRef = useRef<L.Polygon[]>([]);
-  const linesRef = useRef<L.Polyline[]>([]);
-  const [mapInitialized, setMapInitialized] = useState(false);
+  const markersRef = useRef<L.Layer[]>([]);
+  const polygonsRef = useRef<L.Layer[]>([]);
+  const militaryMovementsRef = useRef<MilitaryMovement[]>([]);
+  const animationFrameRef = useRef<number>();
+  const { cities, setSelectedCity } = useGameStore();
+  const [ws, setWs] = useState<WebSocket | null>(null);
 
-  // Инициализация карты
+  // Initialize map once
   useEffect(() => {
-    if (!mapRef.current) {
-      console.log('Initializing map...');
-      // Центр карты на территории России
-      const initialPosition = [55.7558, 37.6173]; // Москва
-      const initialZoom = 5;
-
-      const map = L.map('map-container', {
-        center: initialPosition,
-        zoom: initialZoom,
-        zoomControl: true,
-        attributionControl: true
-      });
-
-      // Добавляем тайловый слой
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors',
-        maxZoom: 18
-      }).addTo(map);
-
-      mapRef.current = map;
-      console.log('Map initialized');
-      setMapInitialized(true);
-    }
-
-    // Удаляем карту при размонтировании компонента
-    return () => {
-      if (mapRef.current) {
-        console.log('Cleaning up map...');
-        mapRef.current.remove();
-        mapRef.current = null;
-      }
-    };
-  }, []);
-
-  // Отрисовка городов на карте
-  useEffect(() => {
-    if (!mapRef.current || !mapInitialized || !cities || cities.length === 0) {
-      console.log('Skipping city rendering, map not ready or no cities', {mapRef: !!mapRef.current, mapInitialized, citiesCount: cities?.length});
+    const container = document.getElementById('map');
+    if (!container) {
+      console.error('Map container not found');
       return;
     }
 
-    console.log('Rendering cities on map:', cities.length);
-
-    // Очищаем предыдущие маркеры и полигоны
-    markersRef.current.forEach(marker => marker.remove());
-    polygonsRef.current.forEach(polygon => polygon.remove());
-    linesRef.current.forEach(line => line.remove());
-
-    markersRef.current = [];
-    polygonsRef.current = [];
-    linesRef.current = [];
-
-    // Добавляем маркеры и полигоны для каждого города
-    cities.forEach((city) => {
-      // Создаем маркер
-      const marker = L.marker([city.latitude, city.longitude])
-        .addTo(mapRef.current!);
-
-      marker.bindPopup(`<b>${city.name}</b><br>Население: ${city.population}/${city.maxPopulation}<br>Владелец: ${city.owner}<br>Ресурсы: ${Object.entries(city.resources).map(([key, value]) => `${key}: ${value}`).join(', ')}`);
-
-      marker.on('click', () => {
-        setSelectedCity(city);
-      });
-
-      markersRef.current.push(marker);
-
-      // Создаем территориальный полигон если есть границы
-      if (city.boundaries && city.boundaries.length > 0) {
-        const color = ownerColors[city.owner as keyof typeof ownerColors] || ownerColors.neutral;
-
-        const polygon = L.polygon(city.boundaries, {
-          color: color,
-          fillColor: color,
-          fillOpacity: 0.2,
-          weight: 2,
-          dashArray: city.owner === 'player' ? '' : '5, 5',
-        }).addTo(mapRef.current!);
-
-        polygon.bindTooltip(`${city.name} (${city.owner})`);
-
-        polygon.on('click', () => {
-          setSelectedCity(city);
-        });
-
-        polygonsRef.current.push(polygon);
-      }
+    console.log('Initializing map');
+    mapRef.current = L.map('map', {
+      center: [55.7558, 37.6173], // Moscow coordinates
+      zoom: 6
     });
 
-    // Добавляем соединительные линии между городами для построения связанных границ
-    const cityConnections: [number, number][][] = [];
-    cities.forEach(city => cityConnections.push([city.latitude, city.longitude]));
-    for (let i = 0; i < cityConnections.length; i++) {
-      for (let j = i + 1; j < cityConnections.length; j++) {
-        const cityA = cities[i];
-        const cityB = cities[j];
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(mapRef.current);
 
-        // Проверяем, что города принадлежат одному владельцу
-        if (cityA.owner === cityB.owner) {
-          const color = ownerColors[cityA.owner as keyof typeof ownerColors] || ownerColors.neutral;
-          const line = L.polyline([
-            [cityA.latitude, cityA.longitude],
-            [cityB.latitude, cityB.longitude]
-          ], {
-            color,
-            weight: 1.5,
-            dashArray: '3, 5',
-            opacity: 0.6
-          }).addTo(mapRef.current!);
+    return () => {
+      console.log('Cleaning up map');
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, []); // Empty dependency array - only run once
 
-          linesRef.current.push(line);
+  // Update markers and polygons when cities change
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    // Clean up existing markers and polygons
+    markersRef.current.forEach(marker => marker.remove());
+    polygonsRef.current.forEach(polygon => polygon.remove());
+    markersRef.current = [];
+    polygonsRef.current = [];
+
+    // Add new markers and polygons
+    cities.forEach(city => {
+      const color = TERRITORY_COLORS[city.owner as keyof typeof TERRITORY_COLORS];
+
+      // Add territory polygon
+      const polygon = L.polygon(city.boundaries, {
+        color,
+        fillColor: color,
+        fillOpacity: 0.4,
+        weight: 2
+      }).addTo(mapRef.current!);
+      polygonsRef.current.push(polygon);
+
+      // Create custom HTML element for city info
+      const cityInfo = document.createElement('div');
+      cityInfo.className = 'bg-white/90 p-2 rounded shadow-lg border border-gray-200 cursor-pointer';
+      cityInfo.innerHTML = `
+        <div class="font-bold text-lg">${city.name}</div>
+        <div class="text-sm">
+          <div>👥 Население: ${city.population} / ${city.maxPopulation}</div>
+          <div>⚔️ Военные: ${city.military || 0}</div>
+          ${Object.entries(city.resources)
+            .map(([resource, amount]) => `<div>${getResourceIcon(resource)} ${resource}: +${amount}</div>`)
+            .join('')}
+        </div>
+      `;
+
+      // Add city label as a custom divIcon
+      const cityMarker = L.divIcon({
+        className: 'custom-div-icon',
+        html: cityInfo,
+        iconSize: [200, 80],
+        iconAnchor: [100, 40]
+      });
+
+      const marker = L.marker([city.latitude, city.longitude], {
+        icon: cityMarker
+      })
+        .addTo(mapRef.current!)
+        .on('click', () => setSelectedCity(city));
+
+      markersRef.current.push(marker);
+    });
+
+    return () => {
+      markersRef.current.forEach(marker => marker.remove());
+      polygonsRef.current.forEach(polygon => polygon.remove());
+    };
+  }, [cities, setSelectedCity]);
+
+  // Setup WebSocket for military movements
+  useEffect(() => {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const newWs = new WebSocket(`${protocol}//${window.location.host}/ws`);
+
+    newWs.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === 'MILITARY_TRANSFER_START') {
+        const { fromCity, toCity, amount, duration } = data;
+
+        // Create military unit marker with custom icon
+        const militaryIcon = L.divIcon({
+          className: 'military-marker',
+          html: `<div style="width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; background: #ff4500; border-radius: 50%; border: 2px solid white; color: white; font-weight: bold;">${amount}</div>`,
+          iconSize: [24, 24],
+          iconAnchor: [12, 12],
+        });
+
+        const marker = L.marker([fromCity.latitude, fromCity.longitude], { icon: militaryIcon }).addTo(mapRef.current!);
+
+        const pathLine = L.polyline([
+          [fromCity.latitude, fromCity.longitude],
+          [toCity.latitude, toCity.longitude]
+        ], {
+          color: 'blue',
+          weight: 3
+        }).addTo(mapRef.current!);
+
+        militaryMovementsRef.current.push({
+          fromCity,
+          toCity,
+          amount,
+          marker,
+          startTime: Date.now(),
+          duration,
+          pathLine
+        });
+
+        // Start animation if not already running
+        if (!animationFrameRef.current) {
+          animate();
         }
       }
-    }
+    };
 
+    setWs(newWs);
 
-    // Отображаем перемещения армий, если они есть
-    if (armyTransfers && armyTransfers.length > 0) {
-      armyTransfers.forEach(transfer => {
-        const fromCity = cities.find(c => c.id === transfer.fromCityId);
-        const toCity = cities.find(c => c.id === transfer.toCityId);
+    return () => {
+      newWs.close();
+    };
+  }, []);
 
-        if (fromCity && toCity) {
-          const line = L.polyline([
-            [fromCity.latitude, fromCity.longitude],
-            [toCity.latitude, toCity.longitude]
-          ], {
-            color: '#f44336',
-            weight: 3,
-            dashArray: '10, 10',
-            opacity: 0.8
-          }).addTo(mapRef.current!);
+  const animate = () => {
+    if (!mapRef.current) return;
 
-          // Добавляем стрелку анимацией
-          const arrowIcon = L.divIcon({
-            html: '➤',
-            className: 'army-transfer-arrow',
-            iconSize: [20, 20]
-          });
+    const currentTime = Date.now();
+    militaryMovementsRef.current = militaryMovementsRef.current.filter(movement => {
+      const progress = (currentTime - movement.startTime) / movement.duration;
 
-          const midPoint = [
-            (fromCity.latitude + toCity.latitude) / 2,
-            (fromCity.longitude + toCity.longitude) / 2
-          ];
-
-          const marker = L.marker(midPoint as [number, number], { icon: arrowIcon }).addTo(mapRef.current!);
-          marker.bindTooltip(`Перемещение армии: ${transfer.amount}`);
-
-          markersRef.current.push(marker);
-          linesRef.current.push(line);
-        }
-      });
-    }
-
-    // Подсветка выбранного города
-    if (selectedCity) {
-      const selectedMarker = markersRef.current.find(marker => {
-        const city = cities.find(city => city.id === selectedCity.id);
-        return city && marker.getLatLng().equals(L.latLng(city.latitude, city.longitude));
-      });
-      if (selectedMarker) {
-        mapRef.current.setView([selectedCity.latitude, selectedCity.longitude], 7);
-        selectedMarker.openPopup();
+      if (progress >= 1) {
+        movement.marker.remove();
+        if (movement.pathLine) movement.pathLine.remove();
+        return false;
       }
+
+      const lat = movement.fromCity.latitude + (movement.toCity.latitude - movement.fromCity.latitude) * progress;
+      const lng = movement.fromCity.longitude + (movement.toCity.longitude - movement.fromCity.longitude) * progress;
+      movement.marker.setLatLng([lat, lng]);
+      if (movement.pathLine) {
+        movement.pathLine.setLatLngs([
+          [movement.fromCity.latitude, movement.fromCity.longitude],
+          [lat, lng]
+        ]);
+      }
+
+      return true;
+    });
+
+    if (militaryMovementsRef.current.length > 0) {
+      animationFrameRef.current = requestAnimationFrame(animate);
     }
-  }, [cities, selectedCity, armyTransfers, mapInitialized, setSelectedCity]);
+  };
 
+  return <div id="map" className="w-full h-screen" />;
+}
 
-  return (
-    <div id="map-container" className="w-full h-full"></div>
-  );
-};
-
-export default Map;
+export function getResourceIcon(resource: string): string {
+  switch (resource) {
+    case 'gold': return '💰';
+    case 'wood': return '🌲';
+    case 'food': return '🍗';
+    case 'oil': return '🛢️';
+    case 'metal': return '⛏️';
+    case 'steel': return '🔩';
+    case 'weapons': return '⚔️';
+    default: return '📦';
+  }
+}
