@@ -1,8 +1,14 @@
 
 import fs from 'fs/promises';
 import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 import { cities } from "../shared/schema";
 import type { City, GameState } from "../shared/schema";
+
+// Получаем __dirname в ES модулях
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Путь к файлам хранилища
 const CITIES_FILE = path.join(__dirname, "../data/cities.json");
