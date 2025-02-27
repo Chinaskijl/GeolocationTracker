@@ -61,6 +61,17 @@ export function ResourcePanel() {
     const foodCons = Math.round(popCount * 0.1);
 
     setResourceProduction({
+      gold: parseFloat(goldProd.toFixed(1)),
+      wood: parseFloat(woodProd.toFixed(1)),
+      food: parseFloat(foodProd.toFixed(1)),
+      oil: parseFloat(oilProd.toFixed(1)),
+      metal: parseFloat(metalProd.toFixed(1)),
+      steel: parseFloat(steelProd.toFixed(1)),
+      weapons: parseFloat(weaponsProd.toFixed(1))
+    });
+    
+    // Для отладки
+    console.log("Производство ресурсов:", {
       gold: goldProd,
       wood: woodProd,
       food: foodProd,

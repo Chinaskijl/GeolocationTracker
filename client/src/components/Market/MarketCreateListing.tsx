@@ -1,171 +1,140 @@
-
-import React, { useState } from 'react';
-import { useGameStore } from '@/lib/store';
-import { ResourceType } from '@/shared/marketTypes';
-import { getResourceIcon } from '@/lib/resources';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertCircle } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Label } from '@/components/ui/label';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select';
+import { useGameStore } from '@/lib/store';
+import { ResourceType } from '@shared/schema';
+import { getResourceIcon } from '@/lib/resources';
+import { showNotification } from '@/lib/notifications';
+import { createListing } from '@/lib/api';
 
 /**
- * Свойства для компонента создания нового лота
+ * Компонент создания нового объявления на рынке
+ * @param onSuccess - Callback, вызываемый при успешном создании объявления
  */
+
 interface MarketCreateListingProps {
   onSuccess: () => void;
+  onResourceSelect?: (resource: ResourceType) => void;
 }
 
 /**
- * Компонент для создания нового лота на рынке
- * 
- * @param onSuccess - Функция обратного вызова, вызываемая после успешного создания лота
+ * Компонент создания нового объявления на рынке
  */
-export function MarketCreateListing({ onSuccess }: MarketCreateListingProps) {
+export function MarketCreateListing({ onSuccess, onResourceSelect }: MarketCreateListingProps) {
   const { gameState } = useGameStore();
-  const [resourceType, setResourceType] = useState<ResourceType>('food');
+  // Исключаем золото из списка ресурсов для продажи
+  const availableResources: ResourceType[] = ['food', 'wood', 'oil', 'metal', 'steel', 'weapons'];
+  const [resourceType, setResourceType] = useState<ResourceType>(availableResources[0]);
   const [amount, setAmount] = useState<number>(1);
   const [pricePerUnit, setPricePerUnit] = useState<number>(10);
   const [listingType, setListingType] = useState<'buy' | 'sell'>('sell');
-
-  // Список ресурсов без золота (т.к. это основная валюта)
-  const availableResources: ResourceType[] = ['food', 'wood', 'oil', 'metal', 'steel', 'weapons'];
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   /**
-   * Доступное количество выбранного ресурса
+   * Создание нового объявления на рынке
    */
-  const availableAmount = gameState.resources[resourceType];
-
-  /**
-   * Общая стоимость лота
-   */
-  const totalPrice = amount * pricePerUnit;
-
-  /**
-   * Проверка возможности создания лота
-   */
-  const canCreateListing = () => {
-    // Если игрок продает ресурсы, проверяем наличие ресурсов
-    if (listingType === 'sell') {
-      return amount > 0 && amount <= availableAmount && pricePerUnit > 0;
-    } 
-    // Если игрок покупает, проверяем наличие золота
-    return amount > 0 && pricePerUnit > 0 && totalPrice <= gameState.resources.gold;
-  };
-
-  /**
-   * Обработчик отправки формы
-   */
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!canCreateListing()) {
+  const handleCreateListing = async () => {
+    if (amount <= 0) {
+      setError('Количество должно быть больше 0');
       return;
     }
-    
+
+    if (pricePerUnit <= 0) {
+      setError('Цена должна быть больше 0');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
     try {
-      setLoading(true);
-      setError(null);
-      
-      const response = await fetch('/api/market/listings', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          resourceType,
-          amount,
-          pricePerUnit,
-          type: listingType,
-        }),
+      await createListing({
+        resourceType,
+        amount,
+        pricePerUnit,
+        type: listingType
       });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Не удалось создать лот');
-      }
-      
+
       // Сбрасываем форму
       setAmount(1);
       setPricePerUnit(10);
-      
-      // Вызываем обратный вызов для обновления списка лотов
+
+      showNotification({
+        title: 'Успех',
+        message: 'Объявление успешно создано',
+        type: 'success'
+      });
+
+      // Вызываем callback для обновления списка объявлений
       onSuccess();
     } catch (err) {
-      console.error('Ошибка при создании лота:', err);
-      setError(err instanceof Error ? err.message : 'Неизвестная ошибка');
+      console.error('Failed to create listing:', err);
+      setError('Не удалось создать объявление. Проверьте наличие ресурсов.');
+
+      showNotification({
+        title: 'Ошибка',
+        message: 'Не удалось создать объявление',
+        type: 'error'
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  /**
-   * Список доступных ресурсов
-   */
-  const resources: ResourceType[] = ['gold', 'food', 'wood', 'oil', 'metal', 'steel', 'weapons'];
-
   return (
-    <Card className="mb-6">
-      <CardHeader>
-        <CardTitle>Создать новый лот</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="listingType">Тип объявления</Label>
-            <Select 
-              value={listingType} 
-              onValueChange={(value) => setListingType(value as 'buy' | 'sell')}
-            >
-              <SelectTrigger id="listingType">
-                <SelectValue placeholder="Выберите тип" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="sell">Продать</SelectItem>
-                <SelectItem value="buy">Купить</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="space-y-2">
-            <Label>Тип объявления</Label>
-            <div className="flex space-x-4 mt-1 mb-3">
-              <div className="flex items-center">
-                <input
-                  type="radio"
-                  id="sell"
-                  name="listingType"
-                  className="mr-2"
-                  checked={listingType === 'sell'}
-                  onChange={() => setListingType('sell')}
-                />
-                <Label htmlFor="sell" className="cursor-pointer">Продажа</Label>
-              </div>
-              <div className="flex items-center">
-                <input
-                  type="radio"
-                  id="buy"
-                  name="listingType"
-                  className="mr-2"
-                  checked={listingType === 'buy'}
-                  onChange={() => setListingType('buy')}
-                />
-                <Label htmlFor="buy" className="cursor-pointer">Покупка</Label>
-              </div>
+    <div className="bg-white p-4 rounded-lg shadow">
+      <h2 className="text-xl font-semibold mb-4">Создать объявление</h2>
+
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label>Тип объявления</Label>
+          <div className="flex space-x-4 mt-1 mb-3">
+            <div className="flex items-center">
+              <input
+                type="radio"
+                id="sell"
+                name="listingType"
+                className="mr-2" 
+                checked={listingType === 'sell'}
+                onChange={() => setListingType('sell')}
+              />
+              <Label htmlFor="sell" className="cursor-pointer">Продажа</Label>
+            </div>
+            <div className="flex items-center">
+              <input
+                type="radio"
+                id="buy"
+                name="listingType"
+                className="mr-2"
+                checked={listingType === 'buy'}
+                onChange={() => setListingType('buy')}
+              />
+              <Label htmlFor="buy" className="cursor-pointer">Покупка</Label>
             </div>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="resourceType">Ресурс</Label>
-            <Select 
-              value={resourceType} 
-              onValueChange={(value) => setResourceType(value as ResourceType)}
+            <Select
+              value={resourceType}
+              onValueChange={(value) => {
+                const resourceValue = value as ResourceType;
+                setResourceType(resourceValue);
+                if (onResourceSelect) {
+                  onResourceSelect(resourceValue);
+                }
+              }}
             >
-              <SelectTrigger id="resourceType">
+              <SelectTrigger id="resourceType" className="w-full">
                 <SelectValue placeholder="Выберите ресурс" />
               </SelectTrigger>
               <SelectContent>
@@ -180,67 +149,40 @@ export function MarketCreateListing({ onSuccess }: MarketCreateListingProps) {
               </SelectContent>
             </Select>
           </div>
-          
+
           <div className="space-y-2">
-            <Label htmlFor="amount">
-              Количество 
-              {listingType === 'sell' && (
-                <span className="text-xs ml-2 text-gray-500">
-                  (Доступно: {Math.floor(availableAmount)})
-                </span>
-              )}
-            </Label>
+            <Label htmlFor="amount">Количество</Label>
             <Input
               id="amount"
               type="number"
               min="1"
-              max={listingType === 'sell' ? Math.floor(availableAmount) : undefined}
               value={amount}
-              onChange={(e) => setAmount(Number(e.target.value))}
-              className={cn(
-                listingType === 'sell' && amount > availableAmount && "border-red-500 focus:border-red-500"
-              )}
+              onChange={(e) => setAmount(parseInt(e.target.value) || 0)}
             />
           </div>
-          
+
           <div className="space-y-2">
-            <Label htmlFor="pricePerUnit">Цена за единицу</Label>
+            <Label htmlFor="pricePerUnit">Цена за единицу (золото)</Label>
             <Input
               id="pricePerUnit"
               type="number"
               min="1"
               value={pricePerUnit}
-              onChange={(e) => setPricePerUnit(Number(e.target.value))}
+              onChange={(e) => setPricePerUnit(parseInt(e.target.value) || 0)}
             />
           </div>
-          
-          <div className="text-sm py-2 border-t border-b">
-            <div className="flex justify-between">
-              <span>Общая стоимость:</span>
-              <span className="font-medium">{totalPrice} 💰</span>
-            </div>
-            
-            {listingType === 'buy' && totalPrice > gameState.resources.gold && (
-              <div className="mt-2 text-red-500 flex items-center text-xs">
-                <AlertCircle className="h-4 w-4 mr-1" />
-                Недостаточно золота
-              </div>
-            )}
-          </div>
-          
-          {error && (
-            <div className="text-red-500 text-sm">{error}</div>
-          )}
-          
+
+          {error && <div className="text-red-500 text-sm">{error}</div>}
+
           <Button 
-            type="submit" 
-            disabled={!canCreateListing() || loading}
-            className="w-full"
+            className="w-full mt-4" 
+            onClick={handleCreateListing}
+            disabled={loading}
           >
-            {loading ? 'Обработка...' : 'Создать лот'}
+            {loading ? 'Создание...' : 'Создать объявление'}
           </Button>
-        </form>
-      </CardContent>
-    </Card>
+        </div>
+      </div>
+    </div>
   );
 }
