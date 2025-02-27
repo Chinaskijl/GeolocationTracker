@@ -36,7 +36,7 @@ export function CityPanel() {
   };
 
   return (
-    <Card className="fixed bottom-4 left-4 p-4 z-50 w-96">
+    <Card className="fixed bottom-4 left-4 p-4 z-[1000] w-96">
       <div className="flex flex-col gap-4">
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-bold">{selectedCity.name}</h2>

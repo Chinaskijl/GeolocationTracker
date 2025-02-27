@@ -13,7 +13,7 @@ export function ResourcePanel() {
   ];
 
   return (
-    <Card className="fixed top-4 left-4 p-4 z-50">
+    <Card className="fixed top-4 left-4 p-4 z-[1000]">
       <div className="flex gap-4">
         {resources.map((resource) => (
           <div key={resource.name} className="flex items-center gap-2">

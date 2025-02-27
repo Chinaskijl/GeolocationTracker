@@ -60,11 +60,33 @@ export function Map() {
       }).addTo(mapRef.current!);
       polygonsRef.current.push(polygon);
 
-      // Add city marker
-      const marker = L.marker([city.latitude, city.longitude])
+      // Create custom HTML element for city info
+      const cityInfo = document.createElement('div');
+      cityInfo.className = 'bg-white/90 p-2 rounded shadow-lg border border-gray-200 cursor-pointer';
+      cityInfo.innerHTML = `
+        <div class="font-bold text-lg">${city.name}</div>
+        <div class="text-sm">
+          <div>👥 Население: ${city.population} / ${city.maxPopulation}</div>
+          ${Object.entries(city.resources)
+            .map(([resource, amount]) => `<div>${getResourceIcon(resource)} ${resource}: +${amount}</div>`)
+            .join('')}
+        </div>
+      `;
+
+      // Add city label as a custom divIcon
+      const cityMarker = L.divIcon({
+        className: 'custom-div-icon',
+        html: cityInfo,
+        iconSize: [200, null], // Width fixed, height auto
+        iconAnchor: [100, 0] // Center horizontally, align top
+      });
+
+      const marker = L.marker([city.latitude, city.longitude], {
+        icon: cityMarker
+      })
         .addTo(mapRef.current!)
-        .on('click', () => setSelectedCity(city))
-        .bindPopup(city.name);
+        .on('click', () => setSelectedCity(city));
+
       markersRef.current.push(marker);
     });
 
@@ -75,4 +97,14 @@ export function Map() {
   }, [cities, setSelectedCity]);
 
   return <div id="map" className="w-full h-screen" />;
+}
+
+function getResourceIcon(resource: string): string {
+  switch (resource) {
+    case 'gold': return '💰';
+    case 'wood': return '🌲';
+    case 'food': return '🌾';
+    case 'oil': return '🛢️';
+    default: return '📦';
+  }
 }
