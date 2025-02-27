@@ -4,6 +4,8 @@ import 'leaflet/dist/leaflet.css';
 import 'leaflet-polylinedecorator';
 import { useGameStore } from '@/lib/store';
 import { TERRITORY_COLORS } from '@/lib/game';
+import { fetchCityBoundaries, createCityConnections } from '../lib/osm'; // Added import
+
 
 interface MilitaryMovement {
   fromCity: any;
@@ -69,7 +71,7 @@ export function Map() {
       const color = TERRITORY_COLORS[city.owner as keyof typeof TERRITORY_COLORS];
 
       // Создаем соединения между территориями
-      const connections = createTerritoryConnections(cities);
+      const connections = createCityConnections(cities); // Using the new function here.
 
       // Add territory polygon with improved styling
       const polygon = L.polygon(city.boundaries, {
