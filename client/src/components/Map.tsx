@@ -2,7 +2,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { useStore } from '../lib/store';
+import { useGameStore } from '../lib/store';
 import { City } from '../../../shared/schema';
 
 // Определение цветов для территорий разных владельцев
@@ -27,7 +27,7 @@ function getResourceIcon(resource: string): string {
 }
 
 const Map: React.FC = () => {
-  const { cities, selectedCity, setSelectedCity, gameState, armyTransfers } = useStore();
+  const { cities, selectedCity, setSelectedCity, gameState, armyTransfers } = useGameStore();
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<L.Marker[]>([]);
   const polygonsRef = useRef<L.Polygon[]>([]);
