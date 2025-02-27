@@ -30,7 +30,7 @@ export async function updateCityBoundary(cityId: number): Promise<any> {
   
   try {
     // Проверяем наличие файла с границами города
-    const filePath = path.join(__dirname, '..', 'data', 'city-boundaries', `${city.name}.json`);
+    const filePath = path.join(process.cwd(), 'data', 'city-boundaries', `${city.name}.json`);
     
     if (fs.existsSync(filePath)) {
       // Если файл существует, загружаем границы
