@@ -1,6 +1,6 @@
 import { Server } from "http";
 import express, { Express } from "express";
-import WebSocket from "ws";
+import { WebSocketServer } from "ws";
 import { gameLoop } from "./gameLoop";
 import { getGameState, getCities, updateGameState, getCityById, updateCity } from "./storage";
 import { aiPlayer } from "./aiPlayer";
@@ -10,7 +10,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const server = new Server(app);
 
   // Set up WebSocket server
-  const wss = new WebSocket.Server({ server });
+  const wss = new WebSocketServer({ server });
 
   // WebSocket connection handler
   wss.on("connection", (ws) => {
