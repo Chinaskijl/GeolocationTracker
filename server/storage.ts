@@ -1,4 +1,3 @@
-
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -29,7 +28,7 @@ async function ensureDataDir() {
 export async function initDb() {
   try {
     await ensureDataDir();
-    
+
     // Проверка и создание начальных данных
     await initializeGameData();
     console.log("Database initialization completed successfully");
@@ -89,7 +88,8 @@ async function createInitialCities() {
       boundaries: [[55.8, 37.5], [55.9, 37.7], [55.7, 37.8], [55.6, 37.6], [55.8, 37.5]],
       owner: "neutral",
       buildings: [],
-      military: 0
+      military: 0,
+      adjacentCities: []
     },
     {
       id: 2,
@@ -102,7 +102,8 @@ async function createInitialCities() {
       boundaries: [[60.0, 30.2], [60.1, 30.4], [59.9, 30.5], [59.8, 30.3], [60.0, 30.2]],
       owner: "neutral",
       buildings: [],
-      military: 0
+      military: 0,
+      adjacentCities: []
     },
     {
       id: 3,
@@ -115,7 +116,8 @@ async function createInitialCities() {
       boundaries: [[55.1, 82.8], [55.2, 83.0], [55.0, 83.1], [54.9, 82.9], [55.1, 82.8]],
       owner: "neutral",
       buildings: [],
-      military: 0
+      military: 0,
+      adjacentCities: []
     },
     {
       id: 4,
@@ -128,7 +130,8 @@ async function createInitialCities() {
       boundaries: generateBoundaries(56.8389, 60.6057),
       owner: "neutral",
       buildings: [],
-      military: 0
+      military: 0,
+      adjacentCities: []
     },
     {
       id: 5,
@@ -141,7 +144,8 @@ async function createInitialCities() {
       boundaries: generateBoundaries(55.7887, 49.1221),
       owner: "neutral",
       buildings: [],
-      military: 0
+      military: 0,
+      adjacentCities: []
     },
     // Маленькие города
     {
@@ -155,7 +159,8 @@ async function createInitialCities() {
       boundaries: generateBoundaries(56.1290, 40.4056),
       owner: "neutral",
       buildings: [],
-      military: 0
+      military: 0,
+      adjacentCities: []
     },
     {
       id: 7,
@@ -168,7 +173,36 @@ async function createInitialCities() {
       boundaries: generateBoundaries(56.4279, 40.4493),
       owner: "neutral",
       buildings: [],
-      military: 0
+      military: 0,
+      adjacentCities: []
+    },
+    {
+      id: 8,
+      name: "Ярославль",
+      latitude: 57.6222,
+      longitude: 39.8966,
+      population: 0,
+      maxPopulation: 30000,
+      resources: { food: 5, wood: 6 },
+      boundaries: generateBoundaries(57.6222, 39.8966),
+      owner: "neutral",
+      buildings: [],
+      military: 0,
+      adjacentCities: []
+    },
+    {
+      id: 9,
+      name: "Нижний Новгород",
+      latitude: 56.3240,
+      longitude: 44.0000,
+      population: 0,
+      maxPopulation: 40000,
+      resources: { gold: 5, oil: 4 },
+      boundaries: generateBoundaries(56.3240, 44.0000),
+      owner: "neutral",
+      buildings: [],
+      military: 0,
+      adjacentCities: []
     }
   ];
 
@@ -205,7 +239,7 @@ class Storage {
   // Загрузка городов из файла
   private async loadCities() {
     if (this.citiesLoaded) return;
-    
+
     try {
       const citiesData = await fs.readFile(CITIES_FILE, 'utf8');
       this.cities = JSON.parse(citiesData);
@@ -223,7 +257,7 @@ class Storage {
 
   async updateCity(id: number, data: any) {
     await this.loadCities();
-    
+
     const cityIndex = this.cities.findIndex(city => city.id === id);
     if (cityIndex === -1) {
       throw new Error(`City with id ${id} not found`);
@@ -285,12 +319,19 @@ class Storage {
     this.armyTransfers = this.armyTransfers.filter(t => t.id !== id);
     return true;
   }
+
+  // Функция для определения, граничат ли два города
+  areCitiesAdjacent(city1: City, city2: City): boolean {
+    const distance = calculateDistance(city1.latitude, city1.longitude, city2.latitude, city2.longitude);
+    //  Простая проверка на основе расстояния.  Можно сделать более сложную логику, используя границы городов.
+    return distance < 0.5;
+  }
 }
 
 export const storage = new Storage();
 
 function generateBoundaries(latitude: number, longitude: number): number[][] {
-  const offset = 0.1;
+  const offset = 0.1 + Math.random() * 0.1; // Add some randomness to boundary size
   return [
     [latitude - offset, longitude - offset],
     [latitude + offset, longitude - offset],
@@ -298,4 +339,21 @@ function generateBoundaries(latitude: number, longitude: number): number[][] {
     [latitude - offset, longitude + offset],
     [latitude - offset, longitude - offset]
   ];
+}
+
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371; // Radius of the earth in km
+  const dLat = deg2rad(lat2 - lat1);  // deg2rad below
+  const dLon = deg2rad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const d = R * c; // Distance in km
+  return d;
+}
+
+function deg2rad(deg: number) {
+  return deg * (Math.PI / 180);
 }

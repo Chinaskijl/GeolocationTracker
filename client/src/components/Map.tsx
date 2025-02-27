@@ -13,6 +13,7 @@ interface MilitaryMovement {
   startTime: number;
   duration: number;
   pathLine?: L.Polyline;
+  isUsingRoute?: boolean; // Added to track route usage
 }
 
 export function Map() {
@@ -119,17 +120,20 @@ export function Map() {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const newWs = new WebSocket(`${protocol}//${window.location.host}/ws`);
 
-    newWs.onmessage = (event) => {
+    const handleMessage = (event: MessageEvent) => {
       const data = JSON.parse(event.data);
       if (data.type === 'MILITARY_TRANSFER_START') {
-        const { fromCity, toCity, amount, duration } = data;
+        const { fromCity, toCity, amount, duration, isUsingRoute } = data;
 
         // Create military unit marker with custom icon
         const militaryIcon = L.divIcon({
           className: 'military-marker',
-          html: `<div style="width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; background: #ff4500; border-radius: 50%; border: 2px solid white; color: white; font-weight: bold;">${amount}</div>`,
-          iconSize: [24, 24],
-          iconAnchor: [12, 12],
+          html: `<div style="width: 24px; height: 24px; display: flex; align-items: center; 
+                  justify-content: center; background: ${isUsingRoute ? '#4a90e2' : '#e74c3c'}; 
+                  border-radius: 50%; border: 2px solid white; color: white; 
+                  font-weight: bold; box-shadow: 0 0 10px rgba(0,0,0,0.5);">${amount}</div>`,
+          iconSize: [28, 28],
+          iconAnchor: [14, 14],
         });
 
         const marker = L.marker([fromCity.latitude, fromCity.longitude], { icon: militaryIcon }).addTo(mapRef.current!);
@@ -138,26 +142,39 @@ export function Map() {
           [fromCity.latitude, fromCity.longitude],
           [toCity.latitude, toCity.longitude]
         ], {
-          color: 'blue',
-          weight: 3
+          color: isUsingRoute ? '#4a90e2' : '#e74c3c', // Use route color if available
+          weight: 3,
+          opacity: 0.7
         }).addTo(mapRef.current!);
+
 
         militaryMovementsRef.current.push({
           fromCity,
           toCity,
           amount,
           marker,
-          startTime: Date.now(),
+          startTime: performance.now(),
           duration,
+          isUsingRoute,
           pathLine
         });
 
         // Start animation if not already running
         if (!animationFrameRef.current) {
-          animate();
+          animateMovement();
         }
+      } else if (data.type === 'ROUTES_UPDATE') {
+        // Обновление информации о маршрутах между городами
+        console.log('Received routes update:', data);
       }
     };
+
+    newWs.onmessage = handleMessage;
+
+    // Запрашиваем обновление маршрутов
+    if (newWs.readyState === WebSocket.OPEN) {
+      newWs.send(JSON.stringify({ type: 'REQUEST_ROUTES_UPDATE' }));
+    }
 
     setWs(newWs);
 
@@ -166,34 +183,68 @@ export function Map() {
     };
   }, []);
 
-  const animate = () => {
+  const animateMovement = () => {
     if (!mapRef.current) return;
 
-    const currentTime = Date.now();
+    const timestamp = performance.now();
     militaryMovementsRef.current = militaryMovementsRef.current.filter(movement => {
-      const progress = (currentTime - movement.startTime) / movement.duration;
+      const elapsed = timestamp - movement.startTime;
+      const progress = Math.min(elapsed / movement.duration, 1);
 
-      if (progress >= 1) {
+      if (progress < 1) {
+        // Интерполируем положение между начальной и конечной точками
+        const newLat = movement.fromCity.latitude + (movement.toCity.latitude - movement.fromCity.latitude) * progress;
+        const newLng = movement.fromCity.longitude + (movement.toCity.longitude - movement.fromCity.longitude) * progress;
+        movement.marker.setLatLng([newLat, newLng]);
+
+        // Добавляем эффект "хвоста" для движущихся войск
+        if (progress > 0.05 && !movement.pathLine) {
+          // Создаем линию пути с градиентом
+          movement.pathLine = L.polyline(
+            [
+              [movement.fromCity.latitude, movement.fromCity.longitude],
+              [newLat, newLng]
+            ],
+            {
+              color: movement.isUsingRoute ? '#4a90e2' : '#e74c3c',
+              weight: 3,
+              opacity: 0.7,
+              dashArray: movement.isUsingRoute ? '' : '5,10'
+            }
+          ).addTo(mapRef.current!);
+        } else if (movement.pathLine) {
+          // Обновляем линию до текущей позиции
+          movement.pathLine.setLatLngs([
+            [movement.fromCity.latitude, movement.fromCity.longitude],
+            [newLat, newLng]
+          ]);
+        }
+      } else {
+        // Достигли пункта назначения
         movement.marker.remove();
-        if (movement.pathLine) movement.pathLine.remove();
+        if (movement.pathLine) {
+          // Добавляем эффект исчезновения линии
+          const pathLine = movement.pathLine;
+          let opacity = 0.7;
+          const fadeInterval = setInterval(() => {
+            opacity -= 0.1;
+            if (opacity <= 0) {
+              clearInterval(fadeInterval);
+              pathLine.remove();
+            } else {
+              pathLine.setStyle({ opacity });
+            }
+          }, 50);
+          movement.pathLine = undefined;
+        }
         return false;
-      }
-
-      const lat = movement.fromCity.latitude + (movement.toCity.latitude - movement.fromCity.latitude) * progress;
-      const lng = movement.fromCity.longitude + (movement.toCity.longitude - movement.fromCity.longitude) * progress;
-      movement.marker.setLatLng([lat, lng]);
-      if (movement.pathLine) {
-        movement.pathLine.setLatLngs([
-          [movement.fromCity.latitude, movement.fromCity.longitude],
-          [lat, lng]
-        ]);
       }
 
       return true;
     });
 
     if (militaryMovementsRef.current.length > 0) {
-      animationFrameRef.current = requestAnimationFrame(animate);
+      animationFrameRef.current = requestAnimationFrame(animateMovement);
     }
   };
 

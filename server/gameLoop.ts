@@ -238,6 +238,15 @@ export class GameLoop {
           transfers: armyTransfers
         });
       }
+      
+      // Отправляем информацию о маршрутах между городами
+      this.broadcast({
+        type: 'ROUTES_UPDATE',
+        cities: cities.map(city => ({
+          id: city.id,
+          adjacentCities: city.adjacentCities
+        }))
+      });
     } catch (error) {
       console.error('Error broadcasting game state:', error);
     }
