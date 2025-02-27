@@ -1,0 +1,10 @@
+{
+  "resources": {
+    "gold": 500,
+    "wood": 200,
+    "food": 0,
+    "oil": 100
+  },
+  "population": 0,
+  "military": 0
+}
