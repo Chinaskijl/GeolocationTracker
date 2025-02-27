@@ -1,4 +1,3 @@
-
 /* Стили для армии на карте */
 .military-icon {
   z-index: 1000 !important;
@@ -64,4 +63,23 @@
   justify-content: center;
   color: white;
   font-weight: bold;
+}
+
+.city-info {
+  padding: 10px;
+  background-color: white;
+  border-radius: 5px;
+  box-shadow: 0 1px 5px rgba(0,0,0,0.65);
+  max-width: 250px;
+}
+
+.distance-label {
+  z-index: 400;
+  pointer-events: none;
+  font-size: 9px;
+  color: #444;
+}
+
+.leaflet-interactive {
+  transition: fillOpacity 0.2s ease-in-out, stroke-opacity 0.2s ease-in-out;
 }
