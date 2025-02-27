@@ -1,212 +1,161 @@
-import type { Express } from "express";
-import { createServer, type Server } from "http";
-import { storage } from "./storage";
-import { WebSocket, WebSocketServer } from "ws";
+import { Server } from "http";
+import express, { Express } from "express";
+import WebSocket from "ws";
 import { gameLoop } from "./gameLoop";
-import { BUILDINGS } from "../client/src/lib/game";
+import { getGameState, getCities, updateGameState, getCityById, updateCity } from "./storage";
+import { aiPlayer } from "./aiPlayer";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  const httpServer = createServer(app);
-  const wss = new WebSocketServer({ 
-    server: httpServer,
-    path: '/ws'
-  });
+  // Create HTTP server
+  const server = new Server(app);
 
-  // Обработка WebSocket соединений
-  wss.on('connection', (ws) => {
-    console.log('Client connected');
-    gameLoop.addClient(ws);
+  // Set up WebSocket server
+  const wss = new WebSocket.Server({ server });
 
-    ws.on('error', (error) => {
-      console.error('WebSocket connection error:', error);
+  // WebSocket connection handler
+  wss.on("connection", (ws) => {
+    console.log("WebSocket client connected");
+
+    // Send initial game state
+    const gameState = getGameState();
+    ws.send(JSON.stringify({ type: "gameState", data: gameState }));
+
+    const cities = getCities();
+    ws.send(JSON.stringify({ type: "cities", data: cities }));
+
+    // Handle messages from clients
+    ws.on("message", (message) => {
+      try {
+        const parsedMessage = JSON.parse(message.toString());
+        console.log("Received message:", parsedMessage);
+
+        if (parsedMessage.type === "action") {
+          // Handle game actions
+          const { action, cityId, data } = parsedMessage;
+
+          if (action === "build" && cityId) {
+            const city = getCityById(cityId);
+            if (city && city.owner === "player") {
+              const gameState = getGameState();
+              const buildingType = data.buildingType;
+
+              // Check if player has enough resources
+              let cost = 0;
+              switch(buildingType) {
+                case "house":
+                  cost = 100;
+                  if (gameState.resources.wood >= cost) {
+                    gameState.resources.wood -= cost;
+                    city.buildings.push(buildingType);
+                    updateCity(city);
+                    updateGameState(gameState);
+                  }
+                  break;
+                case "farm":
+                  cost = 150;
+                  if (gameState.resources.wood >= cost) {
+                    gameState.resources.wood -= cost;
+                    city.buildings.push(buildingType);
+                    updateCity(city);
+                    updateGameState(gameState);
+                  }
+                  break;
+                case "sawmill":
+                  cost = 200;
+                  if (gameState.resources.wood >= cost) {
+                    gameState.resources.wood -= cost;
+                    city.buildings.push(buildingType);
+                    updateCity(city);
+                    updateGameState(gameState);
+                  }
+                  break;
+                case "mine":
+                  cost = 300;
+                  if (gameState.resources.wood >= cost) {
+                    gameState.resources.wood -= cost;
+                    city.buildings.push(buildingType);
+                    updateCity(city);
+                    updateGameState(gameState);
+                  }
+                  break;
+                case "barracks":
+                  cost = 400;
+                  if (gameState.resources.wood >= cost && gameState.resources.gold >= 200) {
+                    gameState.resources.wood -= cost;
+                    gameState.resources.gold -= 200;
+                    city.buildings.push(buildingType);
+                    updateCity(city);
+                    updateGameState(gameState);
+                  }
+                  break;
+              }
+            }
+          }
+
+          if (action === "attack" && cityId) {
+            const targetCity = getCityById(cityId);
+            const playerCity = getCities().find(c => c.owner === "player");
+
+            if (targetCity && playerCity && targetCity.owner === "enemy") {
+              // Simple combat logic
+              if (playerCity.military > targetCity.military) {
+                targetCity.owner = "player";
+                targetCity.military = Math.floor(playerCity.military / 2);
+                playerCity.military = Math.floor(playerCity.military / 2);
+                updateCity(targetCity);
+                updateCity(playerCity);
+              } else {
+                playerCity.military = Math.floor(playerCity.military / 2);
+                updateCity(playerCity);
+              }
+            }
+          }
+        }
+
+      } catch (error) {
+        console.error("Error handling WebSocket message:", error);
+      }
     });
 
-    ws.on('close', () => {
-      console.log('Client disconnected');
-      gameLoop.removeClient(ws);
+    // Handle client disconnection
+    ws.on("close", () => {
+      console.log("WebSocket client disconnected");
+    });
+
+    // Start game loop for this client
+    const gameLoopInterval = setInterval(() => {
+      try {
+        // Update game state via game loop
+        gameLoop();
+        aiPlayer();
+
+        // Send updated state to client
+        const updatedGameState = getGameState();
+        ws.send(JSON.stringify({ type: "gameState", data: updatedGameState }));
+
+        const updatedCities = getCities();
+        ws.send(JSON.stringify({ type: "cities", data: updatedCities }));
+      } catch (error) {
+        console.error("Error in game loop:", error);
+      }
+    }, 1000);
+
+    // Clear interval when client disconnects
+    ws.on("close", () => {
+      clearInterval(gameLoopInterval);
     });
   });
 
-  // Запуск игрового цикла
-  gameLoop.start();
-
-  app.post("/api/cities/:id/build", async (req, res) => {
-    try {
-      const { id } = req.params;
-      const { buildingId } = req.body;
-
-      const city = await storage.getCities().then(cities => 
-        cities.find(c => c.id === Number(id))
-      );
-
-      if (!city) {
-        return res.status(404).json({ message: 'City not found' });
-      }
-
-      const building = BUILDINGS.find(b => b.id === buildingId);
-      if (!building) {
-        return res.status(404).json({ message: 'Building not found' });
-      }
-
-      // Проверка лимита зданий
-      const existingBuildingCount = city.buildings.filter(b => b === buildingId).length;
-      if (existingBuildingCount >= building.maxCount) {
-        return res.status(400).json({ message: 'Building limit reached' });
-      }
-
-      // Получение текущего состояния игры
-      const gameState = await storage.getGameState();
-
-      // Проверка ресурсов
-      const canAfford = Object.entries(building.cost).every(
-        ([resource, amount]) => 
-          gameState.resources[resource as keyof typeof gameState.resources] >= amount
-      );
-
-      if (!canAfford) {
-        return res.status(400).json({ message: 'Insufficient resources' });
-      }
-
-      // Списание ресурсов
-      const newResources = { ...gameState.resources };
-      Object.entries(building.cost).forEach(([resource, amount]) => {
-        newResources[resource as keyof typeof newResources] -= amount;
-      });
-
-      // Обновление состояния игры
-      await storage.setGameState({
-        ...gameState,
-        resources: newResources
-      });
-
-      // Добавление здания в город
-      const updatedCity = await storage.updateCity(Number(id), {
-        buildings: [...city.buildings, buildingId]
-      });
-
-      res.json(updatedCity);
-    } catch (error) {
-      console.error('Error building:', error);
-      res.status(500).json({ message: 'Failed to build' });
-    }
+  // REST API routes
+  app.get("/api/game-state", (req, res) => {
+    res.json(getGameState());
   });
 
-  app.get("/api/cities", async (_req, res) => {
-    try {
-      const cities = await storage.getCities();
-      res.json(cities);
-    } catch (error) {
-      console.error('Error fetching cities:', error);
-      res.status(500).json({ message: 'Failed to fetch cities' });
-    }
+  app.get("/api/cities", (req, res) => {
+    res.json(getCities());
   });
 
-  app.post("/api/cities/:id/capture", async (req, res) => {
-    try {
-      const { id } = req.params;
-      const { owner } = req.body;
-
-      const city = await storage.updateCity(Number(id), { owner });
-
-      res.json(city);
-    } catch (error) {
-      console.error('Error capturing city:', error);
-      res.status(500).json({ message: 'Failed to capture city' });
-    }
-  });
-
-  app.get("/api/game-state", async (_req, res) => {
-    try {
-      const state = await storage.getGameState();
-      res.json(state);
-    } catch (error) {
-      console.error('Error fetching game state:', error);
-      res.status(500).json({ message: 'Failed to fetch game state' });
-    }
-  });
-
-  app.post("/api/game-state", async (req, res) => {
-    try {
-      await storage.setGameState(req.body);
-      res.json({ success: true });
-    } catch (error) {
-      console.error('Error updating game state:', error);
-      res.status(500).json({ message: 'Failed to update game state' });
-    }
-  });
-  
-  app.post("/api/cities/:id/update-military", async (req, res) => {
-    try {
-      const { id } = req.params;
-      const { amount } = req.body;
-      
-      const city = await storage.getCities().then(cities => 
-        cities.find(c => c.id === Number(id))
-      );
-      
-      if (!city) {
-        return res.status(404).json({ message: 'City not found' });
-      }
-      
-      const newMilitary = Math.max(0, (city.military || 0) + amount);
-      const updatedCity = await storage.updateCity(Number(id), {
-        military: newMilitary
-      });
-      
-      res.json(updatedCity);
-    } catch (error) {
-      console.error('Error updating military:', error);
-      res.status(500).json({ message: 'Failed to update military' });
-    }
-  });
-  
-  app.post("/api/cities/:id/attack", async (req, res) => {
-    try {
-      const { id } = req.params;
-      const { fromCityId, armySize } = req.body;
-      
-      const cities = await storage.getCities();
-      const targetCity = cities.find(c => c.id === Number(id));
-      const fromCity = cities.find(c => c.id === Number(fromCityId));
-      
-      if (!targetCity || !fromCity) {
-        return res.status(404).json({ message: 'City not found' });
-      }
-      
-      // Расчет результатов атаки
-      const defenseStrength = targetCity.military || 0;
-      const attackSuccess = armySize > defenseStrength;
-      
-      let survivingAttackers = Math.max(0, armySize - defenseStrength);
-      let newOwner = targetCity.owner;
-      
-      if (attackSuccess) {
-        // Атака успешна, город захвачен
-        newOwner = fromCity.owner;
-        
-        // Обновляем целевой город
-        await storage.updateCity(Number(id), {
-          owner: newOwner,
-          military: survivingAttackers
-        });
-        
-        res.json({ success: true, captured: true });
-      } else {
-        // Атака отбита
-        const remainingDefenders = defenseStrength - armySize;
-        await storage.updateCity(Number(id), {
-          military: remainingDefenders
-        });
-        
-        res.json({ success: true, captured: false });
-      }
-    } catch (error) {
-      console.error('Error attacking city:', error);
-      res.status(500).json({ message: 'Failed to attack city' });
-    }
-  });
-
-  return httpServer;
+  return server;
 }
 
 function calculateDistance(city1: any, city2: any): number {
