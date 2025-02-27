@@ -265,6 +265,50 @@ async function loadCityBoundariesFromFile(cityName: string): Promise<number[][] 
 }
 
 /**
+ * Загружает данные о границах городов из файлов
+ * @returns Promise с массивом городов с загруженными границами
+ */
+export async function loadAllCityBoundaries(): Promise<any[]> {
+  try {
+    console.log('Loading all city boundaries...');
+    // Получаем текущие данные о городах
+    const cities = await storage.getCities();
+
+    // Загружаем границы для каждого города
+    for (const city of cities) {
+      try {
+        console.log(`Loading boundaries for city: ${city.name}`);
+        // Пытаемся загрузить границы из кэша
+        const boundaries = await loadCityBoundariesFromFile(city.name);
+
+        if (boundaries && boundaries.length > 0) {
+          console.log(`Loaded boundaries for ${city.name} with ${boundaries.length} points`);
+          // Устанавливаем границы города
+          city.boundaries = boundaries;
+        } else {
+          console.log(`No cached boundaries for ${city.name}, using simple boundary`);
+          // Если не удалось загрузить границы, создаем простую границу
+          city.boundaries = createSimpleBoundary(city.latitude, city.longitude);
+        }
+      } catch (error) {
+        console.warn(`Failed to load boundaries for ${city.name}:`, error);
+        // В случае ошибки используем простую границу
+        city.boundaries = createSimpleBoundary(city.latitude, city.longitude);
+      }
+    }
+
+    // Сохраняем обновленные данные о городах
+    await storage.updateCitiesData(cities);
+    console.log('City boundaries loaded successfully');
+
+    return cities;
+  } catch (error) {
+    console.error('Error loading city boundaries:', error);
+    throw error;
+  }
+}
+
+/**
  * Обновляет данные о границах городов
  */
 export async function updateAllCityBoundaries(): Promise<any[]> {
