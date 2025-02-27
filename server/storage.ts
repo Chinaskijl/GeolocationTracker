@@ -1,395 +1,212 @@
-import { cities, type City, type InsertCity, type GameState } from "@shared/schema";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
+import { migrate } from "drizzle-orm/postgres-js/migrator";
+import { cities } from "../shared/schema";
+import * as schema from "../shared/schema";
+import path from "path";
 
-export interface IStorage {
-  getCities(): Promise<City[]>;
-  updateCity(id: number, city: Partial<City>): Promise<City>;
-  getGameState(): Promise<GameState>;
-  setGameState(state: GameState): Promise<void>;
+// Соединение с базой данных
+const connectionString = process.env.DATABASE_URL || "postgres://postgres:postgres@localhost:5432/postgres";
+const client = postgres(connectionString);
+export const db = drizzle(client, { schema });
+
+// Инициализация базы данных
+export async function initDb() {
+  try {
+    // Запуск миграций
+    await migrate(db, { migrationsFolder: path.join(__dirname, "../drizzle") });
+    console.log("Migrations completed successfully");
+
+    // Проверка и создание начальных данных
+    await initializeGameData();
+  } catch (error) {
+    console.error("Database initialization error:", error);
+  }
 }
 
-export class MemStorage implements IStorage {
-  private cities: Map<number, City>;
-  private gameState: GameState;
+// Функция для инициализации данных игры
+async function initializeGameData() {
+  // Проверяем наличие городов
+  const existingCities = await db.select().from(cities);
 
-  constructor() {
-    this.cities = new Map();
-    this.gameState = {
+  if (existingCities.length === 0) {
+    // Создаем начальные города
+    console.log("Creating initial cities...");
+    await createInitialCities();
+  }
+
+  // Проверяем наличие состояния игры
+  const gameState = await getGameState();
+  if (!gameState) {
+    // Создаем начальное состояние игры
+    console.log("Creating initial game state...");
+    await setGameState({
       resources: {
         gold: 500,
-        wood: 500,
-        food: 500,
-        oil: 500
+        wood: 200,
+        food: 300,
+        oil: 100
       },
-      population: 0,
+      population: 100,
       military: 0
-    };
+    });
+  }
+}
 
-    // Initialize with Russian cities
-    this.cities.set(1, {
-      id: 1,
+// Функция для создания начальных городов
+async function createInitialCities() {
+  // Крупные города
+  await db.insert(cities).values([
+    {
       name: "Москва",
       latitude: 55.7558,
       longitude: 37.6173,
       population: 0,
       maxPopulation: 150000,
       resources: {},
-      boundaries: [
-        [55.8, 37.5],
-        [55.9, 37.7],
-        [55.7, 37.8],
-        [55.6, 37.6],
-        [55.8, 37.5]
-      ],
-      owner: "neutral",
+      boundaries: [[55.8, 37.5], [55.9, 37.7], [55.7, 37.8], [55.6, 37.6], [55.8, 37.5]],
+      owner: "player",
       buildings: []
-    });
-
-    this.cities.set(2, {
-      id: 2,
+    },
+    {
       name: "Санкт-Петербург",
       latitude: 59.9343,
       longitude: 30.3351,
-      population: 0,
+      population: 0, // Население нейтральных городов равно 0
       maxPopulation: 100000,
-      resources: {
-        food: 8,
-        oil: 3
-      },
-      boundaries: [
-        [60.0, 30.2],
-        [60.1, 30.4],
-        [59.9, 30.5],
-        [59.8, 30.3],
-        [60.0, 30.2]
-      ],
+      resources: { food: 8, oil: 3 },
+      boundaries: [[60.0, 30.2], [60.1, 30.4], [59.9, 30.5], [59.8, 30.3], [60.0, 30.2]],
       owner: "neutral",
       buildings: []
-    });
-
-    this.cities.set(3, {
-      id: 3,
+    },
+    {
       name: "Новосибирск",
       latitude: 55.0084,
       longitude: 82.9357,
-      population: 0,
+      population: 0, // Население нейтральных городов равно 0
       maxPopulation: 80000,
-      resources: {
-        gold: 7,
-        wood: 5
-      },
-      boundaries: [
-        [55.1, 82.8],
-        [55.2, 83.0],
-        [55.0, 83.1],
-        [54.9, 82.9],
-        [55.1, 82.8]
-      ],
+      resources: { gold: 7, wood: 5 },
+      boundaries: [[55.1, 82.8], [55.2, 83.0], [55.0, 83.1], [54.9, 82.9], [55.1, 82.8]],
       owner: "neutral",
       buildings: []
-    });
+    }
+  ]);
+}
 
-    this.cities.set(4, {
-      id: 4,
-      name: "Екатеринбург",
-      latitude: 56.8389,
-      longitude: 60.6057,
-      population: 0,
-      maxPopulation: 70000,
-      resources: {
-        oil: 6,
-        gold: 4
-      },
-      boundaries: [
-        [56.9, 60.5],
-        [57.0, 60.7],
-        [56.8, 60.8],
-        [56.7, 60.6],
-        [56.9, 60.5]
-      ],
-      owner: "neutral",
-      buildings: []
-    });
+// Хранилище для данных игры
+class Storage {
+  private gameState: any = null;
+  private armyTransfers: any[] = []; // Массив для отслеживания передвижений армий
 
-    // Добавляем новые города
-    this.cities.set(5, {
-      id: 5,
-      name: "Казань",
-      latitude: 55.7887,
-      longitude: 49.1221,
-      population: 0,
-      maxPopulation: 90000,
-      resources: {
-        food: 10,
-        wood: 3
-      },
-      boundaries: [
-        [55.85, 49.0],
-        [55.95, 49.2],
-        [55.75, 49.3],
-        [55.65, 49.1],
-        [55.85, 49.0]
-      ],
-      owner: "neutral",
-      buildings: []
-    });
-
-    this.cities.set(6, {
-      id: 6,
-      name: "Красноярск",
-      latitude: 56.0184,
-      longitude: 92.8672,
-      population: 0,
-      maxPopulation: 65000,
-      resources: {
-        wood: 12,
-        oil: 2
-      },
-      boundaries: [
-        [56.1, 92.75],
-        [56.2, 92.95],
-        [56.0, 93.05],
-        [55.9, 92.85],
-        [56.1, 92.75]
-      ],
-      owner: "neutral",
-      buildings: []
-    });
-
-    this.cities.set(7, {
-      id: 7,
-      name: "Ростов-на-Дону",
-      latitude: 47.2357,
-      longitude: 39.7015,
-      population: 0,
-      maxPopulation: 75000,
-      resources: {
-        food: 11,
-        gold: 3
-      },
-      boundaries: [
-        [47.3, 39.6],
-        [47.4, 39.8],
-        [47.2, 39.9],
-        [47.1, 39.7],
-        [47.3, 39.6]
-      ],
-      owner: "neutral",
-      buildings: []
-    });
-
-    this.cities.set(8, {
-      id: 8,
-      name: "Владивосток",
-      latitude: 43.1332,
-      longitude: 131.9113,
-      population: 0,
-      maxPopulation: 60000,
-      resources: {
-        oil: 8,
-        food: 6
-      },
-      boundaries: [
-        [43.2, 131.8],
-        [43.3, 132.0],
-        [43.1, 132.1],
-        [43.0, 131.9],
-        [43.2, 131.8]
-      ],
-      owner: "neutral",
-      buildings: []
-    });
-
-    // Создаем вражеский город (столицу ИИ)
-    this.cities.set(9, {
-      id: 9,
-      name: "Киев",
-      latitude: 50.4501,
-      longitude: 30.5234,
-      population: 8000,
-      maxPopulation: 120000,
-      resources: {
-        wood: 5,
-        food: 5,
-        gold: 5,
-        oil: 5
-      },
-      boundaries: [
-        [50.5, 30.4],
-        [50.6, 30.6],
-        [50.4, 30.7],
-        [50.3, 30.5],
-        [50.5, 30.4]
-      ],
-      owner: "enemy",
-      buildings: [
-        'sawmill', 'farm', 'mine', 'house', 'barracks'
-      ],
-      military: 100
-    });
-
-    this.cities.set(10, {
-      id: 10,
-      name: "Минск",
-      latitude: 53.9045,
-      longitude: 27.5615,
-      population: 5000,
-      maxPopulation: 90000,
-      resources: {
-        wood: 8,
-        food: 7
-      },
-      boundaries: [
-        [54.0, 27.45],
-        [54.1, 27.65],
-        [53.9, 27.75],
-        [53.8, 27.55],
-        [54.0, 27.45]
-      ],
-      owner: "enemy",
-      buildings: [
-        'sawmill', 'farm', 'barracks'
-      ],
-      military: 50
-    });
-    
-    // Добавляем маленькие города
-    this.cities.set(11, {
-      id: 11,
-      name: "Тверь",
-      latitude: 56.8587,
-      longitude: 35.9175,
-      population: 1500,
-      maxPopulation: 20000,
-      resources: {
-        wood: 6,
-        food: 5
-      },
-      boundaries: [
-        [56.89, 35.89],
-        [56.91, 35.95],
-        [56.84, 35.97],
-        [56.82, 35.91],
-        [56.89, 35.89]
-      ],
-      owner: "neutral",
-      buildings: [],
-      military: 0
-    });
-    
-    this.cities.set(12, {
-      id: 12,
-      name: "Рязань",
-      latitude: 54.6295,
-      longitude: 39.7422,
-      population: 2000,
-      maxPopulation: 25000,
-      resources: {
-        food: 8,
-        gold: 3
-      },
-      boundaries: [
-        [54.66, 39.71],
-        [54.68, 39.77],
-        [54.61, 39.79],
-        [54.59, 39.73],
-        [54.66, 39.71]
-      ],
-      owner: "neutral",
-      buildings: [],
-      military: 0
-    });
-    
-    this.cities.set(13, {
-      id: 13,
-      name: "Тула",
-      latitude: 54.2044,
-      longitude: 37.6178,
-      population: 1800,
-      maxPopulation: 22000,
-      resources: {
-        gold: 7,
-        oil: 2
-      },
-      boundaries: [
-        [54.23, 37.59],
-        [54.25, 37.65],
-        [54.18, 37.67],
-        [54.16, 37.61],
-        [54.23, 37.59]
-      ],
-      owner: "neutral",
-      buildings: [],
-      military: 0
-    });
-    
-    this.cities.set(14, {
-      id: 14,
-      name: "Калуга",
-      latitude: 54.5141,
-      longitude: 36.2673,
-      population: 1200,
-      maxPopulation: 18000,
-      resources: {
-        wood: 9,
-        food: 4
-      },
-      boundaries: [
-        [54.54, 36.24],
-        [54.56, 36.3],
-        [54.49, 36.32],
-        [54.47, 36.26],
-        [54.54, 36.24]
-      ],
-      owner: "neutral",
-      buildings: [],
-      military: 0
-    });
-    
-    this.cities.set(15, {
-      id: 15,
-      name: "Смоленск",
-      latitude: 54.7825,
-      longitude: 32.0529,
-      population: 2200,
-      maxPopulation: 28000,
-      resources: {
-        wood: 8,
-        food: 6,
-        gold: 2
-      },
-      boundaries: [
-        [54.81, 32.02],
-        [54.83, 32.08],
-        [54.76, 32.1],
-        [54.74, 32.04],
-        [54.81, 32.02]
-      ],
-      owner: "neutral",
-      buildings: [],
-      military: 0
-    });
+  async getCities() {
+    return db.select().from(cities);
   }
 
-  async getCities(): Promise<City[]> {
-    return Array.from(this.cities.values());
+  async updateCity(id: number, data: any) {
+    const result = await db.update(cities)
+      .set(data)
+      .where(schema.cities.id.eq(id))
+      .returning();
+
+    return result[0];
   }
 
-  async updateCity(id: number, updates: Partial<City>): Promise<City> {
-    const city = this.cities.get(id);
-    if (!city) throw new Error("City not found");
+  async getGameState() {
+    if (this.gameState) return this.gameState;
 
-    const updatedCity = { ...city, ...updates };
-    this.cities.set(id, updatedCity);
-    return updatedCity;
+    // Если состояние не в памяти, получаем из базы данных или создаем новое
+    const filePath = path.join(__dirname, "../game-state.json");
+    try {
+      this.gameState = {
+        resources: {
+          gold: 500,
+          wood: 200,
+          food: 300,
+          oil: 100
+        },
+        population: 100,
+        military: 0
+      };
+      return this.gameState;
+    } catch (error) {
+      console.error("Error reading game state:", error);
+      this.gameState = {
+        resources: {
+          gold: 500,
+          wood: 200,
+          food: 300,
+          oil: 100
+        },
+        population: 100,
+        military: 0
+      };
+      return this.gameState;
+    }
   }
 
-  async getGameState(): Promise<GameState> {
+  async setGameState(state: any) {
+    this.gameState = state;
     return this.gameState;
   }
 
-  async setGameState(state: GameState): Promise<void> {
-    this.gameState = state;
+  // Методы для управления передвижением армий
+  async getArmyTransfers() {
+    return this.armyTransfers;
+  }
+
+  async addArmyTransfer(transfer: any) {
+    this.armyTransfers.push(transfer);
+    return transfer;
+  }
+
+  async removeArmyTransfer(id: number) {
+    this.armyTransfers = this.armyTransfers.filter(t => t.id !== id);
+    return true;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new Storage();
+
+// Исправление заполнения городов для генерации
+async function initializeGame() {
+  // Очищаем и заполняем базу данных
+  await db.delete(cities);
+
+  // Генерируем крупные города
+  await db.insert(cities).values([
+    {
+      name: "Москва",
+      latitude: 55.7558,
+      longitude: 37.6173,
+      population: 20000,
+      maxPopulation: 150000,
+      resources: {},
+      boundaries: generateBoundaries(55.7558, 37.6173),
+      owner: "player",
+      buildings: []
+    },
+    {
+      name: "Санкт-Петербург",
+      latitude: 59.9343,
+      longitude: 30.3351,
+      population: 0, // Нейтральный город, население = 0
+      maxPopulation: 100000,
+      resources: { food: 8, oil: 3 },
+      boundaries: generateBoundaries(59.9343, 30.3351),
+      owner: "neutral",
+      buildings: []
+    },
+  ]);
+}
+
+
+function generateBoundaries(latitude: number, longitude: number): number[][] {
+  const offset = 0.1;
+  return [
+    [latitude - offset, longitude - offset],
+    [latitude + offset, longitude - offset],
+    [latitude + offset, longitude + offset],
+    [latitude - offset, longitude + offset],
+    [latitude - offset, longitude - offset]
+  ];
+}

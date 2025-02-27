@@ -51,6 +51,9 @@ export class GameLoop {
           let cityMilitaryGrowth = 0;
           let cityPopulationUsed = 0;
 
+          // Проверяем наличие еды для роста населения
+          const noFood = gameState.resources.food <= 0;
+
           // Обработка всех зданий
           city.buildings.forEach(buildingId => {
             const building = BUILDINGS.find(b => b.id === buildingId);
@@ -66,10 +69,12 @@ export class GameLoop {
               console.log(`Resource production: +${production} ${type}`);
             }
 
-            // Рост населения
-            if (building.population?.growth) {
+            // Рост населения - только если есть еда
+            if (building.population?.growth && !noFood) {
               cityPopulationGrowth += building.population.growth * deltaTime;
               console.log(`Population growth: +${building.population.growth * deltaTime}`);
+            } else if (building.population?.growth && noFood) {
+              console.log(`Жилой дом в городе ${city.name} не даёт прирост населения из-за нехватки еды`);
             }
 
             // Производство военных
@@ -166,6 +171,7 @@ export class GameLoop {
     try {
       const gameState = await storage.getGameState();
       const cities = await storage.getCities();
+      const armyTransfers = await storage.getArmyTransfers();
       
       this.broadcast({ 
         type: 'GAME_UPDATE',
@@ -176,6 +182,14 @@ export class GameLoop {
         type: 'CITIES_UPDATE',
         cities: cities // Отправляем все города для полного обновления
       });
+      
+      // Отправляем информацию о передвижениях армий
+      if (armyTransfers.length > 0) {
+        this.broadcast({
+          type: 'ARMY_TRANSFERS_UPDATE',
+          transfers: armyTransfers
+        });
+      }
     } catch (error) {
       console.error('Error broadcasting game state:', error);
     }

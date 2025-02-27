@@ -145,11 +145,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Рассчитываем время перемещения
       const travelTime = calculateTravelTime(fromCity, toCity);
       
+      // Создаем передвижение армии
+      const armyTransfer = {
+        id: Date.now(),
+        fromCity: fromCity,
+        toCity: toCity,
+        amount: amount,
+        startTime: Date.now(),
+        arrivalTime: Date.now() + travelTime,
+        owner: fromCity.owner
+      };
+      
+      // Сохраняем информацию о перемещении армии в хранилище
+      await storage.addArmyTransfer(armyTransfer);
+      
       // Уведомляем всех клиентов о начале перемещения армии
       const militaryTransferData = {
         type: 'MILITARY_TRANSFER_START',
-        fromCity,
-        toCity,
+        id: armyTransfer.id,
+        fromCity: { 
+          id: fromCity.id, 
+          name: fromCity.name, 
+          latitude: fromCity.latitude, 
+          longitude: fromCity.longitude 
+        },
+        toCity: { 
+          id: toCity.id, 
+          name: toCity.name, 
+          latitude: toCity.latitude, 
+          longitude: toCity.longitude 
+        },
         amount,
         duration: travelTime,
         startTime: Date.now()
@@ -185,7 +210,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               // Атака успешна, захватываем город
               await storage.updateCity(Number(toCityId), {
                 owner: fromCity.owner,
-                military: amount - defenseStrength
+                military: amount - defenseStrength,
+                // Если захватываем нейтральный город, сбрасываем его население
+                population: currentToCity.owner === 'neutral' ? 0 : currentToCity.population
               });
             } else {
               // Атака отбита, уменьшаем количество защитников
@@ -195,9 +222,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
           
+          // Удаляем перемещение из хранилища
+          await storage.removeArmyTransfer(armyTransfer.id);
+          
           // Уведомляем клиентов о завершении перемещения
           const transferCompleteData = {
             type: 'MILITARY_TRANSFER_COMPLETE',
+            id: armyTransfer.id,
             toCity: toCityId,
             result: currentToCity.owner === fromCity.owner ? 'reinforced' : (amount > defenseStrength ? 'captured' : 'failed')
           };
