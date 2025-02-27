@@ -453,7 +453,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Маршрут для обновления границ города удален, границы инициализируются автоматически
+  // Маршрут для обновления границ конкретного города
+  app.post("/api/cities/:id/updateBoundaries", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const cityId = Number(id);
+      
+      // Обновляем границы конкретного города
+      const updatedCity = await updateCityBoundary(cityId);
+      
+      res.json(updatedCity);
+    } catch (error) {
+      console.error('Ошибка при обновлении границ города:', error);
+      res.status(500).json({ message: 'Failed to update city boundary' });
+    }
+  });
 
   return httpServer;
 }
