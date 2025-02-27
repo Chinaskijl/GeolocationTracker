@@ -134,6 +134,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Failed to update game state' });
     }
   });
+  
+  app.post("/api/cities/:id/update-military", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { amount } = req.body;
+      
+      const city = await storage.getCities().then(cities => 
+        cities.find(c => c.id === Number(id))
+      );
+      
+      if (!city) {
+        return res.status(404).json({ message: 'City not found' });
+      }
+      
+      const newMilitary = Math.max(0, (city.military || 0) + amount);
+      const updatedCity = await storage.updateCity(Number(id), {
+        military: newMilitary
+      });
+      
+      res.json(updatedCity);
+    } catch (error) {
+      console.error('Error updating military:', error);
+      res.status(500).json({ message: 'Failed to update military' });
+    }
+  });
+  
+  app.post("/api/cities/:id/attack", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { fromCityId, armySize } = req.body;
+      
+      const cities = await storage.getCities();
+      const targetCity = cities.find(c => c.id === Number(id));
+      const fromCity = cities.find(c => c.id === Number(fromCityId));
+      
+      if (!targetCity || !fromCity) {
+        return res.status(404).json({ message: 'City not found' });
+      }
+      
+      // Расчет результатов атаки
+      const defenseStrength = targetCity.military || 0;
+      const attackSuccess = armySize > defenseStrength;
+      
+      let survivingAttackers = Math.max(0, armySize - defenseStrength);
+      let newOwner = targetCity.owner;
+      
+      if (attackSuccess) {
+        // Атака успешна, город захвачен
+        newOwner = fromCity.owner;
+        
+        // Обновляем целевой город
+        await storage.updateCity(Number(id), {
+          owner: newOwner,
+          military: survivingAttackers
+        });
+        
+        res.json({ success: true, captured: true });
+      } else {
+        // Атака отбита
+        const remainingDefenders = defenseStrength - armySize;
+        await storage.updateCity(Number(id), {
+          military: remainingDefenders
+        });
+        
+        res.json({ success: true, captured: false });
+      }
+    } catch (error) {
+      console.error('Error attacking city:', error);
+      res.status(500).json({ message: 'Failed to attack city' });
+    }
+  });
 
   return httpServer;
 }

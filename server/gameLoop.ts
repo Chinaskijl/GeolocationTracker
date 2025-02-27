@@ -104,10 +104,14 @@ export class GameLoop {
 
       // Проверяем нехватку еды и уменьшаем население при необходимости
       let populationChange = totalPopulationGrowth - totalPopulationUsed;
-      if (newResources.food <= totalFoodConsumption) {
-        // Недостаточно еды, уменьшаем население
-        populationChange -= deltaTime; // -1 население в секунду
-        console.log(`Not enough food! Population decreasing: -${deltaTime}`);
+      if (newResources.food <= 0) {
+        // Нет еды, уменьшаем население и запрещаем рост
+        populationChange = -deltaTime; // -1 население в секунду, игнорируем рост
+        console.log(`No food! Population decreasing: -${deltaTime}`);
+      } else if (newResources.food <= totalFoodConsumption) {
+        // Недостаточно еды, уменьшаем рост населения
+        populationChange *= 0.5; // Замедляем рост населения
+        console.log(`Not enough food! Population growth reduced`);
       }
 
       // Обновление состояния игры

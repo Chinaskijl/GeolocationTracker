@@ -1,91 +1,76 @@
-import { useEffect } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import React, { useEffect, useState } from 'react';
 import { Map } from '@/components/Map';
 import { ResourcePanel } from '@/components/ResourcePanel';
 import { CityPanel } from '@/components/CityPanel';
+import { MilitaryActionPanel } from '@/components/MilitaryActionPanel';
+import { AttackAnimation } from '@/components/AttackAnimation';
+import { useQuery } from '@tanstack/react-query';
 import { useGameStore } from '@/lib/store';
-import type { City, GameState } from '@shared/schema';
-import { BUILDINGS } from '@/lib/game';
+import { useWebSocketListener } from '@/lib/hooks';
+import { apiRequest } from '@/lib/queryClient';
+import { useQueryClient } from '@tanstack/react-query';
 
-export default function Game() {
-  const { setCities, setGameState } = useGameStore();
+export function Game() {
+  const { setGameState, setCities } = useGameStore();
+  const [attack, setAttack] = useState<{ 
+    fromCity: any; 
+    toCity: any; 
+    armySize: number; 
+    active: boolean; 
+  } | null>(null);
   const queryClient = useQueryClient();
 
-  const { data: cities } = useQuery<City[]>({
-    queryKey: ['/api/cities']
+  useWebSocketListener('GAME_UPDATE', (data) => {
+    console.log('Received game state update:', data.gameState);
+    setGameState(data.gameState);
   });
 
-  const { data: gameState } = useQuery<GameState>({
-    queryKey: ['/api/game-state']
+  useWebSocketListener('CITIES_UPDATE', (data) => {
+    console.log('Received cities update:', data.cities);
+    setCities(data.cities);
   });
 
-  useEffect(() => {
-    if (cities) {
-      console.log('Cities updated:', cities);
-      setCities(cities);
+  const handleAttack = (fromCity: any, toCity: any, armySize: number) => {
+    setAttack({ fromCity, toCity, armySize, active: true });
+  };
+
+  const handleAttackComplete = async () => {
+    if (!attack) return;
+
+    try {
+      // Выполняем атаку на сервере
+      const result = await apiRequest('POST', `/api/cities/${attack.toCity.id}/attack`, {
+        fromCityId: attack.fromCity.id,
+        armySize: attack.armySize
+      });
+
+      // Обновляем данные
+      queryClient.invalidateQueries({ queryKey: ['/api/cities'] });
+
+      // Сбрасываем анимацию
+      setAttack(null);
+    } catch (error) {
+      console.error('Attack failed:', error);
+      setAttack(null);
     }
-  }, [cities, setCities]);
-
-  useEffect(() => {
-    if (gameState) {
-      console.log('Game state updated:', gameState);
-      setGameState(gameState);
-    }
-  }, [gameState, setGameState]);
-
-  useEffect(() => {
-    // Делаем BUILDINGS доступными глобально
-    window.BUILDINGS = BUILDINGS;
-
-    // Инициализация WebSocket соединения
-    const ws = new WebSocket(`${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws`);
-
-    ws.onopen = () => {
-      console.log('WebSocket connected');
-    };
-
-    ws.onmessage = (event) => {
-      try {
-        const message = JSON.parse(event.data);
-
-        if (message.type === 'GAME_UPDATE' && message.gameState) {
-          console.log('Received game state update:', message.gameState);
-          setGameState(message.gameState);
-        }
-
-        if (message.type === 'CITIES_UPDATE' && message.cities) {
-          console.log('Received cities update:', message.cities);
-          setCities(message.cities);
-        }
-
-        if (message.type === 'CITY_UPDATE') {
-          queryClient.invalidateQueries({ queryKey: ['/api/cities'] });
-        }
-      } catch (error) {
-        console.error('Failed to parse WebSocket message:', error);
-      }
-    };
-
-    ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
-    };
-
-    ws.onclose = () => {
-      console.log('WebSocket disconnected');
-    };
-
-    return () => {
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.close();
-      }
-    };
-  }, [queryClient]);
+  };
 
   return (
-    <div className="relative">
-      <Map />
+    <div className="h-screen w-screen relative">
       <ResourcePanel />
+      <Map />
       <CityPanel />
+
+      <MilitaryActionPanel onAttack={handleAttack} />
+
+      {attack?.active && (
+        <AttackAnimation 
+          fromCity={attack.fromCity}
+          toCity={attack.toCity}
+          armySize={attack.armySize}
+          onComplete={handleAttackComplete}
+        />
+      )}
     </div>
   );
 }

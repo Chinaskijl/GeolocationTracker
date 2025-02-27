@@ -10,6 +10,7 @@ export interface IStorage {
 export class MemStorage implements IStorage {
   private cities: Map<number, City>;
   private gameState: GameState;
+  private initialized = false; // Added to track initialization
 
   constructor() {
     this.cities = new Map();
@@ -24,7 +25,7 @@ export class MemStorage implements IStorage {
       military: 0
     };
 
-    // Initialize with Russian cities
+    // Initialize with Russian cities (unchanged)
     this.cities.set(1, {
       id: 1,
       name: "Москва",
@@ -110,7 +111,7 @@ export class MemStorage implements IStorage {
       buildings: []
     });
 
-    // Добавляем новые города
+    // Добавляем новые города (unchanged)
     this.cities.set(5, {
       id: 5,
       name: "Казань",
@@ -199,7 +200,7 @@ export class MemStorage implements IStorage {
       buildings: []
     });
 
-    // Создаем вражеский город (столицу ИИ)
+    // Создаем вражеский город (столицу ИИ) (unchanged)
     this.cities.set(9, {
       id: 9,
       name: "Киев",
@@ -251,7 +252,9 @@ export class MemStorage implements IStorage {
       ],
       military: 50
     });
+    this.initialized = true; // Set initialized flag after successful initialization
   }
+
 
   async getCities(): Promise<City[]> {
     return Array.from(this.cities.values());

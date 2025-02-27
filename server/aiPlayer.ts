@@ -74,13 +74,47 @@ export class AIPlayer {
         }
       }
       
-      // Добавляем ресурсы от зданий
+      // Добавляем ресурсы от зданий (умножаем на 10, как и в gameLoop для игрока)
       for (const buildingId of city.buildings) {
         const building = BUILDINGS.find(b => b.id === buildingId);
         if (building?.resourceProduction) {
           const { type, amount } = building.resourceProduction;
-          this.resources[type] += amount;
+          this.resources[type] += amount * 10; // Увеличиваем в 10 раз для баланса
         }
+      }
+    }
+    
+    // Применяем ежесекундные производства (имитация gameLoop для ИИ)
+    for (const city of cities) {
+      // Рост населения
+      let populationGrowth = 0;
+      let militaryGrowth = 0;
+      
+      for (const buildingId of city.buildings) {
+        const building = BUILDINGS.find(b => b.id === buildingId);
+        
+        // Рост населения
+        if (building?.population?.growth) {
+          populationGrowth += building.population.growth;
+        }
+        
+        // Производство военных
+        if (building?.military?.production) {
+          militaryGrowth += building.military.production;
+        }
+      }
+      
+      // Обновляем город с ростом населения и военных
+      if (populationGrowth > 0 || militaryGrowth > 0) {
+        const newPopulation = Math.min(
+          city.maxPopulation,
+          Math.max(0, (city.population || 0) + populationGrowth)
+        );
+        
+        storage.updateCity(city.id, {
+          population: Math.floor(newPopulation),
+          military: Math.floor((city.military || 0) + militaryGrowth)
+        });
       }
     }
   }
@@ -138,14 +172,38 @@ export class AIPlayer {
   }
   
   private async considerCapturingCity(neutralCities: any[]) {
-    // Сортируем города по близости к нашим ресурсам
-    const targetCity = neutralCities[0]; // Просто берем первый для простоты
+    if (neutralCities.length === 0) return;
     
-    if (targetCity && this.military >= targetCity.maxPopulation / 4) {
-      console.log(`[AI] Attempting to capture ${targetCity.name}`);
+    // Выбираем случайный нейтральный город
+    const randomIndex = Math.floor(Math.random() * neutralCities.length);
+    const targetCity = neutralCities[randomIndex];
+    
+    // Находим город ИИ с наибольшим количеством военных
+    const cities = await storage.getCities();
+    const enemyCities = cities.filter(city => city.owner === 'enemy');
+    
+    if (enemyCities.length === 0) return;
+    
+    const attackingCity = enemyCities.reduce((strongest, city) => 
+      (city.military || 0) > (strongest.military || 0) ? city : strongest
+    , enemyCities[0]);
+    
+    const requiredForces = Math.ceil(targetCity.maxPopulation / 4);
+    
+    if (attackingCity && (attackingCity.military || 0) >= requiredForces) {
+      console.log(`[AI] Attempting to capture ${targetCity.name} from ${attackingCity.name}`);
       try {
-        await storage.updateCity(targetCity.id, { owner: 'enemy' });
-        this.military -= Math.ceil(targetCity.maxPopulation / 4); // Уменьшаем нашу армию
+        // Уменьшаем военных в атакующем городе
+        await storage.updateCity(attackingCity.id, {
+          military: Math.max(0, (attackingCity.military || 0) - requiredForces)
+        });
+        
+        // Захватываем нейтральный город и добавляем часть военных
+        await storage.updateCity(targetCity.id, { 
+          owner: 'enemy',
+          military: Math.floor(requiredForces * 0.7)
+        });
+        
         console.log(`[AI] Successfully captured ${targetCity.name}`);
       } catch (error) {
         console.error(`[AI] Failed to capture city:`, error);
@@ -154,43 +212,50 @@ export class AIPlayer {
   }
   
   private async considerAttackingPlayer(playerCities: any[], enemyCities: any[]) {
-    // Находим ближайший город игрока
-    const targetCity = playerCities[0]; // Упрощенно берем первый город
+    if (enemyCities.length === 0 || playerCities.length === 0) return;
     
-    if (!targetCity) return;
+    // Находим город с наибольшим количеством военных
+    const attackingCity = enemyCities.reduce((strongest, city) => 
+      (city.military || 0) > (strongest.military || 0) ? city : strongest
+    , enemyCities[0]);
+    
+    // Находим самый слабый город игрока
+    const targetCity = playerCities.reduce((weakest, city) => 
+      (city.military || 0) < (weakest.military || 0) ? city : weakest
+    , playerCities[0]);
+    
+    if (!targetCity || !attackingCity) return;
+    
+    const armySize = attackingCity.military || 0;
+    const defenseStrength = targetCity.military || 0;
     
     // Если у нас достаточно военных, атакуем
-    if (this.military > targetCity.maxPopulation / 3) {
-      const attackStrength = Math.floor(this.military * 0.7); // Используем 70% наших сил
+    if (armySize > defenseStrength * 1.2) { // Атакуем только если у нас преимущество минимум 20%
+      const attackStrength = Math.floor(armySize * 0.8); // Используем 80% сил города
       
-      console.log(`[AI] Attacking player's city ${targetCity.name} with ${attackStrength} military`);
+      console.log(`[AI] Attacking player's city ${targetCity.name} from ${attackingCity.name} with ${attackStrength} military`);
       
-      // Здесь можно реализовать логику атаки
-      // Пока просто уменьшаем военную силу противника
       try {
-        const updatedCity = { ...targetCity };
-        updatedCity.military = Math.max(0, (updatedCity.military || 0) - attackStrength);
+        // Уменьшаем военных в атакующем городе
+        await storage.updateCity(attackingCity.id, {
+          military: Math.max(0, armySize - attackStrength)
+        });
         
-        if (updatedCity.military <= 0) {
+        // Определяем результат атаки
+        if (attackStrength > defenseStrength) {
           // Захватываем город
-          updatedCity.owner = "enemy";
+          const survivingAttackers = attackStrength - defenseStrength;
+          await storage.updateCity(targetCity.id, { 
+            owner: "enemy",
+            military: survivingAttackers
+          });
           console.log(`[AI] Captured player's city ${targetCity.name}`);
         } else {
-          console.log(`[AI] Damaged player's forces in ${targetCity.name}`);
-        }
-        
-        await storage.updateCity(targetCity.id, updatedCity);
-        
-        // Уменьшаем наши силы
-        for (const city of enemyCities) {
-          if (city.military) {
-            const usedForces = Math.min(city.military, attackStrength);
-            await storage.updateCity(city.id, { 
-              military: city.military - usedForces 
-            });
-            attackStrength -= usedForces;
-            if (attackStrength <= 0) break;
-          }
+          // Атака отбита
+          await storage.updateCity(targetCity.id, { 
+            military: defenseStrength - attackStrength
+          });
+          console.log(`[AI] Attack on ${targetCity.name} was repelled`);
         }
       } catch (error) {
         console.error(`[AI] Failed to attack player:`, error);
