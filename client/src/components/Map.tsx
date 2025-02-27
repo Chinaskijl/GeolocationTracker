@@ -55,7 +55,7 @@ export function Map() {
       const polygon = L.polygon(city.boundaries, {
         color,
         fillColor: color,
-        fillOpacity: 0.2,
+        fillOpacity: 0.4,
         weight: 2
       }).addTo(mapRef.current!);
       polygonsRef.current.push(polygon);
@@ -77,8 +77,8 @@ export function Map() {
       const cityMarker = L.divIcon({
         className: 'custom-div-icon',
         html: cityInfo,
-        iconSize: [200, null], // Width fixed, height auto
-        iconAnchor: [100, 0] // Center horizontally, align top
+        iconSize: [200, 80],
+        iconAnchor: [100, 40]
       });
 
       const marker = L.marker([city.latitude, city.longitude], {

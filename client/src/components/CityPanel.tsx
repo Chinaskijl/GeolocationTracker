@@ -51,39 +51,103 @@ export function CityPanel() {
 
         <div className="space-y-2">
           <div className="flex justify-between">
-            <span>Population</span>
+            <span>Население</span>
             <span>{selectedCity.population} / {selectedCity.maxPopulation}</span>
           </div>
           <Progress value={(selectedCity.population / selectedCity.maxPopulation) * 100} />
         </div>
 
+        <div className="space-y-2">
+          <h3 className="font-medium">Ресурсы города:</h3>
+          {Object.entries(selectedCity.resources).map(([resource, amount]) => (
+            <div key={resource} className="flex items-center justify-between">
+              <span>{getResourceIcon(resource)} {resource}</span>
+              <span>+{amount}</span>
+            </div>
+          ))}
+        </div>
+
         {selectedCity.owner === 'neutral' && (
-          <Button 
-            onClick={handleCapture}
-            disabled={gameState.military < selectedCity.population / 4}
-          >
-            Capture City
-          </Button>
+          <div className="space-y-2">
+            <Button 
+              onClick={handleCapture}
+              disabled={gameState.military < selectedCity.population / 4}
+              className="w-full"
+            >
+              {selectedCity.buildings.length === 0 ? 'Выбрать столицей' : 'Захватить город'}
+            </Button>
+            {gameState.military < selectedCity.population / 4 && (
+              <p className="text-sm text-red-500">
+                Требуется {Math.ceil(selectedCity.population / 4)} военных
+              </p>
+            )}
+          </div>
         )}
 
         {selectedCity.owner === 'player' && (
           <div className="space-y-2">
-            <h3 className="font-medium">Build</h3>
-            <div className="grid grid-cols-2 gap-2">
+            <h3 className="font-medium">Строительство</h3>
+            <div className="grid grid-cols-1 gap-2">
               {BUILDINGS.map(building => (
                 <Button
                   key={building.id}
                   variant="outline"
                   onClick={() => handleBuild(building.id)}
-                  className="w-full"
+                  className="w-full flex justify-between items-center"
+                  disabled={!canAffordBuilding(gameState, building)}
                 >
-                  {building.name}
+                  <span>{building.name}</span>
+                  <span className="text-sm">
+                    {Object.entries(building.cost).map(([resource, amount]) => (
+                      <span key={resource} className="ml-2">
+                        {getResourceIcon(resource)} {amount}
+                      </span>
+                    ))}
+                  </span>
                 </Button>
               ))}
             </div>
           </div>
         )}
+
+        {selectedCity.buildings.length > 0 && (
+          <div className="space-y-2">
+            <h3 className="font-medium">Постройки</h3>
+            <div className="space-y-1">
+              {selectedCity.buildings.map(buildingId => {
+                const building = BUILDINGS.find(b => b.id === buildingId);
+                if (!building) return null;
+                return (
+                  <div key={buildingId} className="flex justify-between items-center">
+                    <span>{building.name}</span>
+                    {building.resourceProduction && (
+                      <span>
+                        {getResourceIcon(building.resourceProduction.type)} +{building.resourceProduction.amount}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
     </Card>
+  );
+}
+
+function getResourceIcon(resource: string): string {
+  switch (resource) {
+    case 'gold': return '💰';
+    case 'wood': return '🌲';
+    case 'food': return '🌾';
+    case 'oil': return '🛢️';
+    default: return '📦';
+  }
+}
+
+function canAffordBuilding(gameState: any, building: any): boolean {
+  return Object.entries(building.cost).every(
+    ([resource, amount]) => gameState.resources[resource as keyof typeof gameState.resources] >= amount
   );
 }
