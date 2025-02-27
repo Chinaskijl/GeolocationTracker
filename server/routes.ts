@@ -94,10 +94,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/cities", async (_req, res) => {
     try {
       const cities = await storage.getCities();
+      // Отправляем все города, включая нейтральные
       res.json(cities);
     } catch (error) {
       console.error('Error fetching cities:', error);
-      res.status(500).json({ message: 'Failed to fetch cities' });
+      res.status(500).json({ error: 'Failed to fetch cities' });
     }
   });
 

@@ -83,7 +83,7 @@ export class GameLoop {
           // Обновление населения города
           // Если еды 0, то население уменьшается
           let newPopulation = 0;
-          if (newResources.food <= 0) {
+          if (gameState.resources.food <= 0) {
             // При нехватке еды население уменьшается
             newPopulation = Math.max(0, city.population - 1 * deltaTime);
           } else {

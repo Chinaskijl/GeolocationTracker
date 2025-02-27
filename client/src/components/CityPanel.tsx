@@ -166,6 +166,9 @@ export function CityPanel() {
                 {BUILDINGS.map(building => {
                   const buildingCount = selectedCity.buildings.filter(b => b === building.id).length;
                   const atLimit = building.maxCount > 0 && buildingCount >= building.maxCount;
+                  
+                  // Обновляем счетчик при каждом рендере
+                  console.log(`Building ${building.id}: ${buildingCount}/${building.maxCount}`);
 
                   return (
                     <Button
