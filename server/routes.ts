@@ -5,7 +5,277 @@ import { WebSocket, WebSocketServer } from "ws";
 import { gameLoop } from "./gameLoop";
 import { BUILDINGS } from "../client/src/lib/game";
 import { market } from "./market";
-import { updateAllCityBoundaries, updateCityBoundary } from "./osmService";
+import { Router } from 'express';
+
+export const router = Router();
+
+// Получение состояния игры
+router.get('/api/gameState', async (req, res) => {
+  try {
+    const gameState = await storage.getGameState();
+    res.json(gameState);
+  } catch (error) {
+    console.error('Error getting game state:', error);
+    res.status(500).json({ message: 'Error getting game state' });
+  }
+});
+
+// Получение городов
+router.get('/api/cities', async (req, res) => {
+  try {
+    const cities = await storage.getCities();
+    res.json(cities);
+  } catch (error) {
+    console.error('Error getting cities:', error);
+    res.status(500).json({ message: 'Error getting cities' });
+  }
+});
+
+// Захват города
+router.post('/api/cities/:cityId/capture', async (req, res) => {
+  try {
+    const cityId = parseInt(req.params.cityId, 10);
+
+    // Получаем текущее состояние игры и городов
+    const gameState = await storage.getGameState();
+    const cities = await storage.getCities();
+
+    // Проверяем, есть ли уже город-столица
+    const hasCapital = cities.some(city => city.owner === 'player');
+
+    const city = cities.find(c => c.id === cityId);
+    if (!city) {
+      return res.status(404).json({ message: 'City not found' });
+    }
+
+    // Проверяем, что город не захвачен
+    if (city.owner !== 'neutral') {
+      return res.status(400).json({ message: 'City already captured' });
+    }
+
+    // Если это первый город (столица), то просто захватываем его
+    if (!hasCapital) {
+      // Обновляем город
+      city.owner = 'player';
+      await storage.updateCity(cityId, { owner: 'player' });
+
+      // Обновляем состояние игры (широковещательная рассылка)
+      gameLoop.broadcastGameState();
+
+      return res.json({ success: true });
+    }
+
+    // Если это не первый город, проверяем наличие достаточного количества военных
+    if (gameState.military < city.maxPopulation / 4) {
+      return res.status(400).json({ 
+        message: 'Not enough military to capture city',
+        required: Math.ceil(city.maxPopulation / 4)
+      });
+    }
+
+    // Вычитаем военных
+    const militaryUsed = Math.ceil(city.maxPopulation / 4);
+    gameState.military -= militaryUsed;
+
+    // Обновляем город
+    city.owner = 'player';
+
+    // Сохраняем изменения
+    await storage.updateCity(cityId, { owner: 'player' });
+    await storage.updateGameState({ military: gameState.military });
+
+    // Обновляем состояние игры (широковещательная рассылка)
+    gameLoop.broadcastGameState();
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error capturing city:', error);
+    res.status(500).json({ message: 'Error capturing city' });
+  }
+});
+
+// Строительство здания
+router.post('/api/cities/:cityId/build', async (req, res) => {
+  try {
+    const { buildingId } = req.body;
+    const cityId = parseInt(req.params.cityId, 10);
+
+    // Получаем данные о здании из конфигурации игры
+    const building = gameLoop.getBuildingInfo(buildingId);
+    if (!building) {
+      return res.status(404).json({ message: 'Building not found' });
+    }
+
+    // Получаем текущее состояние игры и город
+    const gameState = await storage.getGameState();
+    const city = await storage.getCity(cityId);
+
+    if (!city) {
+      return res.status(404).json({ message: 'City not found' });
+    }
+
+    // Проверяем, что город принадлежит игроку
+    if (city.owner !== 'player') {
+      return res.status(400).json({ message: 'Cannot build in neutral city' });
+    }
+
+    // Проверяем, есть ли уже такое здание
+    if (city.buildings.includes(buildingId)) {
+      return res.status(400).json({ message: 'Building already exists in city' });
+    }
+
+    // Проверяем ресурсы
+    for (const [resource, amount] of Object.entries(building.cost)) {
+      if ((gameState.resources as any)[resource] < amount) {
+        return res.status(400).json({ 
+          message: `Not enough ${resource}`, 
+          required: amount, 
+          available: (gameState.resources as any)[resource]
+        });
+      }
+    }
+
+    // Вычитаем ресурсы
+    for (const [resource, amount] of Object.entries(building.cost)) {
+      (gameState.resources as any)[resource] -= amount;
+    }
+
+    // Добавляем здание в город
+    city.buildings.push(buildingId);
+
+    // Сохраняем изменения
+    await storage.updateGameState({ resources: gameState.resources });
+    await storage.updateCity(cityId, { buildings: city.buildings });
+
+    // Обновляем состояние игры (широковещательная рассылка)
+    gameLoop.broadcastGameState();
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error building:', error);
+    res.status(500).json({ message: 'Error building' });
+  }
+});
+
+// Перемещение военных между городами
+router.post('/api/cities/:cityId/transferMilitary', async (req, res) => {
+  try {
+    const { targetCityId } = req.body;
+    const sourceId = parseInt(req.params.cityId, 10);
+    const targetId = parseInt(targetCityId, 10);
+
+    // Получаем города
+    const sourceCity = await storage.getCity(sourceId);
+    const targetCity = await storage.getCity(targetId);
+
+    if (!sourceCity || !targetCity) {
+      return res.status(404).json({ message: 'City not found' });
+    }
+
+    // Проверяем, что оба города принадлежат игроку
+    if (sourceCity.owner !== 'player' || targetCity.owner !== 'player') {
+      return res.status(400).json({ message: 'Both cities must be player owned' });
+    }
+
+    // Проверяем, что в исходном городе есть военные
+    if (!sourceCity.military) {
+      return res.status(400).json({ message: 'No military in source city' });
+    }
+
+    // Перемещаем всех военных
+    const militaryToTransfer = sourceCity.military;
+    sourceCity.military = 0;
+    targetCity.military = (targetCity.military || 0) + militaryToTransfer;
+
+    // Сохраняем изменения
+    await storage.updateCity(sourceId, { military: sourceCity.military });
+    await storage.updateCity(targetId, { military: targetCity.military });
+
+    // Обновляем состояние игры (широковещательная рассылка)
+    gameLoop.broadcastGameState();
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error transferring military:', error);
+    res.status(500).json({ message: 'Error transferring military' });
+  }
+});
+
+// Получение списка товаров на рынке
+router.get('/api/market/listings', async (req, res) => {
+  try {
+    const listings = await market.getListings();
+    res.json(listings);
+  } catch (error) {
+    console.error('Error getting market listings:', error);
+    res.status(500).json({ message: 'Error getting market listings' });
+  }
+});
+
+// Покупка товара на рынке
+router.post('/api/market/purchase', async (req, res) => {
+  try {
+    const { listingId } = req.body;
+
+    const result = await market.purchaseListing(listingId);
+
+    if (result) {
+      // Получаем обновленное состояние игры
+      const gameState = await storage.getGameState();
+
+      // Обновляем игровое состояние у всех клиентов
+      gameLoop.broadcastGameState();
+
+      res.json({ success: true, gameState });
+    } else {
+      res.status(400).json({ message: 'Failed to purchase listing' });
+    }
+  } catch (error) {
+    console.error('Error purchasing listing:', error);
+    res.status(500).json({ message: 'Error purchasing listing' });
+  }
+});
+
+// Создание товара на рынке
+router.post('/api/market/create', async (req, res) => {
+  try {
+    const { offer, price } = req.body;
+
+    // Получаем текущее состояние игры
+    const gameState = await storage.getGameState();
+
+    // Проверяем, есть ли у игрока достаточно ресурсов
+    for (const [resource, amount] of Object.entries(offer)) {
+      if ((gameState.resources as any)[resource] < amount) {
+        return res.status(400).json({ 
+          message: `Not enough ${resource}`, 
+          required: amount, 
+          available: (gameState.resources as any)[resource]
+        });
+      }
+    }
+
+    // Вычитаем ресурсы
+    for (const [resource, amount] of Object.entries(offer)) {
+      (gameState.resources as any)[resource] -= amount;
+    }
+
+    // Создаем товар на рынке
+    await market.createListing(offer, price);
+
+    // Сохраняем изменения
+    await storage.updateGameState({ resources: gameState.resources });
+
+    // Обновляем состояние игры у всех клиентов
+    gameLoop.broadcastGameState();
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error creating listing:', error);
+    res.status(500).json({ message: 'Error creating listing' });
+  }
+});
+
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
@@ -32,428 +302,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Запуск игрового цикла
   gameLoop.start();
 
-  app.post("/api/cities/:id/build", async (req, res) => {
-    try {
-      const { id } = req.params;
-      const { buildingId } = req.body;
-
-      const city = await storage.getCities().then(cities => 
-        cities.find(c => c.id === Number(id))
-      );
-
-      if (!city) {
-        return res.status(404).json({ message: 'City not found' });
-      }
-
-      const building = BUILDINGS.find(b => b.id === buildingId);
-      if (!building) {
-        return res.status(404).json({ message: 'Building not found' });
-      }
-
-      // Проверка лимита зданий
-      const existingBuildingCount = city.buildings.filter(b => b === buildingId).length;
-      if (existingBuildingCount >= building.maxCount) {
-        return res.status(400).json({ message: 'Building limit reached' });
-      }
-
-      // Получение текущего состояния игры
-      const gameState = await storage.getGameState();
-
-      // Проверка ресурсов
-      const canAfford = Object.entries(building.cost).every(
-        ([resource, amount]) => 
-          gameState.resources[resource as keyof typeof gameState.resources] >= amount
-      );
-
-      if (!canAfford) {
-        return res.status(400).json({ message: 'Insufficient resources' });
-      }
-
-      // Списание ресурсов
-      const newResources = { ...gameState.resources };
-      Object.entries(building.cost).forEach(([resource, amount]) => {
-        newResources[resource as keyof typeof newResources] -= amount;
-      });
-
-      // Обновление состояния игры
-      await storage.setGameState({
-        ...gameState,
-        resources: newResources
-      });
-
-      // Обновление города
-      const updatedCity = await storage.updateCity(Number(id), {
-        buildings: [...city.buildings, buildingId]
-      });
-
-      // Немедленная отправка обновленных данных через WebSocket
-      gameLoop.broadcastGameState();
-
-      res.json(updatedCity);
-    } catch (error) {
-      console.error('Error building:', error);
-      res.status(500).json({ message: 'Failed to build' });
-    }
-  });
-
-  app.get("/api/cities", async (_req, res) => {
-    try {
-      const cities = await storage.getCities();
-      res.json(cities);
-    } catch (error) {
-      console.error('Error fetching cities:', error);
-      res.status(500).json({ message: 'Failed to fetch cities' });
-    }
-  });
-
-  app.post("/api/cities/:id/capture", async (req, res) => {
-    try {
-      const { id } = req.params;
-      const { owner } = req.body;
-
-      const city = await storage.updateCity(Number(id), { owner });
-
-      res.json(city);
-    } catch (error) {
-      console.error('Error capturing city:', error);
-      res.status(500).json({ message: 'Failed to capture city' });
-    }
-  });
-
-  // Новый эндпоинт для отправки армии между городами
-  app.post("/api/military/transfer", async (req, res) => {
-    try {
-      const { fromCityId, toCityId, amount } = req.body;
-
-      // Получаем города
-      const cities = await storage.getCities();
-      const fromCity = cities.find(c => c.id === Number(fromCityId));
-      const toCity = cities.find(c => c.id === Number(toCityId));
-
-      if (!fromCity || !toCity) {
-        return res.status(404).json({ message: 'City not found' });
-      }
-
-      // Проверяем наличие необходимого количества военных
-      if (!fromCity.military || fromCity.military < amount) {
-        return res.status(400).json({ message: 'Insufficient military units' });
-      }
-
-      // Уменьшаем количество военных в исходном городе
-      await storage.updateCity(Number(fromCityId), {
-        military: fromCity.military - amount
-      });
-
-      // Рассчитываем время перемещения
-      const travelTime = calculateTravelTime(fromCity, toCity);
-
-      // Создаем передвижение армии
-      const armyTransfer = {
-        id: Date.now(),
-        fromCity: fromCity,
-        toCity: toCity,
-        amount: amount,
-        startTime: Date.now(),
-        arrivalTime: Date.now() + travelTime,
-        owner: fromCity.owner
-      };
-
-      // Сохраняем информацию о перемещении армии в хранилище
-      await storage.addArmyTransfer(armyTransfer);
-
-      // Уведомляем всех клиентов о начале перемещения армии
-      const militaryTransferData = {
-        type: 'MILITARY_TRANSFER_START',
-        id: armyTransfer.id,
-        fromCity: { 
-          id: fromCity.id, 
-          name: fromCity.name, 
-          latitude: fromCity.latitude, 
-          longitude: fromCity.longitude 
-        },
-        toCity: { 
-          id: toCity.id, 
-          name: toCity.name, 
-          latitude: toCity.latitude, 
-          longitude: toCity.longitude 
-        },
-        amount,
-        duration: travelTime,
-        startTime: Date.now()
-      };
-
-      // Отправляем через WebSocket
-      for (const client of wss.clients) {
-        if (client.readyState === WebSocket.OPEN) {
-          client.send(JSON.stringify(militaryTransferData));
-        }
-      }
-
-      // Запускаем таймер для обработки прибытия армии
-      setTimeout(async () => {
-        try {
-          // Получаем актуальное состояние целевого города
-          const updatedCities = await storage.getCities();
-          const currentToCity = updatedCities.find(c => c.id === Number(toCityId));
-
-          if (!currentToCity) return;
-
-          // Обновляем целевой город
-          if (currentToCity.owner === fromCity.owner) {
-            // Если город принадлежит тому же игроку, просто добавляем военных
-            await storage.updateCity(Number(toCityId), {
-              military: (currentToCity.military || 0) + amount
-            });
-          } else {
-            // Если город не принадлежит игроку, происходит атака
-            const defenseStrength = currentToCity.military || 0;
-
-            if (amount > defenseStrength) {
-              // Атака успешна, захватываем город
-              await storage.updateCity(Number(toCityId), {
-                owner: fromCity.owner,
-                military: amount - defenseStrength,
-                // Если захватываем нейтральный город, сбрасываем его население
-                population: currentToCity.owner === 'neutral' ? 0 : currentToCity.population
-              });
-            } else {
-              // Атака отбита, уменьшаем количество защитников
-              await storage.updateCity(Number(toCityId), {
-                military: defenseStrength - amount
-              });
-            }
-          }
-
-          // Удаляем перемещение из хранилища
-          await storage.removeArmyTransfer(armyTransfer.id);
-
-          // Уведомляем клиентов о завершении перемещения
-          const transferCompleteData = {
-            type: 'MILITARY_TRANSFER_COMPLETE',
-            id: armyTransfer.id,
-            toCity: toCityId,
-            result: currentToCity.owner === fromCity.owner ? 'reinforced' : (amount > defenseStrength ? 'captured' : 'failed')
-          };
-
-          for (const client of wss.clients) {
-            if (client.readyState === WebSocket.OPEN) {
-              client.send(JSON.stringify(transferCompleteData));
-            }
-          }
-
-          // Обновляем игровое состояние у всех клиентов
-          gameLoop.broadcastGameState();
-
-        } catch (error) {
-          console.error('Error processing military arrival:', error);
-        }
-      }, travelTime);
-
-      res.json({ success: true, travelTime });
-
-    } catch (error) {
-      console.error('Error transferring military:', error);
-      res.status(500).json({ message: 'Failed to transfer military' });
-    }
-  });
-
-  app.get("/api/game-state", async (_req, res) => {
-    try {
-      const state = await storage.getGameState();
-      res.json(state);
-    } catch (error) {
-      console.error('Error fetching game state:', error);
-      res.status(500).json({ message: 'Failed to fetch game state' });
-    }
-  });
-
-  app.post("/api/game-state", async (req, res) => {
-    try {
-      await storage.setGameState(req.body);
-      res.json({ success: true });
-    } catch (error) {
-      console.error('Error updating game state:', error);
-      res.status(500).json({ message: 'Failed to update game state' });
-    }
-  });
-
-  // API эндпоинты для рыночной системы
-
-  // Получение списка лотов
-  app.get("/api/market/listings", (_req, res) => {
-    try {
-      const listings = market.getListings();
-      res.json(listings);
-    } catch (error) {
-      console.error('Ошибка при получении списка лотов:', error);
-      res.status(500).json({ message: 'Failed to get listings' });
-    }
-  });
-
-  // Получение истории цен
-  app.get("/api/market/prices/:resourceType", (req, res) => {
-    try {
-      const { resourceType } = req.params;
-      const days = req.query.days ? Number(req.query.days) : undefined;
-
-      const prices = market.getPriceHistory(resourceType as any, days);
-      res.json(prices);
-    } catch (error) {
-      console.error('Ошибка при получении истории цен:', error);
-      res.status(500).json({ message: 'Failed to get price history' });
-    }
-  });
-
-  // Получение истории транзакций
-  app.get("/api/market/transactions", (req, res) => {
-    try {
-      const limit = req.query.limit ? Number(req.query.limit) : undefined;
-      const transactions = market.getTransactions();
-
-      // Если указан лимит, возвращаем только последние N транзакций
-      const result = limit ? transactions.slice(-limit) : transactions;
-      res.json(result);
-    } catch (error) {
-      console.error('Ошибка при получении истории транзакций:', error);
-      res.status(500).json({ message: 'Failed to get transactions' });
-    }
-  });
-
-  // Создание нового лота
-  app.post("/api/market/create-listing", async (req, res) => {
-    try {
-      const { resourceType, amount, pricePerUnit, type } = req.body;
-
-      const result = await market.createPlayerListing({
-        resourceType,
-        amount: Number(amount),
-        pricePerUnit: Number(pricePerUnit),
-        type
-      });
-
-      if (result) {
-        // Обновляем игровое состояние у всех клиентов
-        gameLoop.broadcastGameState();
-        res.json({ success: true });
-      } else {
-        res.status(400).json({ message: 'Failed to create listing' });
-      }
-    } catch (error) {
-      console.error('Ошибка при создании лота:', error);
-      res.status(500).json({ message: 'Failed to create listing' });
-    }
-  });
-
-  // Покупка или продажа лота
-  app.post("/api/market/purchase", async (req, res) => {
-    try {
-      const { listingId } = req.body;
-
-      const result = await market.buyListing(Number(listingId), 'player');
-
-      if (result) {
-        // Обновляем игровое состояние у всех клиентов
-        gameLoop.broadcastGameState();
-
-        // Обеспечиваем обновление состояния игры у клиента, который совершил покупку
-        const gameState = await storage.getGameState();
-
-        res.json({ success: true, gameState });
-      } else {
-        res.status(400).json({ message: 'Failed to buy listing' });
-      }
-    } catch (error) {
-      console.error('Ошибка при покупке лота:', error);
-      res.status(500).json({ message: 'Failed to buy listing' });
-    }
-  });
-
-  // Отмена лота
-  app.post("/api/market/cancel", async (req, res) => {
-    try {
-      const { listingId } = req.body;
-
-      const result = await market.cancelListing(Number(listingId));
-
-      if (result) {
-        // Обновляем игровое состояние у всех клиентов
-        gameLoop.broadcastGameState();
-        res.json({ success: true });
-      } else {
-        res.status(400).json({ message: 'Failed to cancel listing' });
-      }
-    } catch (error) {
-      console.error('Ошибка при отмене лота:', error);
-      res.status(500).json({ message: 'Failed to cancel listing' });
-    }
-  });
-
-  // Обработка покупки лота (новый эндпоинт)
-  app.post("/api/market/purchase-listing", async (req, res) => {
-    try {
-      const { listingId } = req.body;
-
-      const result = await market.purchaseListing(listingId);
-
-      if (result) {
-        // Получаем обновленное состояние игры
-        const gameState = await storage.getGameState();
-
-        // Обновляем игровое состояние у всех клиентов
-        gameLoop.broadcastGameState();
-
-        res.json({ success: true, gameState });
-      } else {
-        res.status(400).json({ message: 'Failed to purchase listing' });
-      }
-    } catch (error) {
-      console.error('Ошибка при покупке/продаже лота:', error);
-      res.status(500).json({ message: 'Failed to purchase listing' });
-    }
-  });
-
-  // Получение истории транзакций
-  app.get("/api/market/transactions", (_req, res) => {
-    try {
-      const transactions = market.getTransactions();
-      res.json(transactions);
-    } catch (error) {
-      console.error('Ошибка при получении истории транзакций:', error);
-      res.status(500).json({ message: 'Failed to get transactions' });
-    }
-  });
-
-  // Получение истории цен
-  app.get("/api/market/price-history/:resource", (req, res) => {
-    try {
-      const { resource } = req.params;
-      const { days } = req.query;
-
-      const priceHistory = market.getPriceHistory(
-        resource as any, 
-        days ? Number(days) : undefined
-      );
-
-      res.json(priceHistory);
-    } catch (error) {
-      console.error('Ошибка при получении истории цен:', error);
-      res.status(500).json({ message: 'Failed to get price history' });
-    }
-  });
-
-  // Эндпоинт для обновления границ всех городов
-  app.post("/api/cities/update-boundaries", async (_req, res) => {
-    try {
-      await updateAllCityBoundaries();
-      const cities = await storage.getCities();
-      res.json(cities);
-    } catch (error) {
-      console.error('Ошибка при обновлении границ городов:', error);
-      res.status(500).json({ message: 'Failed to update city boundaries' });
-    }
-  });
-
-  // Маршрут для обновления границ города удален, границы инициализируются автоматически
+  app.use(router);
 
   return httpServer;
 }

@@ -1,4 +1,3 @@
-
 /**
  * Сервис для работы с данными OpenStreetMap
  */
@@ -48,7 +47,7 @@ export async function fetchCityBoundaries(cityName: string): Promise<number[][]>
       console.log(`Loaded boundaries for ${cityName} from cache (${boundariesFromCache.length} points)`);
       return boundariesFromCache;
     }
-    
+
     // Формируем запрос для получения границ города с геометрией
     const query = `
       [out:json];
@@ -59,35 +58,35 @@ export async function fetchCityBoundaries(cityName: string): Promise<number[][]>
       );
       out geom;
     `;
-    
+
     // URL для Overpass API
     const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
-    
+
     console.log(`Fetching boundaries for ${cityName}...`);
-    
+
     // Отправляем запрос
     const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`Error fetching data: ${response.statusText}`);
     }
-    
+
     // Преобразуем ответ в JSON
     const data = await response.json() as OverpassResponse;
-    
+
     if (!data.elements || data.elements.length === 0) {
       console.warn(`No boundary data found for ${cityName}`);
       return [];
     }
-    
+
     // Обрабатываем данные для получения координат границ
     const boundaries = extractBoundaryCoordinates(data);
-    
+
     // Сохраняем границы в файл для кеширования
     if (boundaries.length > 0) {
       console.log(`Saving boundaries for ${cityName} (${boundaries.length} points)`);
       await saveCityBoundariesToFile(cityName, boundaries);
     }
-    
+
     return boundaries;
   } catch (error) {
     console.error(`Error fetching boundaries for ${cityName}:`, error);
@@ -108,43 +107,53 @@ function extractBoundaryCoordinates(data: OverpassResponse): number[][] {
     ((el.tags.boundary === 'administrative' && el.tags.admin_level) ||
      (el.tags.place === 'city'))
   );
-  
+
   if (!boundaryRelation || !boundaryRelation.members) {
     return [];
   }
-  
+
   const coordinates: number[][] = [];
-  
+
   // Прямая геометрия из ответа Overpass с флагом geom
   if (boundaryRelation.members.some(m => m.geometry)) {
     // Собираем все внешние пути (outer)
     const outerMembers = boundaryRelation.members.filter(m => m.role === 'outer' && m.geometry);
-    
+
     // Здесь создаем один замкнутый полигон из всех внешних частей
     let allPoints: Array<{lat: number; lon: number}> = [];
-    
+
     for (const member of outerMembers) {
       if (member.geometry) {
         // Собираем все точки из всех внешних частей
         allPoints = allPoints.concat(member.geometry);
       }
     }
-    
+
+    // Для крупных городов ограничиваем количество точек для отображения, 
+    // чтобы избежать проблем с производительностью и передачей данных
+    if (allPoints.length > 200) {
+      console.log(`City boundary has too many points (${allPoints.length}), simplifying...`);
+      // Упрощаем полигон, оставляя каждую N-ю точку
+      const simplificationFactor = Math.ceil(allPoints.length / 200);
+      allPoints = allPoints.filter((_, idx) => idx % simplificationFactor === 0);
+      console.log(`Simplified to ${allPoints.length} points`);
+    }
+
     // Если есть точки, формируем полигон
     if (allPoints.length > 3) {
       // Преобразуем геометрию в формат [lat, lon]
       const polygon = allPoints.map(point => [point.lat, point.lon]);
-      
+
       // Убедимся, что полигон замкнут
       if (polygon[0][0] !== polygon[polygon.length - 1][0] || 
           polygon[0][1] !== polygon[polygon.length - 1][1]) {
         polygon.push([polygon[0][0], polygon[0][1]]);
       }
-      
+
       return polygon;
     }
   }
-  
+
   // Если не удалось собрать координаты из геометрии, возвращаем пустой массив
   return [];
 }
@@ -175,10 +184,10 @@ async function saveCityBoundariesToFile(cityName: string, boundaries: number[][]
   try {
     // Создаем директорию, если она не существует
     await fs.mkdir(BOUNDARIES_DIR, { recursive: true });
-    
+
     // Путь к файлу
     const filePath = path.join(BOUNDARIES_DIR, `${cityName}.json`);
-    
+
     // Сохраняем данные
     await fs.writeFile(filePath, JSON.stringify(boundaries, null, 2), 'utf8');
     console.log(`Boundaries for ${cityName} saved to ${filePath}`);
@@ -196,14 +205,14 @@ async function loadCityBoundariesFromFile(cityName: string): Promise<number[][] 
   try {
     // Путь к файлу
     const filePath = path.join(BOUNDARIES_DIR, `${cityName}.json`);
-    
+
     // Проверяем, существует ли файл
     try {
       await fs.access(filePath);
     } catch {
       return null; // Файл не найден
     }
-    
+
     // Читаем данные
     const data = await fs.readFile(filePath, 'utf8');
     const boundaries = JSON.parse(data) as number[][];
@@ -223,14 +232,14 @@ export async function updateAllCityBoundaries(): Promise<any[]> {
     console.log('Starting update of all city boundaries...');
     // Получаем текущие данные о городах
     const cities = await storage.getCities();
-    
+
     // Обновляем границы для каждого города
     for (const city of cities) {
       try {
         console.log(`Processing city: ${city.name}`);
         // Пытаемся получить реальные границы из OSM или из кэша
         const boundaries = await fetchCityBoundaries(city.name);
-        
+
         if (boundaries.length > 0) {
           console.log(`Got boundaries for ${city.name} with ${boundaries.length} points`);
           // Обновляем границы города
@@ -246,56 +255,14 @@ export async function updateAllCityBoundaries(): Promise<any[]> {
         city.boundaries = createSimpleBoundary(city.latitude, city.longitude);
       }
     }
-    
+
     // Сохраняем обновленные данные о городах
     await storage.updateCitiesData(cities);
     console.log('City boundaries updated successfully');
-    
+
     return cities;
   } catch (error) {
     console.error('Error updating city boundaries:', error);
-    throw error;
-  }
-}
-
-/**
- * Обновляет границы для конкретного города
- * @param cityId ID города
- * @returns Обновленные данные о городе
- */
-export async function updateCityBoundary(cityId: number): Promise<any> {
-  try {
-    // Получаем данные о городе
-    const cities = await storage.getCities();
-    const city = cities.find(c => c.id === cityId);
-    
-    if (!city) {
-      throw new Error(`City with ID ${cityId} not found`);
-    }
-    
-    try {
-      console.log(`Updating boundary for city: ${city.name}`);
-      // Пытаемся получить реальные границы из OSM или из кэша
-      const boundaries = await fetchCityBoundaries(city.name);
-      
-      if (boundaries.length > 0) {
-        console.log(`Got boundaries for ${city.name}`);
-        city.boundaries = boundaries;
-      } else {
-        console.log(`Using simple boundary for ${city.name}`);
-        city.boundaries = createSimpleBoundary(city.latitude, city.longitude);
-      }
-    } catch (error) {
-      console.warn(`Failed to update boundaries for ${city.name}:`, error);
-      city.boundaries = createSimpleBoundary(city.latitude, city.longitude);
-    }
-    
-    // Обновляем данные о городе
-    await storage.updateCity(cityId, { boundaries: city.boundaries });
-    
-    return city;
-  } catch (error) {
-    console.error(`Error updating boundary for city ${cityId}:`, error);
     throw error;
   }
 }
