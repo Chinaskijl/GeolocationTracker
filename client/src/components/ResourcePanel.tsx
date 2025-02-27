@@ -30,13 +30,8 @@ export function ResourcePanel() {
 
     cities.forEach(city => {
       if (city.owner === 'player') {
-        // Добавляем базовое производство города (if it exists)
-        goldProd += city.resources?.gold || 0;
-        woodProd += city.resources?.wood || 0;
-        foodProd += city.resources?.food || 0;
-        oilProd += city.resources?.oil || 0;
-
-
+        // Не учитываем базовое производство города, только постройки
+        
         // Обработка зданий и их продукции
         city.buildings.forEach(buildingId => {
           const building = BUILDINGS.find(b => b.id === buildingId);
