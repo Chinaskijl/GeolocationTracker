@@ -109,6 +109,148 @@ export class MemStorage implements IStorage {
       owner: "neutral",
       buildings: []
     });
+
+    // Добавляем новые города
+    this.cities.set(5, {
+      id: 5,
+      name: "Казань",
+      latitude: 55.7887,
+      longitude: 49.1221,
+      population: 0,
+      maxPopulation: 90000,
+      resources: {
+        food: 10,
+        wood: 3
+      },
+      boundaries: [
+        [55.85, 49.0],
+        [55.95, 49.2],
+        [55.75, 49.3],
+        [55.65, 49.1],
+        [55.85, 49.0]
+      ],
+      owner: "neutral",
+      buildings: []
+    });
+
+    this.cities.set(6, {
+      id: 6,
+      name: "Красноярск",
+      latitude: 56.0184,
+      longitude: 92.8672,
+      population: 0,
+      maxPopulation: 65000,
+      resources: {
+        wood: 12,
+        oil: 2
+      },
+      boundaries: [
+        [56.1, 92.75],
+        [56.2, 92.95],
+        [56.0, 93.05],
+        [55.9, 92.85],
+        [56.1, 92.75]
+      ],
+      owner: "neutral",
+      buildings: []
+    });
+
+    this.cities.set(7, {
+      id: 7,
+      name: "Ростов-на-Дону",
+      latitude: 47.2357,
+      longitude: 39.7015,
+      population: 0,
+      maxPopulation: 75000,
+      resources: {
+        food: 11,
+        gold: 3
+      },
+      boundaries: [
+        [47.3, 39.6],
+        [47.4, 39.8],
+        [47.2, 39.9],
+        [47.1, 39.7],
+        [47.3, 39.6]
+      ],
+      owner: "neutral",
+      buildings: []
+    });
+
+    this.cities.set(8, {
+      id: 8,
+      name: "Владивосток",
+      latitude: 43.1332,
+      longitude: 131.9113,
+      population: 0,
+      maxPopulation: 60000,
+      resources: {
+        oil: 8,
+        food: 6
+      },
+      boundaries: [
+        [43.2, 131.8],
+        [43.3, 132.0],
+        [43.1, 132.1],
+        [43.0, 131.9],
+        [43.2, 131.8]
+      ],
+      owner: "neutral",
+      buildings: []
+    });
+
+    // Создаем вражеский город (столицу ИИ)
+    this.cities.set(9, {
+      id: 9,
+      name: "Киев",
+      latitude: 50.4501,
+      longitude: 30.5234,
+      population: 8000,
+      maxPopulation: 120000,
+      resources: {
+        wood: 5,
+        food: 5,
+        gold: 5,
+        oil: 5
+      },
+      boundaries: [
+        [50.5, 30.4],
+        [50.6, 30.6],
+        [50.4, 30.7],
+        [50.3, 30.5],
+        [50.5, 30.4]
+      ],
+      owner: "enemy",
+      buildings: [
+        'sawmill', 'farm', 'mine', 'house', 'barracks'
+      ],
+      military: 100
+    });
+
+    this.cities.set(10, {
+      id: 10,
+      name: "Минск",
+      latitude: 53.9045,
+      longitude: 27.5615,
+      population: 5000,
+      maxPopulation: 90000,
+      resources: {
+        wood: 8,
+        food: 7
+      },
+      boundaries: [
+        [54.0, 27.45],
+        [54.1, 27.65],
+        [53.9, 27.75],
+        [53.8, 27.55],
+        [54.0, 27.45]
+      ],
+      owner: "enemy",
+      buildings: [
+        'sawmill', 'farm', 'barracks'
+      ],
+      military: 50
+    });
   }
 
   async getCities(): Promise<City[]> {

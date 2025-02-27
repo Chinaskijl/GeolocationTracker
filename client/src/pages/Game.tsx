@@ -5,6 +5,7 @@ import { ResourcePanel } from '@/components/ResourcePanel';
 import { CityPanel } from '@/components/CityPanel';
 import { useGameStore } from '@/lib/store';
 import type { City, GameState } from '@shared/schema';
+import { BUILDINGS } from '@/lib/game';
 
 export default function Game() {
   const { setCities, setGameState } = useGameStore();
@@ -33,28 +34,30 @@ export default function Game() {
   }, [gameState, setGameState]);
 
   useEffect(() => {
-    // Use secure WebSocket if the page is served over HTTPS
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
+    // Делаем BUILDINGS доступными глобально
+    window.BUILDINGS = BUILDINGS;
+
+    // Инициализация WebSocket соединения
+    const ws = new WebSocket(`${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws`);
 
     ws.onopen = () => {
       console.log('WebSocket connected');
     };
-    
+
     ws.onmessage = (event) => {
       try {
         const message = JSON.parse(event.data);
-        
+
         if (message.type === 'GAME_UPDATE' && message.gameState) {
           console.log('Received game state update:', message.gameState);
           setGameState(message.gameState);
         }
-        
+
         if (message.type === 'CITIES_UPDATE' && message.cities) {
           console.log('Received cities update:', message.cities);
           setCities(message.cities);
         }
-        
+
         if (message.type === 'CITY_UPDATE') {
           queryClient.invalidateQueries({ queryKey: ['/api/cities'] });
         }

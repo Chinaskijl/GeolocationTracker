@@ -40,6 +40,26 @@ export const BUILDINGS: Building[] = [
       amount: 10
     },
     maxCount: 3
+  },
+  {
+    id: 'mine',
+    name: 'Шахта',
+    cost: { wood: 400, gold: 100 },
+    resourceProduction: {
+      type: 'gold',
+      amount: 8
+    },
+    maxCount: 3
+  },
+  {
+    id: 'oilrig',
+    name: 'Нефтяная вышка',
+    cost: { wood: 500, gold: 500 },
+    resourceProduction: {
+      type: 'oil',
+      amount: 5
+    },
+    maxCount: 2
   }
 ];
 

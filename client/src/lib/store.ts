@@ -11,9 +11,30 @@ interface GameStore {
   setGameState: (state: GameState) => void;
 }
 
+// Делаем BUILDINGS доступными глобально для использования в компонентах
+declare global {
+  interface Window {
+    BUILDINGS?: any[];
+  }
+}
+
 export const useGameStore = create<GameStore>((set) => ({
   cities: [],
-  setCities: (cities) => set({ cities }),
+  setCities: (cities) => set((state) => {
+    // Добавляем только новые города, обновляем существующие
+    const updatedCities = [...state.cities];
+    
+    cities.forEach(newCity => {
+      const existingIndex = updatedCities.findIndex(c => c.id === newCity.id);
+      if (existingIndex >= 0) {
+        updatedCities[existingIndex] = newCity;
+      } else {
+        updatedCities.push(newCity);
+      }
+    });
+    
+    return { cities: updatedCities };
+  }),
   updateCity: (updatedCity) => set((state) => ({
     cities: state.cities.map(city => 
       city.id === updatedCity.id ? updatedCity : city

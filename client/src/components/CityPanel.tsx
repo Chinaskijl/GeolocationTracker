@@ -93,7 +93,7 @@ export function CityPanel() {
             'bg-red-100 text-red-800'
           }`}>
             {selectedCity.owner === 'player' ? 'Ваш город' :
-             selectedCity.owner === 'neutral' ? 'Нейтральный' : 'Враг'}
+             selectedCity.owner === 'neutral' ? 'Нейтральный' : 'Вражеский город'}
           </span>
         </div>
 
@@ -165,7 +165,7 @@ export function CityPanel() {
               <div className="p-4 space-y-4">
                 {BUILDINGS.map(building => {
                   const buildingCount = selectedCity.buildings.filter(b => b === building.id).length;
-                  const atLimit = buildingCount >= building.maxCount;
+                  const atLimit = buildingCount >= building.maxCount || building.maxCount === 0;
 
                   return (
                     <Button

@@ -2,6 +2,7 @@ import { storage } from "./storage";
 import { BUILDINGS, POPULATION_FOOD_CONSUMPTION } from "../client/src/lib/game";
 import type { GameState, City } from "@shared/schema";
 import type { WebSocket } from "ws";
+import { aiPlayer } from "./aiPlayer";
 
 export class GameLoop {
   private tickRate: number = 1; // тиков в секунду
@@ -101,6 +102,14 @@ export class GameLoop {
       totalFoodConsumption = gameState.population * POPULATION_FOOD_CONSUMPTION * deltaTime;
       console.log(`Total food consumption: -${totalFoodConsumption}`);
 
+      // Проверяем нехватку еды и уменьшаем население при необходимости
+      let populationChange = totalPopulationGrowth - totalPopulationUsed;
+      if (newResources.food <= totalFoodConsumption) {
+        // Недостаточно еды, уменьшаем население
+        populationChange -= deltaTime; // -1 население в секунду
+        console.log(`Not enough food! Population decreasing: -${deltaTime}`);
+      }
+
       // Обновление состояния игры
       const newGameState = {
         ...gameState,
@@ -108,7 +117,7 @@ export class GameLoop {
           ...newResources,
           food: Math.max(0, newResources.food - totalFoodConsumption)
         },
-        population: Math.floor(Math.max(0, gameState.population + totalPopulationGrowth - totalPopulationUsed)),
+        population: Math.floor(Math.max(0, gameState.population + populationChange)),
         military: Math.floor(gameState.military + totalMilitaryGrowth)
       };
 
@@ -132,6 +141,9 @@ export class GameLoop {
     setInterval(() => {
       this.tick();
       
+      // Добавляем ход ИИ
+      aiPlayer.makeDecisions();
+      
       // Всегда отправляем обновления клиентам при каждом тике
       this.broadcastGameState();
     }, this.tickInterval);
@@ -150,7 +162,7 @@ export class GameLoop {
 
       this.broadcast({
         type: 'CITIES_UPDATE',
-        cities: cities.filter(city => city.owner === 'player')
+        cities: cities.filter(city => city.owner === 'player' || city.owner === 'enemy')
       });
     } catch (error) {
       console.error('Error broadcasting game state:', error);
