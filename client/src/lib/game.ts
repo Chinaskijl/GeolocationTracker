@@ -26,7 +26,7 @@ export const BUILDINGS: Building[] = [
     name: 'Бараки',
     cost: { wood: 700 },
     military: {
-      production: 1, // per second
+      production: 10, // per second
       populationUse: 1
     },
     maxCount: 2

@@ -85,11 +85,18 @@ export class GameLoop {
             }
           });
 
-          // Обновление населения города
-          const newPopulation = Math.min(
-            city.maxPopulation,
-            Math.max(0, city.population + cityPopulationGrowth - cityPopulationUsed)
-          );
+          // Обновление населения города, учитывая наличие еды
+          let newPopulation;
+          if (gameState.resources.food <= 0) {
+            // Если еды нет, то население уменьшается
+            newPopulation = Math.max(0, city.population - deltaTime * 5); // Быстрее вымирают, -5 населения в секунду
+            console.log(`City ${city.name} is losing population due to food shortage: -${deltaTime * 5}`);
+          } else {
+            newPopulation = Math.min(
+              city.maxPopulation,
+              Math.max(0, city.population + cityPopulationGrowth - cityPopulationUsed)
+            );
+          }
 
           totalPopulationGrowth += cityPopulationGrowth;
           totalMilitaryGrowth += cityMilitaryGrowth;
@@ -110,9 +117,9 @@ export class GameLoop {
       // Проверяем нехватку еды и уменьшаем население при необходимости
       let populationChange = totalPopulationGrowth - totalPopulationUsed;
       if (newResources.food <= totalFoodConsumption) {
-        // Недостаточно еды, уменьшаем население
-        populationChange -= deltaTime; // -1 население в секунду
-        console.log(`Not enough food! Population decreasing: -${deltaTime}`);
+        // Недостаточно еды, уменьшаем население значительно сильнее
+        populationChange -= deltaTime * 5; // -5 населения в секунду
+        console.log(`Not enough food! Population decreasing rapidly: -${deltaTime * 5}`);
       }
 
       // Обновление состояния игры
