@@ -218,20 +218,11 @@ export function CityPanel() {
           <div className="space-y-2">
             <h3 className="font-medium">Административные действия</h3>
             <UpdateBoundariesButton
-              onClick={async () => {
-                try {
-                  await apiRequest('POST', `/api/cities/${selectedCity.id}/updateBoundaries`);
-                  toast({
-                    title: 'Границы обновлены',
-                    description: `Границы города ${selectedCity.name} успешно обновлены.`,
-                  });
-                } catch (error) {
-                  toast({
-                    title: 'Ошибка обновления границ',
-                    description: `Не удалось обновить границы города ${selectedCity.name}.`,
-                    variant: 'destructive',
-                  });
-                }
+              cityId={selectedCity.id}
+              className="w-full mb-2"
+            >
+              Обновить границы города
+            </UpdateBoundariesButton>
               }}
               className="w-full mb-2"
             >

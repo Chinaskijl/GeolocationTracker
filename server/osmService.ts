@@ -1,6 +1,6 @@
 
 /**
- * Сервис для работы с данными OpenStreetMap
+ * Сервис для работы с данными OpenStreetMap и локальными JSON файлами городов
  */
 import fetch from 'node-fetch';
 import fs from 'fs/promises';
@@ -29,41 +29,91 @@ interface OverpassResponse {
 }
 
 /**
- * Получает границы города из Overpass API
+ * Проверяет существование файла границ города
+ * @param cityName Название города
+ * @returns true если файл существует, false в противном случае
+ */
+async function cityBoundaryFileExists(cityName: string): Promise<boolean> {
+  try {
+    const filePath = path.join(__dirname, '../data/city-boundaries', `${cityName}.json`);
+    await fs.access(filePath);
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
+/**
+ * Получает границы города из локального JSON файла
+ * @param cityName Название города
+ * @returns Координаты границ города в формате многоугольника
+ */
+async function getBoundariesFromFile(cityName: string): Promise<number[][]> {
+  try {
+    const filePath = path.join(__dirname, '../data/city-boundaries', `${cityName}.json`);
+    const data = await fs.readFile(filePath, 'utf-8');
+    return JSON.parse(data);
+  } catch (error) {
+    console.error(`Error reading boundaries file for ${cityName}:`, error);
+    return [];
+  }
+}
+
+/**
+ * Сохраняет границы города в локальный JSON файл
+ * @param cityName Название города
+ * @param boundaries Координаты границ города
+ */
+async function saveBoundariesToFile(cityName: string, boundaries: number[][]): Promise<void> {
+  try {
+    // Создаем директорию, если она не существует
+    const dirPath = path.join(__dirname, '../data/city-boundaries');
+    try {
+      await fs.mkdir(dirPath, { recursive: true });
+    } catch (err) {
+      // Игнорируем ошибку, если директория уже существует
+    }
+    
+    const filePath = path.join(dirPath, `${cityName}.json`);
+    await fs.writeFile(filePath, JSON.stringify(boundaries, null, 2));
+    console.log(`Saved boundaries for ${cityName} to file`);
+  } catch (error) {
+    console.error(`Error saving boundaries for ${cityName}:`, error);
+  }
+}
+
+/**
+ * Получает границы города из локального файла или из Overpass API
  * @param cityName Название города
  * @returns Координаты границ города в формате многоугольника
  */
 export async function fetchCityBoundaries(cityName: string): Promise<number[][]> {
   try {
-    // Формируем запрос для получения границ города с геометрией
-    // Адаптируем запрос в зависимости от размера города
-    // Для крупных городов используем более точный запрос с акцентом на городские границы
+    // Сначала проверяем, есть ли файл с границами
+    const fileExists = await cityBoundaryFileExists(cityName);
     
-    let query = '';
-    if (cityName === 'Москва' || cityName === 'Санкт-Петербург' || cityName === 'Екатеринбург') {
-      // Для крупных городов более специализированный запрос
-      query = `
-        [out:json];
-        area["name"="${cityName}"]["place"="city"]->.searchArea;
-        (
-          relation(area.searchArea)["boundary"="administrative"]["admin_level"="8"];
-          relation(area.searchArea)["place"="city"]["admin_level"="6"];
-        );
-        out geom;
-      `;
-      console.log(`Используем специальный запрос для крупного города: ${cityName}`);
-    } else {
-      // Стандартный запрос для обычных городов
-      query = `
-        [out:json];
-        area["name"="${cityName}"]->.searchArea;
-        (
-          relation(area.searchArea)["boundary"="administrative"]["admin_level"~"8|9"];
-          relation(area.searchArea)["place"="city"];
-        );
-        out geom;
-      `;
+    if (fileExists) {
+      console.log(`Loading boundaries for ${cityName} from file...`);
+      const boundaries = await getBoundariesFromFile(cityName);
+      if (boundaries.length > 0) {
+        console.log(`Loaded boundaries for ${cityName} from file with ${boundaries.length} points`);
+        return boundaries;
+      }
     }
+    
+    // Если файла нет или он пустой, пробуем получить границы из API
+    console.log(`No local data for ${cityName}, fetching from API...`);
+    
+    // Формируем запрос для получения границ города с геометрией
+    const query = `
+      [out:json];
+      area["name"="${cityName}"]->.searchArea;
+      (
+        relation(area.searchArea)["boundary"="administrative"]["admin_level"~"8|9|6"];
+        relation(area.searchArea)["place"="city"];
+      );
+      out geom;
+    `;
     
     // URL для Overpass API
     const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
@@ -85,7 +135,14 @@ export async function fetchCityBoundaries(cityName: string): Promise<number[][]>
     }
     
     // Обрабатываем данные для получения координат границ
-    return extractBoundaryCoordinates(data);
+    const boundaries = extractBoundaryCoordinates(data);
+    
+    // Сохраняем границы в файл для будущего использования
+    if (boundaries.length > 0) {
+      await saveBoundariesToFile(cityName, boundaries);
+    }
+    
+    return boundaries;
   } catch (error) {
     console.error(`Error fetching boundaries for ${cityName}:`, error);
     return []; // Возвращаем пустой массив в случае ошибки
