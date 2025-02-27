@@ -1,7 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { initDb } from './storage'; // Importing the database initialization function
+import { storage } from './storage'; // Импортируем экземпляр storage
 
 const app = express();
 app.use(express.json());
@@ -48,10 +48,8 @@ app.use((req, res, next) => {
 
 (async () => {
   try {
-    // Database initialization before server starts
-    console.log("Initializing database...");
-    await initDb();
-    console.log("Database initialized successfully");
+    // Database initialization is handled internally in storage.ts
+    console.log("Starting server...");
 
     const server = await registerRoutes(app);
 
