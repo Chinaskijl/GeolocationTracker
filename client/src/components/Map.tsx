@@ -205,7 +205,12 @@ function getResourceIcon(resource: string): string {
     case 'gold': return '💰';
     case 'wood': return '🌲';
     case 'food': return '🌾';
-    case 'oil': return '🛢️';
+    case 'oil': return '💧';
+    case 'metal': return '⚙️';
+    case 'steel': return '🔩';
+    case 'weapons': return '⚔️';
+    default: return '❓';
+  }🛢️';
     default: return '📦';
   }
 }

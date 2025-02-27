@@ -75,26 +75,26 @@ export function ResourcePanel() {
 
   const resources = [
     { 
-      icon: <Coins className="w-5 h-5" />, 
+      icon: <span className="w-5 h-5 flex items-center justify-center">💰</span>, 
       value: Math.floor(gameState.resources.gold), 
       name: 'Gold',
       production: resourceProduction.gold
     },
     { 
-      icon: <Trees className="w-5 h-5" />, 
+      icon: <span className="w-5 h-5 flex items-center justify-center">🌲</span>, 
       value: Math.floor(gameState.resources.wood), 
       name: 'Wood',
       production: resourceProduction.wood
     },
     { 
-      icon: <Wheat className="w-5 h-5" />, 
+      icon: <span className="w-5 h-5 flex items-center justify-center">🌾</span>, 
       value: Math.floor(gameState.resources.food), 
       name: 'Food',
       production: resourceProduction.food,
       consumption: foodConsumption
     },
     { 
-      icon: <Droplet className="w-5 h-5" />, 
+      icon: <span className="w-5 h-5 flex items-center justify-center">💧</span>, 
       value: Math.floor(gameState.resources.oil), 
       name: 'Oil',
       production: resourceProduction.oil
