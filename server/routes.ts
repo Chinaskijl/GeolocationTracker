@@ -6,8 +6,20 @@ import { gameLoop } from "./gameLoop";
 import { BUILDINGS } from "../client/src/lib/game";
 import { market } from "./market";
 import { Router } from 'express';
+import { loadAllCityBoundaries } from './osmService';
 
 export const router = Router();
+
+// Инициализация границ городов при старте сервера
+(async () => {
+  try {
+    console.log('Initializing city boundaries on server startup...');
+    await loadAllCityBoundaries();
+    console.log('City boundaries initialization completed');
+  } catch (error) {
+    console.error('Failed to initialize city boundaries:', error);
+  }
+})();
 
 // Получение состояния игры
 router.get('/api/gameState', async (req, res) => {

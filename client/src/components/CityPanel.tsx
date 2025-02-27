@@ -26,7 +26,7 @@ export function CityPanel({ cityId }: CityPanelProps) {
   const { toast } = useToast();
 
   // Используем useMemo для кэширования выбранного города и предотвращения бесконечных обновлений
-  const city = useMemo(() => {
+  const selectedCity = useMemo(() => {
     if (cityId) {
       return cities.find(c => c.id === cityId);
     } else if (selectedCityId) {
@@ -35,7 +35,7 @@ export function CityPanel({ cityId }: CityPanelProps) {
     return null;
   }, [cities, cityId, selectedCityId]);
 
-  if (!city) {
+  if (!selectedCity) {
     return (
       <Card className="w-full h-full p-4">
         <div className="text-center py-8">
@@ -45,92 +45,57 @@ export function CityPanel({ cityId }: CityPanelProps) {
     );
   }
 
-  const selectedCity = city;
-
   // Проверка наличия столицы
   const hasCapital = cities.some(city => city.owner === 'player');
 
-  // Список городов игрока, исключая текущий выбранный город
-  const playerCities = cities.filter(city => 
-    city.owner === 'player' && city.id !== selectedCity.id
-  );
-
-  // Обработчик для захвата города
+  // Захват города
   const handleCapture = async () => {
     try {
-      await apiRequest('POST', `/api/cities/${selectedCity.id}/capture`, {});
-      toast({
-        title: 'Город захвачен',
-        description: `Вы успешно захватили город ${selectedCity.name}.`,
+      const response = await apiRequest(`/api/cities/${selectedCity.id}/capture`, {
+        method: 'POST',
       });
-      queryClient.invalidateQueries({
-        queryKey: ['cities'],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['gameState'],
-      });
-    } catch (error) {
-      toast({
-        title: 'Ошибка захвата',
-        description: 'Не удалось захватить город.',
-        variant: 'destructive',
-      });
-    }
-  };
 
-  // Обработчик для перемещения военных
-  const handleTransferMilitary = async (targetCityId: number) => {
-    try {
-      await apiRequest('POST', `/api/cities/${selectedCity.id}/transferMilitary`, {
-        targetCityId,
-      });
+      // Успешное выполнение
       toast({
-        title: 'Войска перемещены',
-        description: `Войска успешно перемещены.`,
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['cities'],
-      });
-    } catch (error) {
-      toast({
-        title: 'Ошибка',
-        description: 'Не удалось переместить войска.',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  // Обработчик для строительства зданий
-  const handleBuild = async (buildingId: string) => {
-    try {
-      const building = BUILDINGS.find(b => b.id === buildingId);
-      if (!building) {
-        console.error('Building not found:', buildingId);
-        return;
-      }
-
-      // Отправляем запрос на строительство
-      await apiRequest('POST', `/api/cities/${selectedCity.id}/build`, {
-        buildingId
+        title: 'Город захвачен!',
+        description: 'Вы успешно захватили город.',
       });
 
       // Обновляем данные
-      queryClient.invalidateQueries({
-        queryKey: ['cities'],
+      queryClient.invalidateQueries({ queryKey: ['cities'] });
+      queryClient.invalidateQueries({ queryKey: ['gameState'] });
+    } catch (error: any) {
+      // Показываем ошибку
+      toast({
+        title: 'Ошибка захвата города',
+        description: error.message || 'Не удалось захватить город.',
+        variant: 'destructive',
       });
-      queryClient.invalidateQueries({
-        queryKey: ['gameState'],
+    }
+  };
+
+  // Строительство здания
+  const handleBuild = async (buildingId: string) => {
+    try {
+      const response = await apiRequest(`/api/cities/${selectedCity.id}/build`, {
+        method: 'POST',
+        body: JSON.stringify({ buildingId }),
       });
 
+      // Успешное выполнение
       toast({
-        title: 'Строительство завершено',
-        description: `${building.name} построено в ${selectedCity.name}.`,
+        title: 'Здание построено!',
+        description: 'Вы успешно построили здание.',
       });
-    } catch (error) {
-      console.error('Error building:', error);
+
+      // Обновляем данные
+      queryClient.invalidateQueries({ queryKey: ['cities'] });
+      queryClient.invalidateQueries({ queryKey: ['gameState'] });
+    } catch (error: any) {
+      // Показываем ошибку
       toast({
         title: 'Ошибка строительства',
-        description: 'Не удалось построить здание.',
+        description: error.message || 'Не удалось построить здание.',
         variant: 'destructive',
       });
     }
@@ -178,58 +143,30 @@ export function CityPanel({ cityId }: CityPanelProps) {
             </div>
           </div>
 
-          {selectedCity.owner === 'player' && playerCities.length > 0 && (
-            <div className="space-y-2">
-              <h3 className="font-medium">Перемещение войск</h3>
-              <div className="grid grid-cols-2 gap-2">
-                {playerCities.map(city => (
-                  <Button
-                    key={city.id}
-                    variant="outline"
-                    onClick={() => handleTransferMilitary(city.id)}
-                    disabled={!selectedCity.military}
-                    className="w-full"
-                  >
-                    Отправить в {city.name}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Информация о ресурсах города удалена */}
-
-          {selectedCity.owner === 'neutral' && (
-            <>
-            <div className="space-y-2">
-              <h3 className="font-medium">Административные действия</h3>
+          {selectedCity.owner !== 'player' && (
+            <div className="mt-4">
               <Button 
-                onClick={handleCapture}
-                disabled={hasCapital && gameState.military < selectedCity.maxPopulation / 4}
+                onClick={handleCapture} 
                 className="w-full"
+                disabled={hasCapital && gameState.military < Math.ceil(selectedCity.maxPopulation / 4)}
               >
-                {!hasCapital ? 'Выбрать столицей' : 'Захватить город'}
+                {hasCapital ? `Захватить (требуется ${Math.ceil(selectedCity.maxPopulation / 4)} военных)` : 'Сделать столицей'}
               </Button>
-              {hasCapital && gameState.military < selectedCity.maxPopulation / 4 && (
-                <p className="text-sm text-red-500">
-                  Требуется минимум {Math.ceil(selectedCity.maxPopulation / 4)} военных
-                </p>
-              )}
             </div>
-            </>
           )}
 
           {selectedCity.owner === 'player' && (
-            <div className="space-y-2">
+            <div className="mt-4 space-y-4">
               <h3 className="font-medium">Строительство</h3>
+
               {availableBuildings.length > 0 ? (
-                <div className="space-y-2">
-                  {availableBuildings.map((building) => (
-                    <div key={building.id} className="border rounded p-2">
-                      <div className="flex justify-between items-center">
+                <div className="space-y-4">
+                  {availableBuildings.map(building => (
+                    <div key={building.id} className="border p-3 rounded-lg">
+                      <div className="flex justify-between items-start">
                         <div>
                           <h4 className="font-medium">{building.name}</h4>
-                          <p className="text-xs text-muted-foreground">{building.description}</p>
+                          <p className="text-sm text-muted-foreground">{building.description}</p>
                         </div>
                         <Button size="sm" onClick={() => handleBuild(building.id)}>
                           Построить
@@ -253,42 +190,8 @@ export function CityPanel({ cityId }: CityPanelProps) {
               )}
             </div>
           )}
-
-          {selectedCity.buildings.length > 0 && (
-            <div className="space-y-2">
-              <h3 className="font-medium">Постройки</h3>
-              <div className="space-y-2">
-                {selectedCity.buildings.map((buildingId) => {
-                  const building = BUILDINGS.find((b) => b.id === buildingId);
-                  if (!building) return null;
-                  return (
-                    <div key={buildingId} className="border rounded p-2">
-                      <h4 className="font-medium">{building.name}</h4>
-                      <p className="text-xs text-muted-foreground">{building.description}</p>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
         </div>
       </ScrollArea>
     </Card>
-  );
-}
-
-function getResourceIcon(resource: string): string {
-  switch (resource) {
-    case 'gold': return '💰';
-    case 'wood': return '🌲';
-    case 'food': return '🌾';
-    case 'oil': return '🛢️';
-    default: return '📦';
-  }
-}
-
-function canAffordBuilding(gameState: any, building: any): boolean {
-  return Object.entries(building.cost).every(
-    ([resource, amount]) => gameState.resources[resource as keyof typeof gameState.resources] >= amount
   );
 }

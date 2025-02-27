@@ -101,11 +101,11 @@ export async function fetchCityBoundaries(cityName: string): Promise<number[][]>
  */
 function extractBoundaryCoordinates(data: OverpassResponse): number[][] {
   // Находим отношение с административной границей или городом
-  const boundaryRelation = data.elements.find(el => 
-    el.type === 'relation' && 
-    el.tags && 
+  const boundaryRelation = data.elements.find(el =>
+    el.type === 'relation' &&
+    el.tags &&
     ((el.tags.boundary === 'administrative' && el.tags.admin_level) ||
-     (el.tags.place === 'city'))
+      (el.tags.place === 'city'))
   );
 
   if (!boundaryRelation || !boundaryRelation.members) {
@@ -120,7 +120,7 @@ function extractBoundaryCoordinates(data: OverpassResponse): number[][] {
     const outerMembers = boundaryRelation.members.filter(m => m.role === 'outer' && m.geometry);
 
     // Здесь создаем один замкнутый полигон из всех внешних частей
-    let allPoints: Array<{lat: number; lon: number}> = [];
+    let allPoints: Array<{ lat: number; lon: number }> = [];
 
     for (const member of outerMembers) {
       if (member.geometry) {
@@ -129,14 +129,54 @@ function extractBoundaryCoordinates(data: OverpassResponse): number[][] {
       }
     }
 
-    // Для крупных городов ограничиваем количество точек для отображения, 
-    // чтобы избежать проблем с производительностью и передачей данных
+    // Для крупных городов применяем более умное упрощение границ
     if (allPoints.length > 200) {
       console.log(`City boundary has too many points (${allPoints.length}), simplifying...`);
-      // Упрощаем полигон, оставляя каждую N-ю точку
-      const simplificationFactor = Math.ceil(allPoints.length / 200);
-      allPoints = allPoints.filter((_, idx) => idx % simplificationFactor === 0);
-      console.log(`Simplified to ${allPoints.length} points`);
+
+      // Для сохранения формы города берем точки через равные интервалы,
+      // но обязательно сохраняем ключевые точки (начало, конец, углы)
+      const maxPoints = 300; // Увеличиваем максимальное количество точек для лучшей детализации
+      const simplificationFactor = Math.ceil(allPoints.length / maxPoints);
+
+      // Всегда сохраняем первую и последнюю точки
+      const firstPoint = allPoints[0];
+      const lastPoint = allPoints[allPoints.length - 1];
+
+      // Фильтруем точки
+      allPoints = allPoints.filter((point, idx) => {
+        // Всегда сохраняем первую и последнюю точки
+        if (idx === 0 || idx === allPoints.length - 1) return true;
+
+        // Сохраняем точки через равные интервалы
+        if (idx % simplificationFactor === 0) return true;
+
+        // Дополнительно проверяем на "угол" (резкое изменение направления)
+        if (idx > 1 && idx < allPoints.length - 1) {
+          const prev = allPoints[idx - 1];
+          const current = point;
+          const next = allPoints[idx + 1];
+
+          // Вычисляем вектора между точками
+          const dx1 = current.lon - prev.lon;
+          const dy1 = current.lat - prev.lat;
+          const dx2 = next.lon - current.lon;
+          const dy2 = next.lat - current.lat;
+
+          // Находим скалярное произведение нормализованных векторов
+          const len1 = Math.sqrt(dx1 * dx1 + dy1 * dy1);
+          const len2 = Math.sqrt(dx2 * dx2 + dy2 * dy2);
+
+          if (len1 > 0 && len2 > 0) {
+            const dot = (dx1 * dx2 + dy1 * dy2) / (len1 * len2);
+            // Если угол достаточно острый (dot < 0.7 соответствует углу > 45 градусов)
+            if (dot < 0.7) return true;
+          }
+        }
+
+        return false;
+      });
+
+      console.log(`Simplified to ${allPoints.length} points using improved algorithm`);
     }
 
     // Если есть точки, формируем полигон
@@ -145,8 +185,8 @@ function extractBoundaryCoordinates(data: OverpassResponse): number[][] {
       const polygon = allPoints.map(point => [point.lat, point.lon]);
 
       // Убедимся, что полигон замкнут
-      if (polygon[0][0] !== polygon[polygon.length - 1][0] || 
-          polygon[0][1] !== polygon[polygon.length - 1][1]) {
+      if (polygon[0][0] !== polygon[polygon.length - 1][0] ||
+        polygon[0][1] !== polygon[polygon.length - 1][1]) {
         polygon.push([polygon[0][0], polygon[0][1]]);
       }
 
