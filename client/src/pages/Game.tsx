@@ -53,26 +53,25 @@ const MarketPanel = ({ open, onClose }) => {
           {/* Левая панель - создание лота */}
           <div className="md:col-span-1">
               <MarketCreateListing onSuccess={handleListingCreated} />
+          </div>
+
+          {/* Правая панель - графики и история */}
+          <div className="md:col-span-2 space-y-6">
+            {/* Графики цен для разных ресурсов */}
+            <div className="bg-white rounded-lg shadow p-4">
+              <h2 className="text-xl font-semibold mb-4">Графики цен</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <MarketPriceChart resourceType="gold" />
+                <MarketPriceChart resourceType="food" />
+              </div>
             </div>
 
-            {/* Правая панель - графики и история */}
-            <div className="md:col-span-2 space-y-6">
-              {/* Графики цен для разных ресурсов */}
-              <div className="bg-white rounded-lg shadow p-4">
-                <h2 className="text-xl font-semibold mb-4">Графики цен</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <MarketPriceChart resourceType="gold" />
-                  <MarketPriceChart resourceType="food" />
-                </div>
-              </div>
-
-              {/* История транзакций */}
-              <div className="bg-white rounded-lg shadow p-4">
-                <MarketTransactions limit={10} />
-              </div>
+            {/* История транзакций */}
+            <div className="bg-white rounded-lg shadow p-4">
+              <MarketTransactions limit={10} />
             </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
