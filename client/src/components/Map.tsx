@@ -122,49 +122,77 @@ export function Map() {
       markersRef.current.push(marker);
     });
 
-    // Создаем соединения между соседними городами
-    const processedPairs = new Set<string>();
+    // Функция для создания маршрутов между городами
+    const createConnectionsBetweenCities = (citiesList: any[]) => {
+      if (!mapRef.current || !citiesList || citiesList.length < 2) return;
 
-    cities.forEach(city1 => {
-      cities.forEach(city2 => {
-        if (city1.id !== city2.id) {
-          // Создаем уникальный идентификатор пары городов
-          const pairId = [city1.id, city2.id].sort().join('-');
+      // Создаем соединения между соседними городами
+      for (let i = 0; i < citiesList.length; i++) {
+        for (let j = i + 1; j < citiesList.length; j++) {
+          const city1 = citiesList[i];
+          const city2 = citiesList[j];
 
-          // Проверяем, не обрабатывали ли мы уже эту пару
-          if (!processedPairs.has(pairId) && areCitiesNeighboring(city1, city2)) {
-            processedPairs.add(pairId);
+          // Получаем центроиды для соединения
+          const point1 = getCityCentroid(city1.boundaries);
+          const point2 = getCityCentroid(city2.boundaries);
 
-            // Получаем центроиды обоих городов
-            const centroid1 = getCityCentroid(city1.boundaries);
-            const centroid2 = getCityCentroid(city2.boundaries);
+          // Вычисляем расстояние между городами
+          const distance = mapRef.current.distance(
+            [point1[0], point1[1]],
+            [point2[0], point2[1]]
+          );
 
-            // Создаем линию границы между городами
-            const borderLine = L.polyline([centroid1, centroid2], {
-              color: '#555',
-              weight: 1.5,
-              opacity: 0.5,
-              dashArray: '4, 4'
-            }).addTo(mapRef.current!);
+          // Соединяем только города в пределах определенного расстояния (соседи)
+          // Подбираем расстояние в зависимости от масштаба карты
+          const maxConnectionDistance = 500000; // 500 км
+          if (distance <= maxConnectionDistance) {
+            const routeColor = getConnectionColor(city1, city2);
 
-            // Добавляем подпись к линии, указывающую расстояние
-            const distance = calculateDistance(centroid1, centroid2).toFixed(1);
-            const midPoint = [
-              (centroid1[0] + centroid2[0]) / 2,
-              (centroid1[1] + centroid2[1]) / 2
+            // Создаем соединение между городами
+            const connection = L.polyline([point1, point2], {
+              color: routeColor,
+              weight: 2,
+              opacity: 0.6,
+              dashArray: '5, 10'
+            }).addTo(mapRef.current);
+
+            // Добавляем метку расстояния
+            const middlePoint = [
+              (point1[0] + point2[0]) / 2,
+              (point1[1] + point2[1]) / 2
             ];
 
-            const distanceLabel = L.marker(midPoint as [number, number], {
-              icon: L.divIcon({
-                className: 'distance-label',
-                html: `<div class="bg-white/80 px-1 text-xs rounded">${distance}</div>`,
-                iconSize: [40, 20]
-              })
-            }).addTo(mapRef.current!);
+            const distanceLabel = L.divIcon({
+              className: 'distance-label',
+              html: `<div>${Math.round(distance / 1000)} км</div>`,
+              iconSize: [60, 20],
+              iconAnchor: [30, 10]
+            });
+
+            const marker = L.marker([middlePoint[0], middlePoint[1]], {
+              icon: distanceLabel,
+              interactive: false
+            }).addTo(mapRef.current);
+
+            polygonsRef.current.push(connection);
+            markersRef.current.push(marker);
           }
         }
-      });
-    });
+      }
+    };
+
+    // Функция для определения цвета соединения между городами
+    const getConnectionColor = (city1: any, city2: any) => {
+      // Если города принадлежат одному владельцу - используем его цвет
+      if (city1.owner !== 'neutral' && city1.owner === city2.owner) {
+        return TERRITORY_COLORS[city1.owner as keyof typeof TERRITORY_COLORS];
+      }
+      // Иначе используем нейтральный цвет
+      return '#888888';
+    };
+
+    createConnectionsBetweenCities(cities);
+
 
     // Show connections between cities for army transfers if they exist
     armyTransfers.forEach(transfer => {

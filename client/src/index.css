@@ -24,6 +24,51 @@
   animation: pulse 1.5s infinite ease-in-out;
 }
 
+/* Стили для границ и территорий */
+.territory-border {
+  stroke-dasharray: 5, 5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  animation: border-pulse 3s infinite ease-in-out;
+}
+
+@keyframes border-pulse {
+  0% { stroke-opacity: 0.5; }
+  50% { stroke-opacity: 0.8; }
+  100% { stroke-opacity: 0.5; }
+}
+
+/* Стили для меток расстояния */
+.distance-label {
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+  padding: 2px 5px;
+  font-size: 10px;
+  white-space: nowrap;
+  pointer-events: none;
+  text-align: center;
+}
+
+.distance-label div {
+  color: #333;
+  font-weight: bold;
+  text-shadow: 0px 0px 2px white;
+}
+
+/* Стили для топографических линий */
+.topographic-line {
+  fill: none;
+  stroke-dasharray: 2, 2;
+  animation: topo-fade 10s infinite ease-in-out;
+}
+
+@keyframes topo-fade {
+  0% { stroke-opacity: 0.2; }
+  50% { stroke-opacity: 0.5; }
+  100% { stroke-opacity: 0.2; }
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
