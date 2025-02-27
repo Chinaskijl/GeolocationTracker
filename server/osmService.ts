@@ -5,7 +5,13 @@
 import fetch from 'node-fetch';
 import fs from 'fs/promises';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { storage } from './storage';
+
+// Определение директории проекта в ESM-модулях
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const BOUNDARIES_DIR = path.join(__dirname, '..', 'data', 'city-boundaries');
 
 // Интерфейс для данных от Overpass API
 interface OverpassResponse {
@@ -35,6 +41,14 @@ interface OverpassResponse {
  */
 export async function fetchCityBoundaries(cityName: string): Promise<number[][]> {
   try {
+    console.log(`Trying to load boundaries for ${cityName} from cache...`);
+    // Пытаемся загрузить из кэша
+    const boundariesFromCache = await loadCityBoundariesFromFile(cityName);
+    if (boundariesFromCache && boundariesFromCache.length > 0) {
+      console.log(`Loaded boundaries for ${cityName} from cache (${boundariesFromCache.length} points)`);
+      return boundariesFromCache;
+    }
+    
     // Формируем запрос для получения границ города с геометрией
     const query = `
       [out:json];
@@ -66,7 +80,15 @@ export async function fetchCityBoundaries(cityName: string): Promise<number[][]>
     }
     
     // Обрабатываем данные для получения координат границ
-    return extractBoundaryCoordinates(data);
+    const boundaries = extractBoundaryCoordinates(data);
+    
+    // Сохраняем границы в файл для кеширования
+    if (boundaries.length > 0) {
+      console.log(`Saving boundaries for ${cityName} (${boundaries.length} points)`);
+      await saveCityBoundariesToFile(cityName, boundaries);
+    }
+    
+    return boundaries;
   } catch (error) {
     console.error(`Error fetching boundaries for ${cityName}:`, error);
     return []; // Возвращаем пустой массив в случае ошибки
@@ -145,34 +167,74 @@ export function createSimpleBoundary(latitude: number, longitude: number): numbe
 }
 
 /**
+ * Сохраняет границы города в JSON-файл
+ * @param cityName Название города
+ * @param boundaries Границы города
+ */
+async function saveCityBoundariesToFile(cityName: string, boundaries: number[][]): Promise<void> {
+  try {
+    // Создаем директорию, если она не существует
+    await fs.mkdir(BOUNDARIES_DIR, { recursive: true });
+    
+    // Путь к файлу
+    const filePath = path.join(BOUNDARIES_DIR, `${cityName}.json`);
+    
+    // Сохраняем данные
+    await fs.writeFile(filePath, JSON.stringify(boundaries, null, 2), 'utf8');
+    console.log(`Boundaries for ${cityName} saved to ${filePath}`);
+  } catch (error) {
+    console.error(`Error saving boundaries for ${cityName}:`, error);
+  }
+}
+
+/**
+ * Загружает границы города из JSON-файла
+ * @param cityName Название города
+ * @returns Границы города или null, если файл не найден
+ */
+async function loadCityBoundariesFromFile(cityName: string): Promise<number[][] | null> {
+  try {
+    // Путь к файлу
+    const filePath = path.join(BOUNDARIES_DIR, `${cityName}.json`);
+    
+    // Проверяем, существует ли файл
+    try {
+      await fs.access(filePath);
+    } catch {
+      return null; // Файл не найден
+    }
+    
+    // Читаем данные
+    const data = await fs.readFile(filePath, 'utf8');
+    const boundaries = JSON.parse(data) as number[][];
+    console.log(`Boundaries for ${cityName} loaded from ${filePath} (${boundaries.length} points)`);
+    return boundaries;
+  } catch (error) {
+    console.error(`Error loading boundaries for ${cityName}:`, error);
+    return null;
+  }
+}
+
+/**
  * Обновляет данные о границах городов
  */
-export async function updateAllCityBoundaries(): Promise<void> {
+export async function updateAllCityBoundaries(): Promise<any[]> {
   try {
     console.log('Starting update of all city boundaries...');
     // Получаем текущие данные о городах
     const cities = await storage.getCities();
-    let boundaryCities = false;
     
     // Обновляем границы для каждого города
     for (const city of cities) {
       try {
-        // Пропускаем города, у которых уже есть границы
-        if (city.boundaries && city.boundaries.length > 10) {
-          console.log(`City ${city.name} already has boundaries with ${city.boundaries.length} points`);
-          boundaryCities = true;
-          continue;
-        }
-        
         console.log(`Processing city: ${city.name}`);
-        // Пытаемся получить реальные границы из OSM
+        // Пытаемся получить реальные границы из OSM или из кэша
         const boundaries = await fetchCityBoundaries(city.name);
         
         if (boundaries.length > 0) {
-          console.log(`Got real boundaries for ${city.name} with ${boundaries.length} points`);
+          console.log(`Got boundaries for ${city.name} with ${boundaries.length} points`);
           // Обновляем границы города
           city.boundaries = boundaries;
-          boundaryCities = true;
         } else {
           console.log(`Using simple boundary for ${city.name}`);
           // Если не удалось получить границы, создаем простую границу
@@ -185,15 +247,14 @@ export async function updateAllCityBoundaries(): Promise<void> {
       }
     }
     
-    // Сохраняем обновленные данные о городах только если есть изменения
-    if (!boundaryCities) {
-      await storage.updateCitiesData(cities);
-      console.log('City boundaries updated successfully');
-    } else {
-      console.log('No boundary updates needed');
-    }
+    // Сохраняем обновленные данные о городах
+    await storage.updateCitiesData(cities);
+    console.log('City boundaries updated successfully');
+    
+    return cities;
   } catch (error) {
     console.error('Error updating city boundaries:', error);
+    throw error;
   }
 }
 
@@ -214,11 +275,11 @@ export async function updateCityBoundary(cityId: number): Promise<any> {
     
     try {
       console.log(`Updating boundary for city: ${city.name}`);
-      // Пытаемся получить реальные границы из OSM
+      // Пытаемся получить реальные границы из OSM или из кэша
       const boundaries = await fetchCityBoundaries(city.name);
       
       if (boundaries.length > 0) {
-        console.log(`Got real boundaries for ${city.name}`);
+        console.log(`Got boundaries for ${city.name}`);
         city.boundaries = boundaries;
       } else {
         console.log(`Using simple boundary for ${city.name}`);
