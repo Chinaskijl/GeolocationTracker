@@ -124,16 +124,15 @@ export function Map() {
       if (data.type === 'MILITARY_TRANSFER_START') {
         const { fromCity, toCity, amount, duration } = data;
 
-        // Create military unit marker
+        // Create military unit marker with custom icon
         const militaryIcon = L.divIcon({
-          className: 'military-icon',
-          html: `<div class="bg-blue-500 text-white px-2 py-1 rounded">⚔️ ${amount}</div>`,
-          iconSize: [40, 24]
+          className: 'military-marker',
+          html: `<div style="width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; background: #ff4500; border-radius: 50%; border: 2px solid white; color: white; font-weight: bold;">${amount}</div>`,
+          iconSize: [24, 24],
+          iconAnchor: [12, 12],
         });
 
-        const marker = L.marker([fromCity.latitude, fromCity.longitude], {
-          icon: militaryIcon
-        }).addTo(mapRef.current!);
+        const marker = L.marker([fromCity.latitude, fromCity.longitude], { icon: militaryIcon }).addTo(mapRef.current!);
 
         const pathLine = L.polyline([
           [fromCity.latitude, fromCity.longitude],

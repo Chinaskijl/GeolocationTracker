@@ -38,3 +38,30 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 }
+
+/* Стили для маркеров военных перемещений */
+.military-movement-tooltip {
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 5px;
+  font-size: 12px;
+  width: auto;
+  white-space: nowrap;
+}
+
+.military-tooltip {
+  text-align: center;
+}
+
+.leaflet-div-icon.military-marker {
+  background: #ff4500;
+  border-radius: 50%;
+  border: 2px solid white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+}
