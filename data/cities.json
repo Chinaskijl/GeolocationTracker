@@ -4,9 +4,12 @@
     "name": "Москва",
     "latitude": 55.7558,
     "longitude": 37.6173,
-    "population": 0,
+    "population": 589,
     "maxPopulation": 150000,
-    "resources": {},
+    "resources": {
+      "food": 10,
+      "gold": 8
+    },
     "boundaries": [
       [
         55.8,
@@ -30,8 +33,21 @@
       ]
     ],
     "owner": "player",
-    "buildings": [],
-    "military": 0
+    "buildings": [
+      "sawmill",
+      "sawmill",
+      "sawmill",
+      "barracks",
+      "mine",
+      "mine",
+      "farm",
+      "farm",
+      "farm",
+      "house",
+      "house",
+      "barracks"
+    ],
+    "military": 2619
   },
   {
     "id": 2,
@@ -251,7 +267,7 @@
         40.3493
       ]
     ],
-    "owner": "neutral",
+    "owner": "player",
     "buildings": [],
     "military": 0
   }
