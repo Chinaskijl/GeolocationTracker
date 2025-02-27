@@ -1,14 +1,26 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useGameStore } from '@/lib/store';
 import { TERRITORY_COLORS } from '@/lib/game';
 
+interface MilitaryMovement {
+  fromCity: any;
+  toCity: any;
+  amount: number;
+  marker: L.Marker;
+  startTime: number;
+  duration: number;
+}
+
 export function Map() {
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<L.Layer[]>([]);
   const polygonsRef = useRef<L.Layer[]>([]);
+  const militaryMovementsRef = useRef<MilitaryMovement[]>([]);
+  const animationFrameRef = useRef<number>();
   const { cities, setSelectedCity } = useGameStore();
+  const [ws, setWs] = useState<WebSocket | null>(null);
 
   // Initialize map once
   useEffect(() => {
@@ -33,6 +45,9 @@ export function Map() {
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
+      }
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
       }
     };
   }, []); // Empty dependency array - only run once
@@ -67,6 +82,7 @@ export function Map() {
         <div class="font-bold text-lg">${city.name}</div>
         <div class="text-sm">
           <div>👥 Население: ${city.population} / ${city.maxPopulation}</div>
+          <div>⚔️ Военные: ${city.military || 0}</div>
           ${Object.entries(city.resources)
             .map(([resource, amount]) => `<div>${getResourceIcon(resource)} ${resource}: +${amount}</div>`)
             .join('')}
@@ -95,6 +111,74 @@ export function Map() {
       polygonsRef.current.forEach(polygon => polygon.remove());
     };
   }, [cities, setSelectedCity]);
+
+  // Setup WebSocket for military movements
+  useEffect(() => {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const newWs = new WebSocket(`${protocol}//${window.location.host}/ws`);
+
+    newWs.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === 'MILITARY_TRANSFER_START') {
+        const { fromCity, toCity, amount, duration } = data;
+
+        // Create military unit marker
+        const militaryIcon = L.divIcon({
+          className: 'military-icon',
+          html: `<div class="bg-blue-500 text-white px-2 py-1 rounded">⚔️ ${amount}</div>`,
+          iconSize: [40, 24]
+        });
+
+        const marker = L.marker([fromCity.latitude, fromCity.longitude], {
+          icon: militaryIcon
+        }).addTo(mapRef.current!);
+
+        militaryMovementsRef.current.push({
+          fromCity,
+          toCity,
+          amount,
+          marker,
+          startTime: Date.now(),
+          duration
+        });
+
+        // Start animation if not already running
+        if (!animationFrameRef.current) {
+          animate();
+        }
+      }
+    };
+
+    setWs(newWs);
+
+    return () => {
+      newWs.close();
+    };
+  }, []);
+
+  const animate = () => {
+    if (!mapRef.current) return;
+
+    const currentTime = Date.now();
+    militaryMovementsRef.current = militaryMovementsRef.current.filter(movement => {
+      const progress = (currentTime - movement.startTime) / movement.duration;
+
+      if (progress >= 1) {
+        movement.marker.remove();
+        return false;
+      }
+
+      const lat = movement.fromCity.latitude + (movement.toCity.latitude - movement.fromCity.latitude) * progress;
+      const lng = movement.fromCity.longitude + (movement.toCity.longitude - movement.fromCity.longitude) * progress;
+      movement.marker.setLatLng([lat, lng]);
+
+      return true;
+    });
+
+    if (militaryMovementsRef.current.length > 0) {
+      animationFrameRef.current = requestAnimationFrame(animate);
+    }
+  };
 
   return <div id="map" className="w-full h-screen" />;
 }

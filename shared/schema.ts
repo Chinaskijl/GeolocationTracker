@@ -17,7 +17,8 @@ export const cities = pgTable("cities", {
   }>().notNull(),
   boundaries: jsonb("boundaries").$type<[number, number][]>().notNull(),
   owner: text("owner").default("neutral"),
-  buildings: jsonb("buildings").$type<string[]>().default([]).notNull()
+  buildings: jsonb("buildings").$type<string[]>().default([]).notNull(),
+  military: integer("military").default(0).notNull()
 });
 
 export const insertCitySchema = createInsertSchema(cities);
