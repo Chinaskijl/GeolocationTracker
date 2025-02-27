@@ -1,4 +1,3 @@
-
 import type { Listing, Transaction, ResourceType } from '@shared/marketTypes';
 import { storage } from './storage';
 
@@ -38,7 +37,7 @@ class Market {
     type: 'buy' | 'sell';
   }): Promise<boolean> {
     const gameState = await storage.getGameState();
-    
+
     // Проверка наличия ресурсов при продаже
     if (listingData.type === 'sell') {
       const currentAmount = gameState.resources[listingData.resourceType];
@@ -62,7 +61,7 @@ class Market {
       newResources.gold -= totalCost;
       await storage.setGameState({ ...gameState, resources: newResources });
     }
-    
+
     // Создаем новый лот
     const newListing: Listing = {
       id: Date.now(),
@@ -73,12 +72,12 @@ class Market {
       createdAt: new Date().toISOString(),
       owner: 'player'
     };
-    
+
     this.listings.push(newListing);
-    
+
     // Обновляем историю цен при создании лота
     this.updatePriceHistory(listingData.resourceType, listingData.pricePerUnit);
-    
+
     return true;
   }
 
@@ -93,25 +92,25 @@ class Market {
     if (listingIndex === -1) {
       return false; // Лот не найден
     }
-    
+
     const listing = this.listings[listingIndex];
-    
+
     // Проверка, что покупатель не является владельцем
     if (listing.owner === buyer) {
       return false; // Нельзя купить свой же лот
     }
-    
+
     const gameState = await storage.getGameState();
     const totalCost = listing.amount * listing.pricePerUnit;
-    
+
     if (listing.type === 'sell') {
       // Покупка у продавца
       if (buyer === 'player' && gameState.resources.gold < totalCost) {
         return false; // Игроку не хватает золота
       }
-      
+
       const newResources = { ...gameState.resources };
-      
+
       if (buyer === 'player') {
         // Игрок покупает ресурсы
         newResources.gold -= totalCost;
@@ -120,16 +119,16 @@ class Market {
         // ИИ покупает ресурсы у игрока
         newResources.gold += totalCost;
       }
-      
+
       await storage.setGameState({ ...gameState, resources: newResources });
     } else if (listing.type === 'buy') {
       // Продажа покупателю
       if (buyer === 'player' && gameState.resources[listing.resourceType] < listing.amount) {
         return false; // Игроку не хватает ресурсов
       }
-      
+
       const newResources = { ...gameState.resources };
-      
+
       if (buyer === 'player') {
         // Игрок продает ресурсы
         newResources[listing.resourceType] -= listing.amount;
@@ -139,10 +138,10 @@ class Market {
         newResources[listing.resourceType] += listing.amount;
         newResources.gold -= totalCost;
       }
-      
+
       await storage.setGameState({ ...gameState, resources: newResources });
     }
-    
+
     // Создаем запись о транзакции
     const transaction: Transaction = {
       id: Date.now(),
@@ -155,12 +154,12 @@ class Market {
       seller: listing.type === 'sell' ? listing.owner : buyer,
       buyer: listing.type === 'sell' ? buyer : listing.owner
     };
-    
+
     this.transactions.push(transaction);
-    
+
     // Удаляем лот из списка
     this.listings.splice(listingIndex, 1);
-    
+
     return true;
   }
 
@@ -174,17 +173,17 @@ class Market {
     if (listingIndex === -1) {
       return false; // Лот не найден
     }
-    
+
     const listing = this.listings[listingIndex];
-    
+
     // Можно отменять только свои лоты
     if (listing.owner !== 'player') {
       return false;
     }
-    
+
     const gameState = await storage.getGameState();
     const newResources = { ...gameState.resources };
-    
+
     if (listing.type === 'sell') {
       // Возвращаем ресурсы продавцу
       newResources[listing.resourceType] += listing.amount;
@@ -192,12 +191,12 @@ class Market {
       // Возвращаем золото покупателю
       newResources.gold += listing.amount * listing.pricePerUnit;
     }
-    
+
     await storage.setGameState({ ...gameState, resources: newResources });
-    
+
     // Удаляем лот из списка
     this.listings.splice(listingIndex, 1);
-    
+
     return true;
   }
 
@@ -219,7 +218,7 @@ class Market {
       timestamp: Date.now(),
       price
     });
-    
+
     // Ограничиваем историю последними 100 записями
     if (this.priceHistory[resourceType].length > 100) {
       this.priceHistory[resourceType].shift();
@@ -236,11 +235,11 @@ class Market {
     if (!this.priceHistory[resourceType].length) {
       return [];
     }
-    
+
     if (!days) {
       return this.priceHistory[resourceType];
     }
-    
+
     const cutoffTime = Date.now() - days * 24 * 60 * 60 * 1000;
     return this.priceHistory[resourceType].filter(record => record.timestamp >= cutoffTime);
   }
@@ -252,7 +251,7 @@ class Market {
   createAIListings(): void {
     // Добавление лотов ИИ для обеспечения ликвидности рынка
     const resourceTypes: ResourceType[] = ['food', 'wood', 'oil', 'metal', 'steel', 'weapons'];
-    
+
     // Базовые цены для различных ресурсов
     const basePrices: Record<ResourceType, number> = {
       gold: 1,
@@ -263,21 +262,21 @@ class Market {
       steel: 12,
       weapons: 20
     };
-    
+
     // Для каждого типа ресурсов создаем по одному лоту покупки и продажи
     for (const resourceType of resourceTypes) {
       const basePrice = basePrices[resourceType];
-      
+
       // Случайное отклонение цены до ±20%
       const sellPriceVariation = 1 + (Math.random() * 0.4 - 0.2);
       const buyPriceVariation = 1 - (Math.random() * 0.3); // Цена покупки всегда ниже базовой
-      
+
       const sellPrice = Math.round(basePrice * sellPriceVariation * 100) / 100;
       const buyPrice = Math.round(basePrice * buyPriceVariation * 100) / 100;
-      
+
       const sellAmount = Math.floor(Math.random() * 10) + 5; // 5-15 единиц
       const buyAmount = Math.floor(Math.random() * 15) + 10; // 10-25 единиц
-      
+
       // Лот продажи (ИИ продает ресурс)
       this.listings.push({
         id: Date.now() + Math.floor(Math.random() * 1000),
@@ -288,7 +287,7 @@ class Market {
         createdAt: new Date().toISOString(),
         owner: 'ai'
       });
-      
+
       // Лот покупки (ИИ покупает ресурс)
       this.listings.push({
         id: Date.now() + Math.floor(Math.random() * 1000) + 1000,
@@ -299,7 +298,7 @@ class Market {
         createdAt: new Date().toISOString(),
         owner: 'ai'
       });
-      
+
       // Обновляем историю цен
       this.updatePriceHistory(resourceType, (sellPrice + buyPrice) / 2);
     }
@@ -312,13 +311,13 @@ class Market {
   cleanupOldListings(): void {
     const now = Date.now();
     const oneDayAgo = now - 24 * 60 * 60 * 1000; // 24 часа назад
-    
+
     this.listings = this.listings.filter(listing => {
       // Сохраняем все лоты игрока
       if (listing.owner === 'player') {
         return true;
       }
-      
+
       // Для AI лотов проверяем время создания
       const createdAt = new Date(listing.createdAt).getTime();
       return createdAt > oneDayAgo;
@@ -332,16 +331,118 @@ class Market {
   initialize(): void {
     // Создаем начальные лоты от AI
     this.createAIListings();
-    
+
     // Устанавливаем периодическое обновление лотов ИИ
     setInterval(() => {
       this.cleanupOldListings();
-      
+
       // Если лотов мало, добавляем новые
       if (this.listings.filter(l => l.owner === 'ai').length < 5) {
         this.createAIListings();
       }
     }, 30 * 60 * 1000); // Каждые 30 минут
+  }
+
+
+  private createTransaction(transactionData: {
+    resourceType: ResourceType;
+    amount: number;
+    pricePerUnit: number;
+    timestamp: number;
+    type: 'buy' | 'sell';
+  }): void {
+    const transaction: Transaction = {
+      id: Date.now(),
+      listingId: 0, // Не используется в этом методе
+      resourceType: transactionData.resourceType,
+      amount: transactionData.amount,
+      pricePerUnit: transactionData.pricePerUnit,
+      totalPrice: transactionData.amount * transactionData.pricePerUnit,
+      timestamp: new Date(transactionData.timestamp).toISOString(),
+      seller: 'player', //  Предполагаем, что игрок всегда участвует в транзакции
+      buyer: 'ai' // Предполагаем, что ИИ всегда участвует в транзакции
+    };
+    this.transactions.push(transaction);
+  }
+
+  /**
+   * Обработка покупки лота
+   * @param listingId - ID лота
+   * @returns true, если покупка успешна, иначе false
+   */
+  async purchaseListing(listingId: string): Promise<boolean> {
+    const listing = this.listings.find(l => l.id === parseInt(listingId, 10));
+    if (!listing) {
+      console.log(`Лот ${listingId} не найден`);
+      return false;
+    }
+
+    const gameState = await storage.getGameState();
+
+    if (listing.type === 'sell') {
+      // Игрок покупает ресурс
+      const totalPrice = listing.amount * listing.pricePerUnit;
+
+      // Проверка наличия достаточного количества золота
+      if (gameState.resources.gold < totalPrice) {
+        console.log(`Недостаточно золота для покупки. Требуется: ${totalPrice}, Имеется: ${gameState.resources.gold}`);
+        return false;
+      }
+
+      // Снимаем золото и добавляем ресурс
+      gameState.resources.gold -= totalPrice;
+      gameState.resources[listing.resourceType] = (gameState.resources[listing.resourceType] || 0) + listing.amount;
+
+      await storage.saveGameState(gameState);
+
+      // Создаем запись о транзакции
+      this.createTransaction({
+        resourceType: listing.resourceType,
+        amount: listing.amount,
+        pricePerUnit: listing.pricePerUnit,
+        timestamp: Date.now(),
+        type: 'buy'
+      });
+
+      // Удаляем лот из рынка
+      this.listings = this.listings.filter(l => l.id !== parseInt(listingId, 10));
+
+      console.log(`Успешная покупка лота ${listingId}. Ресурс: ${listing.resourceType}, Количество: ${listing.amount}, Цена: ${totalPrice}`);
+      return true;
+    } 
+    else if (listing.type === 'buy') {
+      // Игрок продает ресурс
+      const totalPrice = listing.amount * listing.pricePerUnit;
+
+      // Проверка наличия достаточного количества ресурса
+      if ((gameState.resources[listing.resourceType] || 0) < listing.amount) {
+        console.log(`Недостаточно ресурса для продажи. Требуется: ${listing.amount}, Имеется: ${gameState.resources[listing.resourceType] || 0}`);
+        return false;
+      }
+
+      // Снимаем ресурс и добавляем золото
+      gameState.resources[listing.resourceType] -= listing.amount;
+      gameState.resources.gold += totalPrice; // Важно: добавляем золото при продаже
+
+      await storage.saveGameState(gameState);
+
+      // Создаем запись о транзакции
+      this.createTransaction({
+        resourceType: listing.resourceType,
+        amount: listing.amount,
+        pricePerUnit: listing.pricePerUnit,
+        timestamp: Date.now(),
+        type: 'sell'
+      });
+
+      // Удаляем лот из рынка
+      this.listings = this.listings.filter(l => l.id !== parseInt(listingId, 10));
+
+      console.log(`Успешная продажа лота ${listingId}. Ресурс: ${listing.resourceType}, Количество: ${listing.amount}, Получено золота: ${totalPrice}`);
+      return true;
+    }
+
+    return false;
   }
 }
 

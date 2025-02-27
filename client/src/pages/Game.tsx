@@ -63,10 +63,9 @@ const MarketPanel = ({ open, onClose }) => {
             <MarketCreateListing onSuccess={handleListingCreated} />
           </div>
 
-          {/* Средняя панель - графики цен и общий селектор ресурсов */}
+          {/* Средняя панель - графики цен */}
           <div className="md:col-span-1">
             <MarketPriceChartSelector onResourceSelect={setSelectedResource} excludeResource="gold"/> {/* Передаем функцию для установки выбранного ресурса */}
-            <MarketPriceChart selectedResource={selectedResource}/> {/*Added to display the chart based on selected resource*/}
           </div>
         </div>
 

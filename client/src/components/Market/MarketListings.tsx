@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Listing, ResourceType } from '@/shared/marketTypes';
@@ -8,24 +9,30 @@ import { getResourceIcon, getResourceName } from '@/lib/resources';
  */
 interface MarketListingsProps {
   onListingPurchased?: () => void;
-  currentResource?: ResourceType;
-  onResourceSelect?: (resource: ResourceType) => void;
+  selectedResource?: ResourceType;
 }
 
 /**
  * Компонент для отображения списков лотов на рынке
  * 
  * @param onListingPurchased - Функция обратного вызова, вызываемая после успешной покупки лота
- * @param currentResource - Текущий выбранный тип ресурса для фильтрации
- * @param onResourceSelect - Функция обратного вызова при выборе ресурса
+ * @param selectedResource - Текущий выбранный тип ресурса для фильтрации
  */
-export function MarketListings({ onListingPurchased, currentResource, onResourceSelect }: MarketListingsProps) {
+export function MarketListings({ onListingPurchased, selectedResource = 'food' }: MarketListingsProps) {
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentResource, setCurrentResource] = useState<ResourceType>(selectedResource);
 
   // Получение списка доступных ресурсов для фильтрации (без золота)
   const resources: ResourceType[] = ['food', 'wood', 'oil', 'metal', 'steel', 'weapons'];
+
+  // Обновляем текущий ресурс, когда меняется selectedResource из props
+  useEffect(() => {
+    if (selectedResource) {
+      setCurrentResource(selectedResource);
+    }
+  }, [selectedResource]);
 
   /**
    * Загрузка лотов с сервера
@@ -45,65 +52,55 @@ export function MarketListings({ onListingPurchased, currentResource, onResource
   };
 
   /**
-   * Покупка лота
-   * 
-   * @param listingId - ID лота для покупки
+   * Загрузка лотов при монтировании компонента
    */
-  const purchaseListing = async (listingId: number) => {
+  useEffect(() => {
+    fetchListings();
+
+    // Настраиваем интервал для периодического обновления лотов
+    const interval = setInterval(fetchListings, 10000); // Каждые 10 секунд
+
+    // Очищаем интервал при размонтировании компонента
+    return () => clearInterval(interval);
+  }, []);
+
+  /**
+   * Обработчик покупки лота
+   */
+  const handlePurchase = async (listingId: string) => {
     try {
-      await axios.post(`/api/market/buy/${listingId}`);
-      // Обновляем список лотов после покупки
+      await axios.post(`/api/market/purchase/${listingId}`);
+      
+      // Обновляем список лотов после успешной покупки
       fetchListings();
+      
+      // Вызываем коллбэк, если он предоставлен
       if (onListingPurchased) {
         onListingPurchased();
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error('Ошибка при покупке лота:', err);
-      setError(err.response?.data?.message || 'Не удалось купить лот');
+      setError('Не удалось купить лот. Возможно, у вас недостаточно ресурсов или лот уже продан.');
     }
   };
 
-  // Загрузка лотов при монтировании компонента
-  useEffect(() => {
-    fetchListings();
-  }, []);
-
-  // Обработчик выбора ресурса
+  /**
+   * Обработчик выбора ресурса
+   */
   const handleResourceSelect = (resource: ResourceType) => {
-    if (onResourceSelect) {
-      onResourceSelect(resource);
-    }
+    setCurrentResource(resource);
   };
 
-  if (loading) {
-    return <div className="text-center p-4">Загрузка лотов...</div>;
-  }
-
-  if (error) {
-    return (
-      <div className="text-center p-4 text-red-500">
-        <p>{error}</p>
-        <button 
-          onClick={fetchListings} 
-          className="mt-2 px-4 py-2 bg-blue-500 text-white rounded"
-        >
-          Повторить
-        </button>
-      </div>
-    );
-  }
-
-  if (listings.length === 0) {
-    return <div className="text-center p-4 text-gray-500">Нет активных лотов</div>;
-  }
-
-  // Фильтрация лотов по выбранному ресурсу, если он указан
-  const filteredListings = currentResource
-    ? listings.filter(listing => listing.resourceType === currentResource)
-    : listings;
+  /**
+   * Фильтрация лотов по выбранному ресурсу
+   */
+  const filteredListings = listings.filter(listing => listing.resourceType === currentResource);
 
   return (
-    <div>
+    <div className="bg-white rounded-lg shadow p-4">
+      <h2 className="text-xl font-semibold mb-4">Активные лоты на рынке</h2>
+      
+      {/* Кнопки выбора ресурса */}
       <div className="mb-4 flex flex-wrap gap-2">
         {resources.map((resource) => (
           <button
@@ -121,44 +118,104 @@ export function MarketListings({ onListingPurchased, currentResource, onResource
         ))}
       </div>
 
-      <div className="space-y-4">
-        {filteredListings.length > 0 ? (
-          filteredListings.map((listing) => (
-            <div key={listing.id} className="border rounded-lg p-4 shadow-sm bg-white">
-              <div className="flex justify-between items-center">
-                <div>
-                  <span className="mr-2 text-lg">{getResourceIcon(listing.resourceType)}</span>
-                  <span className="font-medium">{getResourceName(listing.resourceType)}</span>
-                  <span className="ml-2 text-gray-600">x{listing.amount}</span>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm text-gray-600">
-                    Цена: <span className="font-medium">{listing.price}</span> 💰
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    За единицу: <span className="font-medium">{(listing.price / listing.amount).toFixed(2)}</span> 💰
-                  </div>
-                </div>
-              </div>
-              <div className="mt-2 flex justify-between items-center">
-                <div className="text-sm text-gray-600">
-                  Продавец: <span className="font-medium">{listing.seller}</span>
-                </div>
-                <button
-                  onClick={() => purchaseListing(listing.id)}
-                  className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
-                >
-                  Купить
-                </button>
-              </div>
-            </div>
-          ))
-        ) : (
-          <div className="text-center p-4 text-gray-500">
-            Нет лотов с выбранным ресурсом
-          </div>
-        )}
-      </div>
+      {/* Отображение ошибки, если она есть */}
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          {error}
+        </div>
+      )}
+
+      {/* Отображение индикатора загрузки */}
+      {loading && (
+        <div className="text-center py-4">
+          <svg className="animate-spin h-5 w-5 text-blue-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+        </div>
+      )}
+
+      {/* Отображение лотов */}
+      {!loading && filteredListings.length === 0 && (
+        <div className="text-center py-4 text-gray-500">
+          Нет активных лотов для {getResourceName(currentResource)}
+        </div>
+      )}
+
+      {!loading && filteredListings.length > 0 && (
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Тип
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Ресурс
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Количество
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Цена за единицу
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Общая стоимость
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Действие
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredListings.map((listing) => (
+                <tr key={listing.id}>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                      listing.type === 'sell' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
+                    }`}>
+                      {listing.type === 'sell' ? 'Продажа' : 'Покупка'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <span className="mr-2">{getResourceIcon(listing.resourceType)}</span>
+                      <span>{getResourceName(listing.resourceType)}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {listing.amount}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {listing.pricePerUnit} {getResourceIcon('gold')}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {listing.amount * listing.pricePerUnit} {getResourceIcon('gold')}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {listing.type === 'sell' && (
+                      <button
+                        onClick={() => handlePurchase(listing.id)}
+                        className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-lg text-sm"
+                      >
+                        Купить
+                      </button>
+                    )}
+                    {listing.type === 'buy' && (
+                      <button
+                        onClick={() => handlePurchase(listing.id)}
+                        className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-lg text-sm"
+                      >
+                        Продать
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
