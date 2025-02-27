@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Map } from '@/components/Map';
 import { ResourcePanel } from '@/components/ResourcePanel';
@@ -7,19 +7,9 @@ import { useGameStore } from '@/lib/store';
 import type { City, GameState } from '@shared/schema';
 import { BUILDINGS } from '@/lib/game';
 
-interface Attack {
-  id: string;
-  fromCityId: number;
-  toCityId: number;
-  amount: number;
-  startTime: number;
-  endTime: number;
-}
-
 export default function Game() {
   const { setCities, setGameState } = useGameStore();
   const queryClient = useQueryClient();
-  const [attacks, setAttacks] = useState<Attack[]>([]);
 
   const { data: cities } = useQuery<City[]>({
     queryKey: ['/api/cities']
@@ -71,12 +61,6 @@ export default function Game() {
         if (message.type === 'CITY_UPDATE') {
           queryClient.invalidateQueries({ queryKey: ['/api/cities'] });
         }
-        if (message.type === 'ATTACK_STARTED' && message.attack) {
-          setAttacks(prevAttacks => [...prevAttacks, message.attack]);
-        }
-        if (message.type === 'ATTACK_ENDED' && message.attackId){
-          setAttacks(prevAttacks => prevAttacks.filter(attack => attack.id !== message.attackId));
-        }
       } catch (error) {
         console.error('Failed to parse WebSocket message:', error);
       }
@@ -97,39 +81,11 @@ export default function Game() {
     };
   }, [queryClient]);
 
-
-  // Placeholder for MilitaryActionPanel component
-  const MilitaryActionPanel = () => <div>Military Actions</div>;
-
-  // Placeholder for AttackAnimation component
-  const AttackAnimation = ({ attack }: { attack: Attack }) => (
-    <div>Attack from {attack.fromCityId} to {attack.toCityId} ({attack.amount})</div>
-  );
-
   return (
     <div className="relative">
       <Map />
       <ResourcePanel />
-      {cities && cities.map(city => (
-          <div key={city.id}>{city.name}: Population - {city.population}, Military - {city.military || 0}</div>
-        ))}
-      {attacks.map(attack => (
-        <AttackAnimation key={attack.id} attack={attack} />
-      ))}
+      <CityPanel />
     </div>
   );
-}
-
-interface City {
-  id: number;
-  name: string;
-  latitude: number;
-  longitude: number;
-  population: number;
-  maxPopulation: number;
-  owner: string;
-  resources: Record<string, number>;
-  boundaries: number[][];
-  buildings: string[];
-  military?: number;
 }

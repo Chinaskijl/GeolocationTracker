@@ -81,18 +81,10 @@ export class GameLoop {
           });
 
           // Обновление населения города
-          // Если еды 0, то население уменьшается
-          let newPopulation = 0;
-          if (gameState.resources.food <= 0) {
-            // При нехватке еды население уменьшается
-            newPopulation = Math.max(0, city.population - 1 * deltaTime);
-          } else {
-            // При наличии еды население растет
-            newPopulation = Math.min(
-              city.maxPopulation,
-              Math.max(0, city.population + cityPopulationGrowth - cityPopulationUsed)
-            );
-          }
+          const newPopulation = Math.min(
+            city.maxPopulation,
+            Math.max(0, city.population + cityPopulationGrowth - cityPopulationUsed)
+          );
 
           totalPopulationGrowth += cityPopulationGrowth;
           totalMilitaryGrowth += cityMilitaryGrowth;

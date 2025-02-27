@@ -23,7 +23,7 @@ export const useGameStore = create<GameStore>((set) => ({
   setCities: (cities) => set((state) => {
     // Добавляем только новые города, обновляем существующие
     const updatedCities = [...state.cities];
-
+    
     cities.forEach(newCity => {
       const existingIndex = updatedCities.findIndex(c => c.id === newCity.id);
       if (existingIndex >= 0) {
@@ -32,7 +32,7 @@ export const useGameStore = create<GameStore>((set) => ({
         updatedCities.push(newCity);
       }
     });
-
+    
     return { cities: updatedCities };
   }),
   updateCity: (updatedCity) => set((state) => ({
