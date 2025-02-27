@@ -61,14 +61,13 @@ const MarketPanel = ({ open, onClose }) => {
 
           {/* Средняя панель - графики цен и общий селектор ресурсов */}
           <div className="md:col-span-2">
-            <MarketPriceChartSelector onResourceSelect={setSelectedResource} excludeResource="gold"/> {/* Pass selectedResource to MarketListings */}
-            <MarketPriceChart selectedResource={selectedResource} /> {/* Assuming MarketPriceChart takes selectedResource */}
+            <MarketPriceChartSelector onResourceSelect={setSelectedResource} excludeResource="gold"/> {/* Передаем функцию для установки выбранного ресурса */}
           </div>
         </div>
 
         {/* Нижняя панель - список лотов */}
         <div className="mt-6">
-          <MarketListings selectedResource={selectedResource} onListingPurchased={handleListingCreated} /> {/* Pass selectedResource to MarketListings */}
+          <MarketListings selectedResource={selectedResource} onListingPurchased={handleListingCreated} /> {/* Передаем выбранный ресурс в компонент списка лотов */}
         </div>
       </div>
     </div>

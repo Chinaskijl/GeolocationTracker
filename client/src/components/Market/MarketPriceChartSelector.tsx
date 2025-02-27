@@ -19,6 +19,10 @@ export function MarketPriceChartSelector() {
     console.log('Лот успешно куплен');
   };
 
+  const handleResourceSelect = (resource: ResourceType) => {
+    setSelectedResource(resource);
+  };
+
   return (
     <div>
       <div className="bg-white rounded-lg shadow p-4 mb-6">
@@ -28,7 +32,7 @@ export function MarketPriceChartSelector() {
           {resources.map((resource) => (
             <button
               key={resource}
-              onClick={() => setSelectedResource(resource)}
+              onClick={() => handleResourceSelect(resource)}
               className={`flex items-center px-3 py-1.5 rounded-full text-sm ${
                 selectedResource === resource
                   ? 'bg-blue-500 text-white'

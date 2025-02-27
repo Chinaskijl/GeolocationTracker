@@ -3,11 +3,12 @@ import { Listing, ResourceType } from '@/shared/marketTypes';
 import { getResourceIcon } from '@/lib/resources';
 
 /**
- * Свойства компонента списка лотов
+ * Параметры компонента списка лотов
  */
 interface MarketListingsProps {
   onRefreshNeeded?: () => void;
-  selectedResource?: ResourceType; // Added selectedResource prop
+  selectedResource?: ResourceType; // Выбранный ресурс
+  onListingPurchased?: () => void; // Обработчик успешной покупки лота
 }
 
 /**
@@ -15,11 +16,23 @@ interface MarketListingsProps {
  * 
  * @param onRefreshNeeded - Функция, вызываемая при необходимости обновления данных
  * @param selectedResource - Выбранный тип ресурса для фильтрации
+ * @param onListingPurchased - Функция, вызываемая после успешной покупки лота
  */
-export function MarketListings({ onRefreshNeeded, selectedResource }: MarketListingsProps) {
+export function MarketListings({ onRefreshNeeded, selectedResource, onListingPurchased }: MarketListingsProps) {
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentResource, setCurrentResource] = useState<ResourceType | undefined>(selectedResource || 'food');
+
+  // Обновляем текущий ресурс, когда изменяется выбранный ресурс из родительского компонента
+  useEffect(() => {
+    if (selectedResource) {
+      setCurrentResource(selectedResource);
+    }
+  }, [selectedResource]);
+
+  // Список всех доступных ресурсов (без gold, так как это основная валюта)
+  const resources: ResourceType[] = ['food', 'wood', 'oil', 'metal', 'steel', 'weapons'];
 
   // Загрузка списка лотов с сервера
   const fetchListings = async () => {
@@ -63,6 +76,9 @@ export function MarketListings({ onRefreshNeeded, selectedResource }: MarketList
       // Уведомляем родительский компонент о необходимости обновления
       if (onRefreshNeeded) {
         onRefreshNeeded();
+      }
+      if (onListingPurchased) {
+        onListingPurchased();
       }
     } catch (err) {
       console.error('Ошибка при покупке лота:', err);
@@ -143,8 +159,8 @@ export function MarketListings({ onRefreshNeeded, selectedResource }: MarketList
   }
 
   // Фильтрация лотов по выбранному ресурсу, если он указан
-  const filteredListings = selectedResource 
-    ? listings.filter(listing => listing.resourceType === selectedResource) 
+  const filteredListings = currentResource
+    ? listings.filter(listing => listing.resourceType === currentResource)
     : listings;
 
   // Удаление золота из списка ресурсов, если оно там есть
@@ -165,6 +181,17 @@ export function MarketListings({ onRefreshNeeded, selectedResource }: MarketList
 
   return (
     <div className="overflow-x-auto">
+      <div className="mb-2">
+        {resources.map((resource) => (
+          <button
+            key={resource}
+            onClick={() => setCurrentResource(resource)}
+            className={`px-3 py-1 mx-1 rounded ${currentResource === resource ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}
+          >
+            {resource}
+          </button>
+        ))}
+      </div>
       <h3 className="text-lg font-medium mb-2">Активные лоты на рынке</h3>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
