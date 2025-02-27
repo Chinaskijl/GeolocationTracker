@@ -20,12 +20,14 @@ export default function Game() {
 
   useEffect(() => {
     if (cities) {
+      console.log('Cities updated:', cities);
       setCities(cities);
     }
   }, [cities, setCities]);
 
   useEffect(() => {
     if (gameState) {
+      console.log('Game state updated:', gameState);
       setGameState(gameState);
     }
   }, [gameState, setGameState]);

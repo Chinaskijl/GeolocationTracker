@@ -34,6 +34,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const cities = await storage.getCities();
       const gameState = await storage.getGameState();
+      console.log('Current game state:', gameState);
+
       let totalFoodConsumption = 0;
       let populationGrowth = 0;
       let militaryGrowth = 0;
@@ -42,25 +44,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Calculate production from all buildings in all player cities
       cities.forEach(city => {
         if (city.owner === 'player') {
+          console.log(`Processing city ${city.name}:`, city);
+
           city.buildings.forEach(buildingId => {
             const building = BUILDINGS.find(b => b.id === buildingId);
             if (!building) return;
+
+            console.log(`Processing building ${building.name} in ${city.name}`);
 
             // Resource production
             if (building.resourceProduction) {
               const { type, amount } = building.resourceProduction;
               gameState.resources[type] += amount;
+              console.log(`Resource production: +${amount} ${type}`);
             }
 
             // Population growth from houses
             if (building.population?.growth) {
               populationGrowth += building.population.growth;
+              console.log(`Population growth: +${building.population.growth}`);
             }
 
             // Military production and population use from barracks
             if (building.military) {
               militaryGrowth += building.military.production;
               populationUsed += building.military.populationUse;
+              console.log(`Military production: +${building.military.production}, Population used: -${building.military.populationUse}`);
             }
           });
         }
@@ -68,6 +77,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Calculate food consumption
       totalFoodConsumption = gameState.population * POPULATION_FOOD_CONSUMPTION;
+      console.log(`Total food consumption: -${totalFoodConsumption}`);
 
       // Update resources and population
       const newGameState = {
@@ -80,6 +90,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         military: gameState.military + militaryGrowth
       };
 
+      console.log('Updated game state:', newGameState);
       await storage.setGameState(newGameState);
 
       // Broadcast game state update

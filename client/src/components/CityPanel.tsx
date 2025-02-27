@@ -4,17 +4,34 @@ import { Button } from '@/components/ui/button';
 import { BUILDINGS } from '@/lib/game';
 import { apiRequest } from '@/lib/queryClient';
 import { Progress } from '@/components/ui/progress';
+import { useQueryClient } from '@tanstack/react-query';
 
 export function CityPanel() {
   const { selectedCity, gameState } = useGameStore();
+  const queryClient = useQueryClient();
 
   if (!selectedCity) return null;
 
   const handleBuild = async (buildingId: string) => {
     try {
+      console.log(`Attempting to build ${buildingId} in city ${selectedCity.id}`);
+      const building = BUILDINGS.find(b => b.id === buildingId);
+      if (!building) {
+        console.error('Building not found:', buildingId);
+        return;
+      }
+
+      console.log('Current resources:', gameState.resources);
+      console.log('Building cost:', building.cost);
+
       await apiRequest('POST', `/api/cities/${selectedCity.id}/build`, {
         buildingId
       });
+
+      console.log('Building successful, invalidating queries');
+      // Обновляем данные после успешного строительства
+      queryClient.invalidateQueries({ queryKey: ['/api/cities'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/game-state'] });
     } catch (error) {
       console.error('Failed to build:', error);
     }
@@ -23,9 +40,17 @@ export function CityPanel() {
   const handleCapture = async () => {
     if (selectedCity.owner === 'neutral' && gameState.military >= selectedCity.population / 4) {
       try {
+        console.log(`Attempting to capture city ${selectedCity.id}`);
+        console.log('Military strength:', gameState.military);
+        console.log('Required strength:', selectedCity.population / 4);
+
         await apiRequest('POST', `/api/cities/${selectedCity.id}/capture`, {
           owner: 'player'
         });
+
+        console.log('Capture successful, invalidating queries');
+        // Обновляем данные после успешного захвата
+        queryClient.invalidateQueries({ queryKey: ['/api/cities'] });
       } catch (error) {
         console.error('Failed to capture:', error);
       }
@@ -98,12 +123,12 @@ export function CityPanel() {
                     disabled={!canAffordBuilding(gameState, building) || atLimit}
                   >
                     <div className="flex justify-between w-full">
-                      <span>{building.name}</span>
+                      <span className="font-medium">{building.name}</span>
                       <span className="text-sm text-gray-500">
                         {buildingCount}/{building.maxCount}
                       </span>
                     </div>
-                    <div className="text-sm text-gray-600">
+                    <div className="text-xs text-gray-600">
                       {building.resourceProduction && (
                         <span>+{building.resourceProduction.amount} {building.resourceProduction.type}/сек </span>
                       )}
@@ -114,9 +139,9 @@ export function CityPanel() {
                         <span>+{building.military.production} военные/сек (-{building.military.populationUse} население) </span>
                       )}
                     </div>
-                    <div className="text-sm">
+                    <div className="flex flex-wrap gap-2 text-xs">
                       {Object.entries(building.cost).map(([resource, amount]) => (
-                        <span key={resource} className="mr-2">
+                        <span key={resource} className="flex items-center gap-1">
                           {getResourceIcon(resource)} {amount}
                         </span>
                       ))}
@@ -138,17 +163,17 @@ export function CityPanel() {
                 return (
                   <div key={`${buildingId}-${index}`} className="flex justify-between items-center">
                     <span>{building.name}</span>
-                    <div>
+                    <div className="flex items-center gap-2 text-sm">
                       {building.resourceProduction && (
                         <span>
                           {getResourceIcon(building.resourceProduction.type)} +{building.resourceProduction.amount}
                         </span>
                       )}
                       {building.population?.growth && (
-                        <span className="ml-2">👥 +{building.population.growth}</span>
+                        <span>👥 +{building.population.growth}</span>
                       )}
                       {building.military?.production && (
-                        <span className="ml-2">⚔️ +{building.military.production}</span>
+                        <span>⚔️ +{building.military.production}</span>
                       )}
                     </div>
                   </div>

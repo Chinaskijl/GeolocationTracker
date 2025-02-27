@@ -32,10 +32,7 @@ export class MemStorage implements IStorage {
       longitude: 37.6173,
       population: 0,
       maxPopulation: 150000,
-      resources: {
-        wood: 10,
-        gold: 5
-      },
+      resources: {},
       boundaries: [
         [55.8, 37.5],
         [55.9, 37.7],
