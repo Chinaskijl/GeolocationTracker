@@ -27,31 +27,41 @@ export function CityPanel() {
       console.log('Current resources:', gameState.resources);
       console.log('Building cost:', building.cost);
 
-      const response = await apiRequest('POST', `/api/cities/${selectedCity.id}/build`, {
+      // Отправляем запрос на строительство
+      await apiRequest('POST', `/api/cities/${selectedCity.id}/build`, {
         buildingId
       });
-      
-      // Обновляем локальное состояние города и выбранного города
-      if (response && response.id) {
-        // Обновляем выбранный город с новыми данными от сервера
-        useGameStore.getState().setSelectedCity({
-          ...selectedCity,
-          buildings: [...selectedCity.buildings, buildingId]
-        });
-        
-        // Обеспечиваем согласованность с состоянием хранилища
-        const citiesState = useGameStore.getState().cities;
-        const updatedCities = citiesState.map(city => 
-          city.id === selectedCity.id 
-            ? { ...city, buildings: [...city.buildings, buildingId] } 
-            : city
-        );
-        useGameStore.getState().setCities(updatedCities);
-      }
 
       console.log('Building successful, invalidating queries');
       queryClient.invalidateQueries({ queryKey: ['/api/cities'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/game-state'] });
+
+      // Создаем промис, который разрешится, когда придет следующее обновление от сервера
+      const waitForUpdate = new Promise<void>((resolve) => {
+        // Функция, которая будет вызвана при следующем WebSocket обновлении
+        const subscription = useGameStore.subscribe(
+          (state) => state.cities,
+          (cities) => {
+            const cityInState = cities.find(city => city.id === selectedCity.id);
+            if (cityInState && cityInState.buildings.includes(buildingId)) {
+              // Обновляем выбранный город
+              useGameStore.getState().setSelectedCity(cityInState);
+              // Отписываемся от обновлений
+              subscription();
+              // Завершаем промис
+              resolve();
+            }
+          }
+        );
+
+        // Установим таймаут для случая, если обновление не придет
+        setTimeout(() => {
+          subscription();
+          resolve();
+        }, 2000);
+      });
+
+      // Ждем обновления с сервера
+      await waitForUpdate;
     } catch (error) {
       console.error('Failed to build:', error);
     }
