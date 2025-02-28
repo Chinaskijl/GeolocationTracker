@@ -1,7 +1,13 @@
 import fs from 'fs/promises';
 import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 import { BUILDINGS } from '../client/src/lib/game';
 import type { Region } from '../shared/regionTypes';
+
+// Получаем эквивалент __dirname для ES модулей
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Пути к файлам данных
 const REGIONS_FILE = path.join(__dirname, "../data/regions.json");
