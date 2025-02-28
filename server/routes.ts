@@ -452,6 +452,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Failed to update region boundaries' });
     }
   });
+  
+  // Эндпоинт для исправления пересечений границ
+  app.post("/api/regions/fix-intersections", async (_req, res) => {
+    try {
+      // Импортируем необходимые функции
+      const { fixBoundaryIntersections } = await import('./osmService');
+      
+      // Получаем текущие регионы
+      const regions = await storage.getRegions();
+      
+      // Исправляем пересечения границ
+      const fixedRegions = fixBoundaryIntersections(regions);
+      
+      // Сохраняем обновленные данные
+      await storage.updateRegionsData(fixedRegions);
+      
+      res.json(fixedRegions);
+    } catch (error) {
+      console.error('Ошибка при исправлении пересечений границ:', error);
+      res.status(500).json({ message: 'Failed to fix boundary intersections' });
+    }
+  });
 
   // Сохраним старый эндпоинт для обратной совместимости
   app.post("/api/cities/update-boundaries", async (_req, res) => {

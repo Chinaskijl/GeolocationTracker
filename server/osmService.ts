@@ -1,4 +1,3 @@
-
 /**
  * Сервис для работы с данными OpenStreetMap
  */
@@ -44,26 +43,26 @@ export async function fetchRegionBoundaries(regionName: string): Promise<number[
       );
       out geom;
     `;
-    
+
     // URL для Overpass API
     const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
-    
+
     console.log(`Fetching boundaries for ${regionName}...`);
-    
+
     // Отправляем запрос
     const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`Error fetching data: ${response.statusText}`);
     }
-    
+
     // Преобразуем ответ в JSON
     const data = await response.json() as OverpassResponse;
-    
+
     if (!data.elements || data.elements.length === 0) {
       console.warn(`No boundary data found for ${regionName}`);
       return [];
     }
-    
+
     // Обрабатываем данные для получения координат границ
     return extractBoundaryCoordinates(data);
   } catch (error) {
@@ -79,75 +78,90 @@ export async function fetchRegionBoundaries(regionName: string): Promise<number[
  */
 function extractBoundaryCoordinates(data: OverpassResponse): number[][] {
   // Находим отношение с административной границей или городом
-  const boundaryRelation = data.elements.find(el => 
-    el.type === 'relation' && 
-    el.tags && 
+  const boundaryRelation = data.elements.find(el =>
+    el.type === 'relation' &&
+    el.tags &&
     ((el.tags.boundary === 'administrative' && el.tags.admin_level) ||
-     (el.tags.place === 'city'))
+      (el.tags.place === 'city'))
   );
-  
+
   if (!boundaryRelation || !boundaryRelation.members) {
     return [];
   }
-  
+
   const coordinates: number[][] = [];
-  
+
   // Прямая геометрия из ответа Overpass с флагом geom
   if (boundaryRelation.members.some(m => m.geometry)) {
     // Собираем все внешние пути (outer)
     const outerMembers = boundaryRelation.members.filter(m => m.role === 'outer' && m.geometry);
-    
+
     // Здесь создаем один замкнутый полигон из всех внешних частей
-    let allPoints: Array<{lat: number; lon: number}> = [];
-    
+    let allPoints: Array<{ lat: number; lon: number }> = [];
+
     for (const member of outerMembers) {
       if (member.geometry) {
         // Собираем все точки из всех внешних частей
         allPoints = allPoints.concat(member.geometry);
       }
     }
-    
+
     // Если есть точки, формируем полигон
     if (allPoints.length > 3) {
       // Преобразуем геометрию в формат [lat, lon]
       const polygon = allPoints.map(point => [point.lat, point.lon]);
-      
+
       // Убедимся, что полигон замкнут
-      if (polygon[0][0] !== polygon[polygon.length - 1][0] || 
-          polygon[0][1] !== polygon[polygon.length - 1][1]) {
+      if (polygon[0][0] !== polygon[polygon.length - 1][0] ||
+        polygon[0][1] !== polygon[polygon.length - 1][1]) {
         polygon.push([polygon[0][0], polygon[0][1]]);
       }
-      
+
       return polygon;
     }
   }
-  
+
   // Если не удалось собрать координаты из геометрии, возвращаем пустой массив
   return [];
 }
 
 /**
- * Создает более естественную границу вокруг точки (многоугольник с 8 точками)
- * @param latitude Широта
- * @param longitude Долгота
- * @returns Массив координат, образующих многоугольник
+ * Создает простую границу для области с уникальной формой для каждого региона
+ * @param latitude Широта центра области
+ * @param longitude Долгота центра области
+ * @param regionId Идентификатор региона для создания уникальной формы
+ * @returns Координаты границы области в формате многоугольника
  */
-export function createSimpleBoundary(latitude: number, longitude: number): number[][] {
-  // Создаем неправильный многоугольник с 8 точками для более естественной формы
-  const baseDelta = 0.07; // базовый размер области
-  const variableDelta = 0.03; // вариация размера для создания неправильной формы
+function createSimpleBoundary(latitude: number, longitude: number, regionId: number = 1): number[][] {
+  // Создаем неправильный многоугольник для более естественной формы
+  // Используем regionId как сид для генерации уникальной формы
+  const baseDelta = 0.05; // базовый размер области (уменьшили для меньших наложений)
+  const points = 12; // количество точек в многоугольнике
+  const result: number[][] = [];
 
-  return [
-    [latitude - baseDelta * 0.8, longitude - baseDelta],
-    [latitude - baseDelta * 0.3, longitude - baseDelta * 1.1],
-    [latitude + baseDelta * 0.4, longitude - baseDelta * 0.9],
-    [latitude + baseDelta, longitude - baseDelta * 0.2],
-    [latitude + baseDelta * 0.9, longitude + baseDelta * 0.5],
-    [latitude + baseDelta * 0.4, longitude + baseDelta],
-    [latitude - baseDelta * 0.3, longitude + baseDelta * 0.9],
-    [latitude - baseDelta * 0.8, longitude + baseDelta * 0.3],
-    [latitude - baseDelta * 0.8, longitude - baseDelta], // замыкаем полигон
-  ];
+  // Создаем уникальный коэффициент формы на основе regionId
+  const shapeOffset = (regionId % 5) * 0.2;
+  const radiusVariation = (regionId % 3) * 0.15;
+
+  for (let i = 0; i < points; i++) {
+    // Вычисляем угол для текущей точки
+    const angle = (i / points) * 2 * Math.PI;
+
+    // Радиус с вариацией на основе угла и regionId
+    const radiusFactor = 1.0 + Math.sin(angle * (2 + (regionId % 3))) * radiusVariation;
+    const radius = baseDelta * radiusFactor;
+
+    // Вычисляем координаты
+    const lat = latitude + Math.sin(angle + shapeOffset) * radius;
+    const lng = longitude + Math.cos(angle + shapeOffset) * radius;
+
+    result.push([lat, lng]);
+  }
+
+  // Замыкаем полигон
+  result.push([...result[0]]);
+
+  return result;
 }
 
 /**
@@ -159,14 +173,14 @@ export async function updateAllRegionBoundaries(): Promise<void> {
     // Получаем текущие данные об областях
     const regions = await storage.getRegions();
     let boundariesUpdated = false;
-    
+
     // Обновляем границы для каждой области
     for (const region of regions) {
       try {
         console.log(`Processing region: ${region.name}`);
         // Пытаемся получить реальные границы из OSM
         const boundaries = await fetchRegionBoundaries(region.name);
-        
+
         if (boundaries.length > 0) {
           console.log(`Got real boundaries for ${region.name} with ${boundaries.length} points`);
           // Обновляем границы области
@@ -175,17 +189,17 @@ export async function updateAllRegionBoundaries(): Promise<void> {
         } else {
           console.log(`Using simple boundary for ${region.name}`);
           // Если не удалось получить границы, создаем простую границу
-          region.boundaries = createSimpleBoundary(region.latitude, region.longitude);
+          region.boundaries = createSimpleBoundary(region.latitude, region.longitude, region.id);
           boundariesUpdated = true;
         }
       } catch (error) {
         console.warn(`Failed to update boundaries for ${region.name}:`, error);
         // В случае ошибки используем простую границу
-        region.boundaries = createSimpleBoundary(region.latitude, region.longitude);
+        region.boundaries = createSimpleBoundary(region.latitude, region.longitude, region.id);
         boundariesUpdated = true;
       }
     }
-    
+
     // Сохраняем обновленные данные об областях
     if (boundariesUpdated) {
       await storage.updateRegionsData(regions);
@@ -208,31 +222,31 @@ export async function updateRegionBoundary(regionId: number): Promise<any> {
     // Получаем данные об области
     const regions = await storage.getRegions();
     const region = regions.find(r => r.id === regionId);
-    
+
     if (!region) {
       throw new Error(`Region with ID ${regionId} not found`);
     }
-    
+
     try {
       console.log(`Updating boundary for region: ${region.name}`);
       // Пытаемся получить реальные границы из OSM
       const boundaries = await fetchRegionBoundaries(region.name);
-      
+
       if (boundaries.length > 0) {
         console.log(`Got real boundaries for ${region.name}`);
         region.boundaries = boundaries;
       } else {
         console.log(`Using simple boundary for ${region.name}`);
-        region.boundaries = createSimpleBoundary(region.latitude, region.longitude);
+        region.boundaries = createSimpleBoundary(region.latitude, region.longitude, region.id);
       }
     } catch (error) {
       console.warn(`Failed to update boundaries for ${region.name}:`, error);
-      region.boundaries = createSimpleBoundary(region.latitude, region.longitude);
+      region.boundaries = createSimpleBoundary(region.latitude, region.longitude, region.id);
     }
-    
+
     // Обновляем данные об области
     await storage.updateRegion(regionId, { boundaries: region.boundaries });
-    
+
     return region;
   } catch (error) {
     console.error(`Error updating boundary for region ${regionId}:`, error);
