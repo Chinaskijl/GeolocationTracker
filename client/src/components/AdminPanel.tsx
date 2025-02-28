@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { UpdateBoundariesButton } from './UpdateBoundariesButton';
 import { Button } from '@/components/ui/button';
 import { apiRequest } from '@/lib/queryClient';
 import { useQueryClient } from '@tanstack/react-query';
@@ -38,8 +37,6 @@ export function AdminPanel() {
         <CardTitle>Панель администратора</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <UpdateBoundariesButton />
-        
         <Button 
           variant="outline"
           onClick={handleRefreshGameState}

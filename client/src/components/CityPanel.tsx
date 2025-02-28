@@ -7,7 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { useQueryClient } from '@tanstack/react-query';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/components/ui/use-toast';
-import { UpdateBoundariesButton } from './UpdateBoundariesButton';
+
 
 export function CityPanel() {
   const { selectedCity, gameState, cities } = useGameStore();
@@ -217,22 +217,6 @@ export function CityPanel() {
           <>
           <div className="space-y-2">
             <h3 className="font-medium">Административные действия</h3>
-            <UpdateBoundariesButton
-              onClick={async () => {
-                try {
-                  await apiRequest('POST', `/api/cities/${selectedCity.id}/updateBoundaries`);
-                  toast({
-                    title: 'Границы обновлены',
-                    description: `Границы города ${selectedCity.name} успешно обновлены.`,
-                  });
-                } catch (error) {
-                  toast({
-                    title: 'Ошибка обновления границ',
-                    description: `Не удалось обновить границы города ${selectedCity.name}.`,
-                    variant: 'destructive',
-                  });
-                }
-              }}
               className="w-full mb-2"
             >
               Обновить границы города
