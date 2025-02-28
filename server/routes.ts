@@ -5,7 +5,7 @@ import { WebSocket, WebSocketServer } from "ws";
 import { gameLoop } from "./gameLoop";
 import { BUILDINGS } from "../client/src/lib/game";
 import { market } from "./market";
-import { updateAllCityBoundaries, updateCityBoundary } from "./osmService";
+import { updateAllCityBoundaries, updateCityBoundary, updateAllRegionBoundaries } from "./osmService";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
@@ -441,19 +441,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Эндпоинт для обновления границ всех городов
-  app.post("/api/cities/update-boundaries", async (_req, res) => {
+  // Эндпоинт для обновления границ всех областей
+  app.post("/api/regions/update-boundaries", async (_req, res) => {
     try {
-      await updateAllCityBoundaries();
-      const cities = await storage.getCities();
-      res.json(cities);
+      await updateAllRegionBoundaries();
+      const regions = await storage.getRegions();
+      res.json(regions);
     } catch (error) {
-      console.error('Ошибка при обновлении границ городов:', error);
-      res.status(500).json({ message: 'Failed to update city boundaries' });
+      console.error('Ошибка при обновлении границ областей:', error);
+      res.status(500).json({ message: 'Failed to update region boundaries' });
     }
   });
 
-  // Маршрут для обновления границ города удален, границы инициализируются автоматически
+  // Сохраним старый эндпоинт для обратной совместимости
+  app.post("/api/cities/update-boundaries", async (_req, res) => {
+    try {
+      await updateAllRegionBoundaries();
+      const regions = await storage.getRegions();
+      res.json(regions);
+    } catch (error) {
+      console.error('Ошибка при обновлении границ областей:', error);
+      res.status(500).json({ message: 'Failed to update region boundaries' });
+    }
+  });
 
   return httpServer;
 }

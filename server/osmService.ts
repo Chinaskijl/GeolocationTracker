@@ -29,19 +29,18 @@ interface OverpassResponse {
 }
 
 /**
- * Получает границы города из Overpass API
- * @param cityName Название города
- * @returns Координаты границ города в формате многоугольника
+ * Получает границы области из Overpass API
+ * @param regionName Название области
+ * @returns Координаты границ области в формате многоугольника
  */
-export async function fetchCityBoundaries(cityName: string): Promise<number[][]> {
+export async function fetchRegionBoundaries(regionName: string): Promise<number[][]> {
   try {
-    // Формируем запрос для получения границ города с геометрией
+    // Формируем запрос для получения границ области с геометрией
     const query = `
       [out:json];
-      area["name"="${cityName}"]->.searchArea;
+      area["name:ru"="${regionName}"]->.searchArea;
       (
-        relation(area.searchArea)["boundary"="administrative"]["admin_level"~"8|9"];
-        relation(area.searchArea)["place"="city"];
+        relation(area.searchArea)["boundary"="administrative"]["admin_level"="4"];
       );
       out geom;
     `;
@@ -145,96 +144,96 @@ export function createSimpleBoundary(latitude: number, longitude: number): numbe
 }
 
 /**
- * Обновляет данные о границах городов
+ * Обновляет данные о границах областей
  */
-export async function updateAllCityBoundaries(): Promise<void> {
+export async function updateAllRegionBoundaries(): Promise<void> {
   try {
-    console.log('Starting update of all city boundaries...');
-    // Получаем текущие данные о городах
-    const cities = await storage.getCities();
-    let boundaryCities = false;
+    console.log('Starting update of all region boundaries...');
+    // Получаем текущие данные об областях
+    const regions = await storage.getRegions();
+    let boundaryRegions = false;
     
-    // Обновляем границы для каждого города
-    for (const city of cities) {
+    // Обновляем границы для каждой области
+    for (const region of regions) {
       try {
-        // Пропускаем города, у которых уже есть границы
-        if (city.boundaries && city.boundaries.length > 10) {
-          console.log(`City ${city.name} already has boundaries with ${city.boundaries.length} points`);
-          boundaryCities = true;
+        // Пропускаем области, у которых уже есть границы
+        if (region.boundaries && region.boundaries.length > 10) {
+          console.log(`Region ${region.name} already has boundaries with ${region.boundaries.length} points`);
+          boundaryRegions = true;
           continue;
         }
         
-        console.log(`Processing city: ${city.name}`);
+        console.log(`Processing region: ${region.name}`);
         // Пытаемся получить реальные границы из OSM
-        const boundaries = await fetchCityBoundaries(city.name);
+        const boundaries = await fetchRegionBoundaries(region.name);
         
         if (boundaries.length > 0) {
-          console.log(`Got real boundaries for ${city.name} with ${boundaries.length} points`);
-          // Обновляем границы города
-          city.boundaries = boundaries;
-          boundaryCities = true;
+          console.log(`Got real boundaries for ${region.name} with ${boundaries.length} points`);
+          // Обновляем границы области
+          region.boundaries = boundaries;
+          boundaryRegions = true;
         } else {
-          console.log(`Using simple boundary for ${city.name}`);
+          console.log(`Using simple boundary for ${region.name}`);
           // Если не удалось получить границы, создаем простую границу
-          city.boundaries = createSimpleBoundary(city.latitude, city.longitude);
+          region.boundaries = createSimpleBoundary(region.latitude, region.longitude);
         }
       } catch (error) {
-        console.warn(`Failed to update boundaries for ${city.name}:`, error);
+        console.warn(`Failed to update boundaries for ${region.name}:`, error);
         // В случае ошибки используем простую границу
-        city.boundaries = createSimpleBoundary(city.latitude, city.longitude);
+        region.boundaries = createSimpleBoundary(region.latitude, region.longitude);
       }
     }
     
-    // Сохраняем обновленные данные о городах только если есть изменения
-    if (!boundaryCities) {
-      await storage.updateCitiesData(cities);
-      console.log('City boundaries updated successfully');
+    // Сохраняем обновленные данные об областях только если есть изменения
+    if (!boundaryRegions) {
+      await storage.updateRegionsData(regions);
+      console.log('Region boundaries updated successfully');
     } else {
       console.log('No boundary updates needed');
     }
   } catch (error) {
-    console.error('Error updating city boundaries:', error);
+    console.error('Error updating region boundaries:', error);
   }
 }
 
 /**
- * Обновляет границы для конкретного города
- * @param cityId ID города
- * @returns Обновленные данные о городе
+ * Обновляет границы для конкретной области
+ * @param regionId ID области
+ * @returns Обновленные данные об области
  */
-export async function updateCityBoundary(cityId: number): Promise<any> {
+export async function updateRegionBoundary(regionId: number): Promise<any> {
   try {
-    // Получаем данные о городе
-    const cities = await storage.getCities();
-    const city = cities.find(c => c.id === cityId);
+    // Получаем данные об области
+    const regions = await storage.getRegions();
+    const region = regions.find(r => r.id === regionId);
     
-    if (!city) {
-      throw new Error(`City with ID ${cityId} not found`);
+    if (!region) {
+      throw new Error(`Region with ID ${regionId} not found`);
     }
     
     try {
-      console.log(`Updating boundary for city: ${city.name}`);
+      console.log(`Updating boundary for region: ${region.name}`);
       // Пытаемся получить реальные границы из OSM
-      const boundaries = await fetchCityBoundaries(city.name);
+      const boundaries = await fetchRegionBoundaries(region.name);
       
       if (boundaries.length > 0) {
-        console.log(`Got real boundaries for ${city.name}`);
-        city.boundaries = boundaries;
+        console.log(`Got real boundaries for ${region.name}`);
+        region.boundaries = boundaries;
       } else {
-        console.log(`Using simple boundary for ${city.name}`);
-        city.boundaries = createSimpleBoundary(city.latitude, city.longitude);
+        console.log(`Using simple boundary for ${region.name}`);
+        region.boundaries = createSimpleBoundary(region.latitude, region.longitude);
       }
     } catch (error) {
-      console.warn(`Failed to update boundaries for ${city.name}:`, error);
-      city.boundaries = createSimpleBoundary(city.latitude, city.longitude);
+      console.warn(`Failed to update boundaries for ${region.name}:`, error);
+      region.boundaries = createSimpleBoundary(region.latitude, region.longitude);
     }
     
-    // Обновляем данные о городе
-    await storage.updateCity(cityId, { boundaries: city.boundaries });
+    // Обновляем данные об области
+    await storage.updateRegion(regionId, { boundaries: region.boundaries });
     
-    return city;
+    return region;
   } catch (error) {
-    console.error(`Error updating boundary for city ${cityId}:`, error);
+    console.error(`Error updating boundary for region ${regionId}:`, error);
     throw error;
   }
 }

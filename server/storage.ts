@@ -1,17 +1,15 @@
-
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import { cities } from "../shared/schema";
-import type { City, GameState } from "../shared/schema";
+import type { Region, GameState } from "../shared/schema";
 
 // Получаем __dirname в ES модулях
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Путь к файлам хранилища
-const CITIES_FILE = path.join(__dirname, "../data/cities.json");
+const REGIONS_FILE = path.join(__dirname, "../data/regions.json");
 const GAME_STATE_FILE = path.join(__dirname, "../data/game-state.json");
 
 // Создаем директорию для данных, если ее нет
@@ -29,14 +27,14 @@ async function ensureDataDir() {
 export async function initDb() {
   try {
     await ensureDataDir();
-    
+
     // Проверка и создание начальных данных
     await initializeGameData();
-    
+
     // Обновляем границы городов при инициализации
-    const { updateAllCityBoundaries } = await import('./osmService');
-    await updateAllCityBoundaries();
-    
+    const { updateAllRegionBoundaries } = await import('./osmService');
+    await updateAllRegionBoundaries();
+
     console.log("Database initialization completed successfully");
   } catch (error) {
     console.error("Database initialization error:", error);
@@ -47,20 +45,20 @@ export async function initDb() {
 async function initializeGameData() {
   await ensureDataDir();
 
-  // Проверяем наличие городов
-  let existingCities: City[] = [];
+  // Проверяем наличие областей
+  let existingRegions: Region[] = [];
   try {
-    const citiesData = await fs.readFile(CITIES_FILE, 'utf8');
-    existingCities = JSON.parse(citiesData);
-    console.log(`Загружены существующие города: ${existingCities.length}`);
+    const regionsData = await fs.readFile(REGIONS_FILE, 'utf8');
+    existingRegions = JSON.parse(regionsData);
+    console.log(`Загружены существующие области: ${existingRegions.length}`);
   } catch (error) {
     // Файл не существует или другая ошибка при чтении
-    console.log("Cities file not found, will create initial cities");
+    console.log("Regions file not found, will create initial regions");
   }
 
-  // Создаем начальные города в любом случае, так как они пропали
-  console.log("Creating initial cities...");
-  await createInitialCities();
+  // Создаем начальные области в любом случае, так как они пропали
+  console.log("Creating initial regions...");
+  await createInitialRegions();
 
   // Создаем начальное состояние игры
   console.log("Creating initial game state...");
@@ -79,13 +77,13 @@ async function initializeGameData() {
   });
 }
 
-// Функция для создания начальных городов
-async function createInitialCities() {
+// Функция для создания начальных областей
+async function createInitialRegions() {
   // Крупные города
-  const initialCities: City[] = [
+  const initialRegions: Region[] = [
     {
       id: 1,
-      name: "Москва",
+      name: "Московская область",
       latitude: 55.7558,
       longitude: 37.6173,
       population: 0,
@@ -98,7 +96,7 @@ async function createInitialCities() {
     },
     {
       id: 2,
-      name: "Санкт-Петербург",
+      name: "Ленинградская область",
       latitude: 59.9343,
       longitude: 30.3351,
       population: 0, // Население нейтральных городов равно 0
@@ -111,7 +109,7 @@ async function createInitialCities() {
     },
     {
       id: 3,
-      name: "Новосибирск",
+      name: "Новосибирская область",
       latitude: 55.0084,
       longitude: 82.9357,
       population: 0, // Население нейтральных городов равно 0
@@ -124,7 +122,7 @@ async function createInitialCities() {
     },
     {
       id: 4,
-      name: "Екатеринбург",
+      name: "Свердловская область",
       latitude: 56.8389,
       longitude: 60.6057,
       population: 0,
@@ -137,7 +135,7 @@ async function createInitialCities() {
     },
     {
       id: 5,
-      name: "Казань",
+      name: "Республика Татарстан",
       latitude: 55.7887,
       longitude: 49.1221,
       population: 0,
@@ -151,7 +149,7 @@ async function createInitialCities() {
     // Маленькие города
     {
       id: 6,
-      name: "Владимир",
+      name: "Владимирская область",
       latitude: 56.1290,
       longitude: 40.4056,
       population: 0,
@@ -164,7 +162,7 @@ async function createInitialCities() {
     },
     {
       id: 7,
-      name: "Суздаль",
+      name: "Владимирская область",
       latitude: 56.4279,
       longitude: 40.4493,
       population: 0,
@@ -177,15 +175,15 @@ async function createInitialCities() {
     }
   ];
 
-  await saveCities(initialCities);
+  await saveRegions(initialRegions);
 }
 
-// Сохранение городов в файл
-async function saveCities(citiesData: City[]) {
+// Сохранение областей в файл
+async function saveRegions(regionsData: Region[]) {
   try {
-    await fs.writeFile(CITIES_FILE, JSON.stringify(citiesData, null, 2));
+    await fs.writeFile(REGIONS_FILE, JSON.stringify(regionsData, null, 2));
   } catch (error) {
-    console.error("Error saving cities:", error);
+    console.error("Error saving regions:", error);
     throw error;
   }
 }
@@ -203,45 +201,45 @@ async function saveGameState(gameState: GameState) {
 // Хранилище для данных игры
 class Storage {
   private gameState: GameState | null = null;
-  private cities: City[] = [];
+  private regions: Region[] = [];
   private armyTransfers: any[] = []; // Массив для отслеживания передвижений армий
-  private citiesLoaded = false;
+  private regionsLoaded = false;
 
-  // Загрузка городов из файла
-  private async loadCities() {
-    if (this.citiesLoaded) return;
-    
+  // Загрузка областей из файла
+  private async loadRegions() {
+    if (this.regionsLoaded) return;
+
     try {
-      const citiesData = await fs.readFile(CITIES_FILE, 'utf8');
-      this.cities = JSON.parse(citiesData);
-      this.citiesLoaded = true;
+      const regionsData = await fs.readFile(REGIONS_FILE, 'utf8');
+      this.regions = JSON.parse(regionsData);
+      this.regionsLoaded = true;
     } catch (error) {
-      console.error("Error loading cities:", error);
-      this.cities = [];
+      console.error("Error loading regions:", error);
+      this.regions = [];
     }
   }
 
-  async getCities() {
-    await this.loadCities();
-    return [...this.cities]; // Возвращаем копию массива городов
+  async getRegions() {
+    await this.loadRegions();
+    return [...this.regions]; // Возвращаем копию массива областей
   }
 
-  async updateCity(id: number, data: any) {
-    await this.loadCities();
-    
-    const cityIndex = this.cities.findIndex(city => city.id === id);
-    if (cityIndex === -1) {
-      throw new Error(`City with id ${id} not found`);
+  async updateRegion(id: number, data: any) {
+    await this.loadRegions();
+
+    const regionIndex = this.regions.findIndex(region => region.id === id);
+    if (regionIndex === -1) {
+      throw new Error(`Region with id ${id} not found`);
     }
 
-    // Обновляем город
-    const updatedCity = { ...this.cities[cityIndex], ...data };
-    this.cities[cityIndex] = updatedCity;
+    // Обновляем область
+    const updatedRegion = { ...this.regions[regionIndex], ...data };
+    this.regions[regionIndex] = updatedRegion;
 
-    // Сохраняем обновленные города
-    await saveCities(this.cities);
+    // Сохраняем обновленные области
+    await saveRegions(this.regions);
 
-    return updatedCity;
+    return updatedRegion;
   }
 
   async getGameState() {
@@ -289,6 +287,29 @@ class Storage {
   async removeArmyTransfer(id: number) {
     this.armyTransfers = this.armyTransfers.filter(t => t.id !== id);
     return true;
+  }
+
+  // Для обратной совместимости добавим алиасы методов
+  async getCities() {
+    return this.getRegions();
+  }
+
+  async updateCitiesData(regions: Region[]) {
+    return this.updateRegionsData(regions);
+  }
+
+  async updateCity(regionId: number, updates: Partial<Region>) {
+    return this.updateRegion(regionId, updates);
+  }
+
+  async updateRegionsData(regions: Region[]) {
+    try {
+      await fs.writeFile(REGIONS_FILE, JSON.stringify(regions, null, 2));
+      return true;
+    } catch (error) {
+      console.error("Error writing regions:", error);
+      return false;
+    }
   }
 }
 

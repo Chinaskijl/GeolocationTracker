@@ -15,21 +15,21 @@ export function UpdateBoundariesButton() {
       setIsLoading(true);
       toast({
         title: 'Обновление границ',
-        description: 'Получение актуальных границ городов из OpenStreetMap...',
+        description: 'Получение актуальных границ областей из OpenStreetMap...',
       });
 
-      // Отправляем запрос на обновление границ всех городов
-      const updatedCities = await apiRequest('POST', '/api/cities/update-boundaries', {});
+      // Отправляем запрос на обновление границ всех областей
+      const updatedRegions = await apiRequest('POST', '/api/regions/update-boundaries', {});
       
       // Обновляем состояние игры с новыми границами
       setGameState(prev => ({
         ...prev,
-        cities: updatedCities
+        cities: updatedRegions // сохраняем обратную совместимость с клиентом
       }));
 
       toast({
         title: 'Границы обновлены',
-        description: 'Границы городов успешно обновлены.',
+        description: 'Границы областей успешно обновлены.',
       });
     } catch (error) {
       console.error('Ошибка при обновлении границ:', error);

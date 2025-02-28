@@ -53,6 +53,11 @@ app.use((req, res, next) => {
     await initDb();
     console.log("Database initialized successfully");
 
+    // Обновляем границы областей при инициализации
+    const { updateAllRegionBoundaries } = await import('./osmService');
+    await updateAllRegionBoundaries();
+
+
     const server = await registerRoutes(app);
 
     // Error handling middleware
