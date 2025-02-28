@@ -75,7 +75,7 @@ app.use((req, res, next) => {
     }
 
     // Configure server to listen on all interfaces
-    const port = 5000;
+    const port = 5001; // Изменен порт с 5000 на 5001
     server.listen({
       port,
       host: "0.0.0.0",
