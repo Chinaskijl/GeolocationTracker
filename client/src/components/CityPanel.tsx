@@ -217,10 +217,11 @@ export function CityPanel() {
           <>
           <div className="space-y-2">
             <h3 className="font-medium">Административные действия</h3>
+            <Button 
               className="w-full mb-2"
             >
               Обновить границы города
-            </UpdateBoundariesButton>
+            </Button>
             <Button 
               onClick={handleCapture}
               disabled={hasCapital && gameState.military < selectedCity.maxPopulation / 4}
