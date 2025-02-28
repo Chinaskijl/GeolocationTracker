@@ -10,7 +10,7 @@ deploymentTarget = "cloudrun"
 run = ["sh", "-c", "npm run dev"]
 
 [[ports]]
-localPort = 5000
+localPort = 5001
 externalPort = 5000
 
 [[ports]]
