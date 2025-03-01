@@ -29,7 +29,8 @@ export async function initDb() {
   try {
     await ensureDataDir();
 
-    // Сбрасываем игру к начальному состоянию при каждом запуске сервера
+    // Всегда сбрасываем данные при перезапуске игры
+    console.log("Resetting game data...");
     await resetGameData();
 
     // Обновляем границы областей при каждой инициализации сервера
@@ -44,6 +45,92 @@ export async function initDb() {
 
 // Функция для сброса данных игры
 async function resetGameData() {
+  await ensureDataDir();
+
+  // Создаем начальные параметры для игры
+  const initialGameState: GameState = {
+    resources: {
+      gold: 500,
+      wood: 500,
+      food: 500,
+      oil: 500,
+      metal: 0,
+      steel: 0,
+      weapons: 0
+    },
+    population: 0,
+    military: 0
+  };
+
+  // Сохраняем начальное состояние
+  await writeDataFile('game-state.json', initialGameState);
+
+  // Получаем текущие регионы
+  const regionsData = await readDataFile<Region[]>('regions.json');
+
+  if (regionsData && regionsData.length > 0) {
+    // Сбрасываем владельцев и постройки для всех регионов
+    const resetRegions = regionsData.map(region => ({
+      ...region,
+      owner: 'neutral',
+      buildings: [],
+      military: 0
+    }));
+
+    await writeDataFile('regions.json', resetRegions);
+  } else {
+    // Если регионов нет, создаем базовые
+    console.log("Creating initial regions data...");
+
+    // Базовые параметры для областей 
+    const regions = [
+      {
+        id: 1,
+        name: "Московская область",
+        latitude: 55.7558,
+        longitude: 37.6173,
+        population: 0,
+        maxPopulation: 150000,
+        resources: { food: 10, gold: 8 },
+        boundaries: [],
+        owner: "neutral",
+        buildings: [],
+        military: 0
+      },
+      {
+        id: 2,
+        name: "Ленинградская область",
+        latitude: 59.9343,
+        longitude: 30.3351,
+        population: 0,
+        maxPopulation: 100000,
+        resources: { food: 8, oil: 3 },
+        boundaries: [],
+        owner: "neutral",
+        buildings: [],
+        military: 0
+      },
+      {
+        id: 3,
+        name: "Новосибирская область",
+        latitude: 55.0084,
+        longitude: 82.9357,
+        population: 0,
+        maxPopulation: 80000,
+        resources: { gold: 7, wood: 5 },
+        boundaries: [],
+        owner: "neutral",
+        buildings: [],
+        military: 0
+      }
+    ];
+
+    await writeDataFile('regions.json', regions);
+  }
+}
+
+// Функция для сброса данных игры (старая функция, оставлена для обратной совместимости)
+async function resetGameDataOld() {
   await ensureDataDir();
 
   // Создаем области с начальными параметрами
@@ -119,7 +206,7 @@ async function resetGameData() {
   try {
     const regionsData = await fs.readFile(REGIONS_FILE, 'utf8');
     const existingRegions = JSON.parse(regionsData);
-    
+
     // Копируем только границы из существующих областей
     for (let i = 0; i < defaultRegions.length; i++) {
       const existingRegion = existingRegions.find(r => r.id === defaultRegions[i].id);
@@ -156,8 +243,32 @@ async function resetGameData() {
 
 // Функция для инициализации данных игры (для обратной совместимости)
 async function initializeGameData() {
-  return resetGameData();
+  return resetGameDataOld();
 }
+
+async function readDataFile(filename: string) {
+  const filePath = path.join(__dirname, `../data/${filename}`);
+  try {
+    const data = await fs.readFile(filePath, 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      return null;
+    }
+    console.error(`Error reading file ${filename}:`, error);
+    return null;
+  }
+}
+
+async function writeDataFile(filename: string, data: any) {
+  const filePath = path.join(__dirname, `../data/${filename}`);
+  try {
+    await fs.writeFile(filePath, JSON.stringify(data, null, 2));
+  } catch (error) {
+    console.error(`Error writing file ${filename}:`, error);
+  }
+}
+
 
 class Storage {
   private cities: Region[] = [];
@@ -263,3 +374,17 @@ class Storage {
 }
 
 export const storage = new Storage();
+
+interface GameState {
+  resources: {
+    gold: number;
+    wood: number;
+    food: number;
+    oil: number;
+    metal: number;
+    steel: number;
+    weapons: number;
+  };
+  population: number;
+  military: number;
+}
