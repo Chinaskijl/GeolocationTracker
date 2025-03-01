@@ -82740,17 +82740,8 @@
         37.8405143
       ]
     ],
-    "owner": "player",
-    "buildings": [
-      "sawmill",
-      "sawmill",
-      "sawmill",
-      "barracks",
-      "barracks",
-      "weapons_factory",
-      "weapons_factory",
-      "weapons_factory"
-    ],
+    "owner": "neutral",
+    "buildings": [],
     "military": 0
   },
   {
