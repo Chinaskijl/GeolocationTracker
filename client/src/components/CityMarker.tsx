@@ -1,16 +1,26 @@
-import { useGameStore } from '@/lib/store';
-import { Card } from '@/components/ui/card';
-import { useEffect, useState } from 'react';
-import { MapPinIcon, Crown } from 'lucide-react';
-import { getResourceIcon } from '@/lib/resources';
-import { BUILDINGS } from '@/lib/game';
 
+import React from 'react';
+import { useMap } from 'react-leaflet';
+import { BUILDINGS } from '@/lib/game';
+import { useGameStore } from '@/lib/store';
+import { getResourceIcon } from '@/lib/resources';
+import type { Region } from '@/shared/regionTypes';
+
+interface CityMarkerProps {
+  city: Region;
+  onClick: (city: Region) => void;
+}
+
+/**
+ * Компонент маркера города на карте
+ * Отображает название города и ресурсы, которые он производит (если город принадлежит игроку)
+ */
 const CityMarker: React.FC<CityMarkerProps> = ({ city, onClick }) => {
   const { zoom } = useMap();
   const { buildingUpgrades } = useGameStore();
 
   // Размер маркера зависит от зума карты
-  const size = Math.max(10, Math.min(16, zoom * 2));
+  const size = Math.max(8, Math.min(14, zoom * 1.5));
 
   // Рассчитываем ресурсы, производимые зданиями в городе (только для городов игрока)
   const playerProducedResources: Record<string, number> = {};
@@ -48,14 +58,18 @@ const CityMarker: React.FC<CityMarkerProps> = ({ city, onClick }) => {
 
         {city.owner === 'player' && city.buildings && city.buildings.length > 0 && (
           <div className="mt-1 text-[8px]">
-            {hasResources && resourceEntries.map(([type, amount]) => (
-              <span key={type}>
-                {amount} {type}
-              </span>
-            ))}
+            {hasResources && 
+              resourceEntries.map(([resource, amount]) => (
+                <div key={resource} className="flex items-center justify-center">
+                  {getResourceIcon(resource)} +{amount}
+                </div>
+              ))
+            }
           </div>
         )}
       </div>
     </div>
   );
 };
+
+export default CityMarker;
