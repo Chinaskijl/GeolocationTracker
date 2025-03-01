@@ -82740,8 +82740,12 @@
         37.8405143
       ]
     ],
-    "owner": "neutral",
-    "buildings": [],
+    "owner": "player",
+    "buildings": [
+      "sawmill",
+      "sawmill",
+      "sawmill"
+    ],
     "military": 0
   },
   {
