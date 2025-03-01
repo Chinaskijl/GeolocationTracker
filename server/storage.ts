@@ -29,8 +29,8 @@ export async function initDb() {
   try {
     await ensureDataDir();
 
-    // Проверка и создание начальных данных
-    await initializeGameData();
+    // Сбрасываем игру к начальному состоянию при каждом запуске сервера
+    await resetGameData();
 
     // Обновляем границы областей при каждой инициализации сервера
     const { updateAllRegionBoundaries } = await import('./osmService');
@@ -42,110 +42,121 @@ export async function initDb() {
   }
 }
 
-// Функция для инициализации данных игры
-async function initializeGameData() {
+// Функция для сброса данных игры
+async function resetGameData() {
   await ensureDataDir();
 
-  // Проверяем наличие областей
-  let existingRegions: Region[] = [];
+  // Создаем области с начальными параметрами
+  const defaultRegions = [
+    {
+      id: 1,
+      name: "Московская область",
+      latitude: 55.7558,
+      longitude: 37.6173,
+      population: 0,
+      maxPopulation: 150000,
+      resources: { food: 10, gold: 8 },
+      boundaries: [],
+      owner: "neutral",
+      buildings: [],
+      military: 0
+    },
+    {
+      id: 2,
+      name: "Ленинградская область",
+      latitude: 59.9343,
+      longitude: 30.3351,
+      population: 0,
+      maxPopulation: 100000,
+      resources: { food: 8, oil: 3 },
+      boundaries: [],
+      owner: "neutral",
+      buildings: [],
+      military: 0
+    },
+    {
+      id: 3,
+      name: "Новосибирская область",
+      latitude: 55.0084,
+      longitude: 82.9357,
+      population: 0,
+      maxPopulation: 80000,
+      resources: { gold: 7, wood: 5 },
+      boundaries: [],
+      owner: "neutral",
+      buildings: [],
+      military: 0
+    },
+    {
+      id: 4,
+      name: "Свердловская область",
+      latitude: 56.8389,
+      longitude: 60.6057,
+      population: 0,
+      maxPopulation: 90000,
+      resources: { metal: 12, wood: 3 },
+      boundaries: [],
+      owner: "neutral",
+      buildings: [],
+      military: 0
+    },
+    {
+      id: 5,
+      name: "Нижегородская область",
+      latitude: 56.2965,
+      longitude: 43.9361,
+      population: 0,
+      maxPopulation: 85000,
+      resources: { wood: 8, food: 5 },
+      boundaries: [],
+      owner: "neutral",
+      buildings: [],
+      military: 0
+    }
+  ];
+
+  // Сохраняем границы из существующего файла, если он есть
   try {
     const regionsData = await fs.readFile(REGIONS_FILE, 'utf8');
-    existingRegions = JSON.parse(regionsData);
-  } catch (error) {
-    console.log("Regions file not found, creating default regions");
-    existingRegions = [
-      {
-        id: 1,
-        name: "Московская область",
-        latitude: 55.7558,
-        longitude: 37.6173,
-        population: 0,
-        maxPopulation: 150000,
-        resources: { food: 10, gold: 8 },
-        boundaries: [],
-        owner: "neutral",
-        buildings: [],
-        military: 0
-      },
-      {
-        id: 2,
-        name: "Ленинградская область",
-        latitude: 59.9343,
-        longitude: 30.3351,
-        population: 0,
-        maxPopulation: 100000,
-        resources: { food: 8, oil: 3 },
-        boundaries: [],
-        owner: "neutral",
-        buildings: [],
-        military: 0
-      },
-      {
-        id: 3,
-        name: "Новосибирская область",
-        latitude: 55.0084,
-        longitude: 82.9357,
-        population: 0,
-        maxPopulation: 80000,
-        resources: { gold: 7, wood: 5 },
-        boundaries: [],
-        owner: "neutral",
-        buildings: [],
-        military: 0
-      },
-      {
-        id: 4,
-        name: "Свердловская область",
-        latitude: 56.8389,
-        longitude: 60.6057,
-        population: 0,
-        maxPopulation: 90000,
-        resources: { metal: 12, wood: 3 },
-        boundaries: [],
-        owner: "neutral",
-        buildings: [],
-        military: 0
-      },
-      {
-        id: 5,
-        name: "Нижегородская область",
-        latitude: 56.2965,
-        longitude: 43.9361,
-        population: 0,
-        maxPopulation: 85000,
-        resources: { wood: 8, food: 5 },
-        boundaries: [],
-        owner: "neutral",
-        buildings: [],
-        military: 0
+    const existingRegions = JSON.parse(regionsData);
+    
+    // Копируем только границы из существующих областей
+    for (let i = 0; i < defaultRegions.length; i++) {
+      const existingRegion = existingRegions.find(r => r.id === defaultRegions[i].id);
+      if (existingRegion && existingRegion.boundaries) {
+        defaultRegions[i].boundaries = existingRegion.boundaries;
       }
-    ];
-
-    await fs.writeFile(REGIONS_FILE, JSON.stringify(existingRegions, null, 2));
-  }
-
-  // Проверяем наличие файла с состоянием игры
-  try {
-    await fs.access(GAME_STATE_FILE);
+    }
   } catch (error) {
-    console.log("Game state file not found, creating default state");
-
-    const defaultGameState = {
-      resources: {
-        gold: 500,
-        wood: 500,
-        food: 500,
-        oil: 500,
-        metal: 0,
-        steel: 0,
-        weapons: 0
-      },
-      population: 0,
-      military: 0
-    };
-
-    await fs.writeFile(GAME_STATE_FILE, JSON.stringify(defaultGameState, null, 2));
+    console.log("Could not read existing regions file");
   }
+
+  // Записываем начальные области
+  await fs.writeFile(REGIONS_FILE, JSON.stringify(defaultRegions, null, 2));
+  console.log("Reset regions to default state");
+
+  // Создаем начальное состояние игры
+  const defaultGameState = {
+    resources: {
+      gold: 500,
+      wood: 500,
+      food: 500,
+      oil: 500,
+      metal: 0,
+      steel: 0,
+      weapons: 0
+    },
+    population: 0,
+    military: 0
+  };
+
+  await fs.writeFile(GAME_STATE_FILE, JSON.stringify(defaultGameState, null, 2));
+  console.log("Reset game state to default state");
+}
+
+// Функция для инициализации данных игры (для обратной совместимости)
+async function initializeGameData() {
+  return resetGameData();
 }
 
 class Storage {
