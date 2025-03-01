@@ -257,5 +257,81 @@
     "owner": "neutral",
     "buildings": [],
     "military": 0
+  },
+  {
+    "id": 8,
+    "name": "Владимирская область",
+    "latitude": 56.1430,
+    "longitude": 40.3980,
+    "population": 0,
+    "maxPopulation": 35000,
+    "resources": {
+      "wood": 7,
+      "food": 5,
+      "metal": 3
+    },
+    "boundaries": [
+      [
+        56.04,
+        40.2
+      ],
+      [
+        56.3,
+        40.2
+      ],
+      [
+        56.3,
+        40.6
+      ],
+      [
+        56.04,
+        40.6
+      ],
+      [
+        56.04,
+        40.2
+      ]
+    ],
+    "owner": "neutral",
+    "buildings": [],
+    "military": 0
+  },
+  {
+    "id": 9,
+    "name": "Ивановская область",
+    "latitude": 57.0000,
+    "longitude": 41.0000,
+    "population": 0,
+    "maxPopulation": 30000,
+    "resources": {
+      "wood": 6,
+      "food": 4,
+      "gold": 2
+    },
+    "boundaries": [
+      [
+        56.8,
+        40.8
+      ],
+      [
+        57.2,
+        40.8
+      ],
+      [
+        57.2,
+        41.2
+      ],
+      [
+        56.8,
+        41.2
+      ],
+      [
+        56.8,
+        40.8
+      ]
+    ],
+    "owner": "neutral",
+    "buildings": [],
+    "military": 0
   }
 ]

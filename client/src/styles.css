@@ -1,0 +1,30 @@
+
+.city-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s ease-in-out;
+}
+
+.city-marker:hover {
+  transform: scale(1.1);
+  z-index: 1000 !important;
+}
+
+.city-marker-blue {
+  background-color: #3b82f6;
+  border: 2px solid #1d4ed8;
+}
+
+.city-marker-gray {
+  background-color: #6b7280;
+  border: 2px solid #4b5563;
+}
+
+.city-marker-red {
+  background-color: #ef4444;
+  border: 2px solid #b91c1c;
+}
+
