@@ -1,9 +1,11 @@
 
 import React from 'react';
 import { useMap } from 'react-leaflet';
-import { BUILDINGS } from '@/lib/game';
 import { useGameStore } from '@/lib/store';
 import { getResourceIcon } from '@/lib/resources';
+import { MapPinIcon, Crown, Swords, Users } from 'lucide-react';
+import { Card } from '@/components/ui/card';
+import { BUILDINGS } from '@/lib/game';
 import type { Region } from '@/shared/regionTypes';
 
 interface CityMarkerProps {
@@ -13,7 +15,7 @@ interface CityMarkerProps {
 
 /**
  * Компонент маркера города на карте
- * Отображает название города и ресурсы, которые он производит (если город принадлежит игроку)
+ * Отображает информацию о городе: население, военные и производимые ресурсы
  */
 const CityMarker: React.FC<CityMarkerProps> = ({ city, onClick }) => {
   const { zoom } = useMap();
@@ -24,50 +26,78 @@ const CityMarker: React.FC<CityMarkerProps> = ({ city, onClick }) => {
 
   // Рассчитываем ресурсы, производимые зданиями в городе (только для городов игрока)
   const playerProducedResources: Record<string, number> = {};
-
+  
   if (city.owner === 'player' && city.buildings?.length > 0) {
-    // Рассчитываем производство от зданий
     city.buildings.forEach(buildingId => {
       const building = BUILDINGS.find(b => b.id === buildingId);
       if (building?.resourceProduction) {
         const { type, amount } = building.resourceProduction;
-        playerProducedResources[type] = (playerProducedResources[type] || 0) + amount;
+        
+        // Учитываем улучшения
+        const upgrade = buildingUpgrades[buildingId] || 0;
+        const actualAmount = amount * (1 + upgrade * 0.2);
+        
+        if (!playerProducedResources[type]) {
+          playerProducedResources[type] = 0;
+        }
+        playerProducedResources[type] += actualAmount;
       }
     });
   }
 
-  // Фильтруем ресурсы, чтобы показывать только ненулевые производимые игроком ресурсы
-  const resourceEntries = Object.entries(playerProducedResources);
-  const hasResources = resourceEntries.length > 0;
+  // Преобразуем объект с ресурсами в массив для отображения
+  const producedResourceEntries = Object.entries(playerProducedResources);
+  const hasProducedResources = producedResourceEntries.length > 0;
 
   return (
-    <div 
-      className={`
-        absolute transform -translate-x-1/2 -translate-y-1/2 
-        rounded-full border-2 
-        flex items-center justify-center 
-        cursor-pointer hover:border-blue-400 
-        transition-all duration-200
-        ${city.owner === 'player' ? 'bg-blue-500 border-blue-700' : 'bg-gray-500 border-gray-700'}
-      `}
-      style={{ width: `${size}px`, height: `${size}px` }}
-      onClick={() => onClick(city)}
-    >
-      <div className="text-xs font-semibold text-center text-white">
-        {city.name.split(' ')[0]}
+    <div className="relative" onClick={() => onClick(city)}>
+      <div 
+        className={`flex items-center justify-center rounded-full cursor-pointer
+          ${city.owner === 'player' ? 'bg-blue-500' : 
+            city.owner === 'enemy' ? 'bg-red-500' : 'bg-gray-500'}`} 
+        style={{ 
+          width: `${size}px`, 
+          height: `${size}px`,
+          boxShadow: '0 2px 4px rgba(0,0,0,0.3)'
+        }}
+      >
+        {city.owner === 'player' && <Crown className="text-white" size={size * 0.5} />}
+      </div>
 
-        {city.owner === 'player' && city.buildings && city.buildings.length > 0 && (
-          <div className="mt-1 text-[8px]">
-            {hasResources && 
-              resourceEntries.map(([resource, amount]) => (
-                <div key={resource} className="flex items-center justify-center">
-                  {getResourceIcon(resource)} +{amount}
-                </div>
-              ))
-            }
+      <Card className="absolute top-full mt-1 left-1/2 transform -translate-x-1/2 z-50 p-1 shadow-lg bg-white min-w-[80px] text-[6px] text-center">
+        <div className="font-semibold text-[8px]">{city.name}</div>
+        
+        <div className="flex items-center justify-center gap-1 mt-1">
+          <Users size={7} />
+          <span>{city.population}/{city.maxPopulation}</span>
+        </div>
+        
+        {city.military > 0 && (
+          <div className="flex items-center justify-center gap-1 mt-1">
+            <Swords size={7} />
+            <span>{city.military}</span>
           </div>
         )}
-      </div>
+        
+        {city.owner === 'player' && hasProducedResources && (
+          <div className="mt-1">
+            <div className="text-[7px] font-semibold">Производство:</div>
+            <div className="grid grid-cols-2 gap-x-1 mt-0.5">
+              {producedResourceEntries.map(([resource, amount]) => (
+                <div key={resource} className="flex items-center justify-start gap-0.5">
+                  {getResourceIcon(resource, { size: 6 })} 
+                  <span>+{amount.toFixed(1)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        <div className="mt-1">
+          <div className="text-[7px] font-semibold">Возможные ресурсы:</div>
+          {/* Это поле оставляем пустым, как вы просили */}
+        </div>
+      </Card>
     </div>
   );
 };
