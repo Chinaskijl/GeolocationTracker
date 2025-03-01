@@ -9,6 +9,20 @@ import { type Server } from "http";
 import viteConfig from "../vite.config";
 import { nanoid } from "nanoid";
 
+import { createServer as createViteServer } from "vite";
+import { Server } from "http";
+import type { Express } from "express";
+import fs from "fs";
+import path from "path";
+import { nanoid } from "nanoid";
+import { createLogger } from "vite";
+import viteConfig from "../vite.config";
+import { dirname } from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
 const viteLogger = createLogger();
 
 export function log(message: string, source = "express") {
