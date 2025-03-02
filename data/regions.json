@@ -82744,13 +82744,13 @@
     "buildings": [],
     "military": 0,
     "buildingLimits": {
-      "farm": 2,
+      "farm": 3,
       "logging_camp": 1,
-      "gold_mine": 2,
+      "gold_mine": 3,
       "oil_rig": 4,
       "metal_mine": 4,
       "house": 5,
-      "barracks": 2,
+      "barracks": 1,
       "market": 1,
       "research_center": 1
     }
@@ -102532,20 +102532,17 @@
         28.7759027
       ]
     ],
-    "owner": "player",
-    "buildings": [
-      "sawmill",
-      "sawmill"
-    ],
+    "owner": "neutral",
+    "buildings": [],
     "military": 0,
     "buildingLimits": {
       "farm": 2,
       "logging_camp": 2,
-      "gold_mine": 1,
-      "oil_rig": 5,
-      "metal_mine": 3,
-      "house": 4,
-      "barracks": 2,
+      "gold_mine": 3,
+      "oil_rig": 3,
+      "metal_mine": 2,
+      "house": 5,
+      "barracks": 1,
       "market": 1,
       "research_center": 1
     }
@@ -141099,17 +141096,17 @@
         77.9065061
       ]
     ],
-    "owner": "neutral",
+    "owner": "player",
     "buildings": [],
     "military": 0,
     "buildingLimits": {
-      "farm": 5,
-      "logging_camp": 3,
-      "gold_mine": 4,
-      "oil_rig": 5,
+      "farm": 3,
+      "logging_camp": 1,
+      "gold_mine": 3,
+      "oil_rig": 1,
       "metal_mine": 3,
-      "house": 4,
-      "barracks": 1,
+      "house": 3,
+      "barracks": 2,
       "market": 1,
       "research_center": 1
     }
