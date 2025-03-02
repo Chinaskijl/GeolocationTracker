@@ -200,7 +200,8 @@ export function Map() {
   return <div id="map" className="w-full h-screen" />;
 }
 
-export function getResourceIcon(resource: string): string {
+// Use the imported getResourceIcon from @/lib/resources instead
+function getMapResourceIcon(resource: string): string {
   switch (resource) {
     case 'gold': return '💰';
     case 'wood': return '🌲';
