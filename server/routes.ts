@@ -50,9 +50,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: 'Building not found' });
       }
 
-      // Проверка лимита зданий
+      // Проверка лимита зданий с учетом специфичных лимитов для города
       const existingBuildingCount = city.buildings.filter(b => b === buildingId).length;
-      if (existingBuildingCount >= building.maxCount) {
+      
+      // Получаем лимит для этого здания в этом городе
+      const cityBuildingLimit = city.buildingLimits && city.buildingLimits[buildingId];
+      
+      // Используем либо лимит города, либо глобальный лимит здания
+      const effectiveLimit = cityBuildingLimit !== undefined ? cityBuildingLimit : building.maxCount;
+      
+      if (existingBuildingCount >= effectiveLimit) {
         return res.status(400).json({ message: 'Building limit reached' });
       }
 

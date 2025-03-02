@@ -8,98 +8,102 @@ import { Card } from '@/components/ui/card';
 import { BUILDINGS } from '@/lib/game';
 import type { Region } from '@/shared/regionTypes';
 
-interface CityMarkerProps {
-  city: Region;
-  onClick: (city: Region) => void;
-}
+export function CityMarker({ city }: { city: Region }) {
+  const map = useMap();
+  const selectCity = useGameStore(state => state.selectCity);
+  const selectedCity = useGameStore(state => state.selectedCity);
 
-/**
- * Компонент маркера города на карте
- * Отображает информацию о городе: население, военные и производимые ресурсы
- */
-const CityMarker: React.FC<CityMarkerProps> = ({ city, onClick }) => {
-  const { zoom } = useMap();
-  const { buildingUpgrades } = useGameStore();
-
-  // Размер маркера зависит от зума карты
-  const size = Math.max(8, Math.min(14, zoom * 1.5));
-
-  // Рассчитываем ресурсы, производимые зданиями в городе (только для городов игрока)
-  const playerProducedResources: Record<string, number> = {};
+  const isSelected = selectedCity && selectedCity.id === city.id;
   
-  if (city.owner === 'player' && city.buildings?.length > 0) {
-    city.buildings.forEach(buildingId => {
-      const building = BUILDINGS.find(b => b.id === buildingId);
-      if (building?.resourceProduction) {
-        const { type, amount } = building.resourceProduction;
-        
-        // Учитываем улучшения
-        const upgrade = buildingUpgrades[buildingId] || 0;
-        const actualAmount = amount * (1 + upgrade * 0.2);
-        
-        if (!playerProducedResources[type]) {
-          playerProducedResources[type] = 0;
-        }
-        playerProducedResources[type] += actualAmount;
-      }
-    });
-  }
+  // Получаем только доступные в городе ресурсы (не производство)
+  const availableResources = Object.entries(city.resources || {})
+    .filter(([_, value]) => value > 0)
+    .map(([key, value]) => ({ type: key, amount: value }));
 
-  // Преобразуем объект с ресурсами в массив для отображения
-  const producedResourceEntries = Object.entries(playerProducedResources);
-  const hasProducedResources = producedResourceEntries.length > 0;
+  // Определяем, является ли город столицей игрока
+  const isCapital = city.owner === 'player' && city.buildings.includes('capital');
+
+  const handleClick = () => {
+    map.flyTo([city.latitude, city.longitude], 10);
+    selectCity(city);
+  };
 
   return (
-    <div className="relative" onClick={() => onClick(city)}>
-      <div 
-        className={`flex items-center justify-center rounded-full cursor-pointer
+    <div 
+      className={`absolute transform -translate-x-1/2 -translate-y-1/2 z-50 ${
+        isSelected ? 'z-[1000]' : 'z-50'
+      }`} 
+      style={{ 
+        left: map.latLngToLayerPoint([city.latitude, city.longitude]).x,
+        top: map.latLngToLayerPoint([city.latitude, city.longitude]).y
+      }}
+      onClick={handleClick}
+    >
+      <div className="relative cursor-pointer group">
+        {/* Маркер города */}
+        <div className={`
+          flex items-center justify-center w-8 h-8 rounded-full 
           ${city.owner === 'player' ? 'bg-blue-500' : 
-            city.owner === 'enemy' ? 'bg-red-500' : 'bg-gray-500'}`} 
-        style={{ 
-          width: `${size}px`, 
-          height: `${size}px`,
-          boxShadow: '0 2px 4px rgba(0,0,0,0.3)'
-        }}
-      >
-        {city.owner === 'player' && <Crown className="text-white" size={size * 0.5} />}
-      </div>
-
-      <Card className="absolute top-full mt-1 left-1/2 transform -translate-x-1/2 z-50 p-1 shadow-lg bg-white min-w-[80px] text-[6px] text-center">
-        <div className="font-semibold text-[8px]">{city.name}</div>
-        
-        <div className="flex items-center justify-center gap-1 mt-1">
-          <Users size={7} />
-          <span>{city.population}/{city.maxPopulation}</span>
+            city.owner === 'ai' ? 'bg-red-500' : 'bg-gray-500'} 
+          text-white shadow-md hover:scale-110 transition-transform
+          ${isSelected ? 'ring-2 ring-white scale-110' : ''}
+        `}>
+          {isCapital ? <Crown size={16} /> : <MapPinIcon size={16} />}
         </div>
         
-        {city.military > 0 && (
-          <div className="flex items-center justify-center gap-1 mt-1">
-            <Swords size={7} />
-            <span>{city.military}</span>
+        {/* Всплывающая карточка с информацией */}
+        <Card className="absolute bottom-full mb-2 p-2 w-40 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="text-sm font-bold mb-1 truncate">{city.name}</div>
+          
+          <div className="flex justify-between text-xs mb-1">
+            <span className="flex items-center">
+              <Users size={14} className="mr-1" />
+              {city.population}
+            </span>
+            {city.military > 0 && (
+              <span className="flex items-center">
+                <Swords size={14} className="mr-1" />
+                {city.military}
+              </span>
+            )}
           </div>
-        )}
-        
-        {city.owner === 'player' && hasProducedResources && (
-          <div className="mt-1">
-            <div className="text-[7px] font-semibold">Производство:</div>
-            <div className="grid grid-cols-2 gap-x-1 mt-0.5">
-              {producedResourceEntries.map(([resource, amount]) => (
-                <div key={resource} className="flex items-center justify-start gap-0.5">
-                  {getResourceIcon(resource, { size: 6 })} 
-                  <span>+{amount.toFixed(1)}</span>
-                </div>
-              ))}
+          
+          {/* Доступные в городе ресурсы */}
+          {availableResources.length > 0 && (
+            <div className="border-t pt-1 mt-1">
+              <div className="text-xs font-semibold mb-1">Доступные ресурсы:</div>
+              <div className="flex flex-wrap gap-1">
+                {availableResources.map(resource => {
+                  const ResourceIcon = getResourceIcon(resource.type);
+                  return (
+                    <div key={resource.type} className="flex items-center text-xs">
+                      <ResourceIcon size={12} className="mr-1" />
+                      {resource.amount}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        )}
-        
-        <div className="mt-1">
-          <div className="text-[7px] font-semibold">Возможные ресурсы:</div>
-          {/* Это поле оставляем пустым, как вы просили */}
-        </div>
-      </Card>
+          )}
+          
+          {/* Построенные здания */}
+          {city.buildings.length > 0 && (
+            <div className="border-t pt-1 mt-1">
+              <div className="text-xs font-semibold mb-1">Постройки:</div>
+              <div className="flex flex-wrap gap-1">
+                {city.buildings.map((buildingId, index) => {
+                  const building = BUILDINGS.find(b => b.id === buildingId);
+                  return (
+                    <div key={`${buildingId}-${index}`} className="text-xs">
+                      {building?.name || buildingId}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </Card>
+      </div>
     </div>
   );
-};
-
-export default CityMarker;
+}

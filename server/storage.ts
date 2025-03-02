@@ -43,6 +43,29 @@ export async function initDb() {
   }
 }
 
+// Функция для генерации случайных ограничений для зданий
+function generateRandomBuildingLimits() {
+  // Список основных производственных зданий
+  const productionBuildings = ['farm', 'logging_camp', 'gold_mine', 'oil_rig', 'metal_mine'];
+  
+  // Создаем объект с ограничениями
+  const buildingLimits: {[key: string]: number} = {};
+  
+  // Генерируем случайное ограничение для каждого типа производственного здания
+  productionBuildings.forEach(building => {
+    // Генерируем случайное число от 1 до 5 для каждого здания
+    buildingLimits[building] = Math.floor(Math.random() * 5) + 1;
+  });
+  
+  // Добавляем ограничения для важных зданий
+  buildingLimits['house'] = Math.floor(Math.random() * 3) + 3; // 3-5 домов
+  buildingLimits['barracks'] = Math.floor(Math.random() * 2) + 1; // 1-2 казармы
+  buildingLimits['market'] = 1; // только 1 рынок
+  buildingLimits['research_center'] = 1; // только 1 исследовательский центр
+  
+  return buildingLimits;
+}
+
 // Функция для сброса данных игры
 async function resetGameData() {
   await ensureDataDir();
@@ -69,14 +92,16 @@ async function resetGameData() {
   const regionsData = await readDataFile('regions.json');
 
   if (regionsData && Array.isArray(regionsData) && regionsData.length > 0) {
-    // Сбрасываем владельцев и постройки для всех регионов
+    // Сбрасываем владельцев и постройки для всех регионов и генерируем случайные ограничения
     const resetRegions = regionsData.map(region => ({
       ...region,
       owner: 'neutral',
       buildings: [],
       military: 0,
       // Сохраняем только базовую информацию о границах, если они есть
-      boundaries: region.boundaries || []
+      boundaries: region.boundaries || [],
+      // Генерируем случайные ограничения для зданий
+      buildingLimits: generateRandomBuildingLimits()
     }));
 
     await writeDataFile('regions.json', resetRegions);
@@ -97,7 +122,8 @@ async function resetGameData() {
         boundaries: [],
         owner: "neutral",
         buildings: [],
-        military: 0
+        military: 0,
+        buildingLimits: generateRandomBuildingLimits()
       },
       {
         id: 2,
@@ -110,7 +136,8 @@ async function resetGameData() {
         boundaries: [],
         owner: "neutral",
         buildings: [],
-        military: 0
+        military: 0,
+        buildingLimits: generateRandomBuildingLimits()
       },
       {
         id: 3,
@@ -123,7 +150,8 @@ async function resetGameData() {
         boundaries: [],
         owner: "neutral",
         buildings: [],
-        military: 0
+        military: 0,
+        buildingLimits: generateRandomBuildingLimits()
       }
     ];
 

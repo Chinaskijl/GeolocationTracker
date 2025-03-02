@@ -41,4 +41,9 @@ export interface Region {
   
   /** Количество военных единиц */
   military: number;
+  
+  /** Ограничения на количество зданий каждого типа */
+  buildingLimits?: {
+    [buildingId: string]: number;
+  };
 }

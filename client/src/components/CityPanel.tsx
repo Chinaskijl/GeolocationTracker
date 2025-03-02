@@ -241,7 +241,18 @@ export function CityPanel() {
                 {BUILDINGS.map(building => {
                   // Обновляем чтение количества зданий напрямую из выбранного города
                   const buildingCount = selectedCity.buildings.filter(b => b === building.id).length;
-                  const atLimit = buildingCount >= building.maxCount || building.maxCount === 0;
+                  
+                  // Проверяем лимит зданий данного типа для этого города
+                  const cityBuildingLimit = selectedCity.buildingLimits 
+                    ? selectedCity.buildingLimits[building.id] 
+                    : building.maxCount;
+                    
+                  // Используем либо лимит города, либо глобальный лимит здания
+                  const effectiveLimit = cityBuildingLimit !== undefined 
+                    ? cityBuildingLimit 
+                    : building.maxCount;
+                    
+                  const atLimit = buildingCount >= effectiveLimit || effectiveLimit === 0;
 
                   return (
                     <Button
@@ -255,7 +266,7 @@ export function CityPanel() {
                         <div className="flex justify-between items-center">
                           <span className="text-lg font-medium">{building.name}</span>
                           <span className="text-sm text-gray-500">
-                            {buildingCount}/{building.maxCount}
+                            {buildingCount}/{effectiveLimit}
                           </span>
                         </div>
                         <div className="text-sm text-left text-gray-600">
