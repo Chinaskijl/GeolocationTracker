@@ -43,7 +43,7 @@ export async function initDb() {
   }
 }
 
-// Функция для генерации случайных доступных зданий
+// Функция для генерации случайных доступных зданий и их лимитов
 function generateRandomAvailableBuildings() {
   // Список всех возможных зданий
   const allBuildings = [
@@ -69,6 +69,19 @@ function generateRandomAvailableBuildings() {
   }
 
   return availableBuildings;
+}
+
+// Функция для генерации случайных лимитов зданий
+function generateRandomBuildingLimits(availableBuildings: string[]) {
+  const limits: Record<string, number> = {};
+  
+  // Установка лимитов для каждого доступного здания
+  availableBuildings.forEach(buildingId => {
+    // Генерируем случайный лимит от 1 до 5
+    limits[buildingId] = Math.floor(Math.random() * 5) + 1;
+  });
+  
+  return limits;
 }
 
 // Функция для генерации случайного населения
@@ -128,6 +141,9 @@ async function resetGameData() {
       // Обновляем максимальное население в зависимости от текущего
       const maxPopulation = Math.floor(population * (Math.random() * 0.3 + 1.1)); // На 10-40% больше текущего
 
+      const availableBuildings = generateRandomAvailableBuildings();
+      const buildingLimits = generateRandomBuildingLimits(availableBuildings);
+      
       return {
         ...region,
         population,
@@ -135,7 +151,8 @@ async function resetGameData() {
         military,
         owner: 'neutral',
         buildings: [],
-        availableBuildings: generateRandomAvailableBuildings()
+        availableBuildings,
+        buildingLimits
       };
     });
 
@@ -165,9 +182,15 @@ async function resetGameData() {
         maxPopulation: 10000,
         military: 0, // будет заполнено после генерации населения
         resources: { food: 10, gold: 8, wood: 5, oil: 2 },
-        availableBuildings: generateRandomAvailableBuildings(),
+        availableBuildings: ((availableBuildings) => {
+          const buildings = availableBuildings || generateRandomAvailableBuildings();
+          const limits = generateRandomBuildingLimits(buildings);
+          region.buildingLimits = limits;
+          return buildings;
+        })(generateRandomAvailableBuildings()),
         owner: "neutral",
-        buildings: []
+        buildings: [],
+        buildingLimits: {} // Это будет заполнено в функции выше
       },
       {
         id: 2,
@@ -382,14 +405,24 @@ class Storage {
   private cities: Region[] = [];
   private gameState: any = null;
   private armyTransfers: any[] = [];
+  private citiesLastLoaded: number = 0;
+  private gameStateLastLoaded: number = 0;
+  private CACHE_TTL = 5000; // Кэш действителен 5 секунд
 
-  // Получение списка областей
+  // Получение списка областей с оптимизацией кэширования
   async getRegions(): Promise<Region[]> {
     try {
-      if (this.cities.length === 0) {
-        const data = await fs.readFile(INFO_FILE, 'utf8');
-        this.cities = JSON.parse(data);
+      const now = Date.now();
+      
+      // Используем кэш, если он не устарел
+      if (this.cities.length > 0 && now - this.citiesLastLoaded < this.CACHE_TTL) {
+        return this.cities;
       }
+      
+      const data = await fs.readFile(INFO_FILE, 'utf8');
+      this.cities = JSON.parse(data);
+      this.citiesLastLoaded = now;
+      
       return this.cities;
     } catch (error) {
       console.error('Error reading regions from info.json:', error);
@@ -397,7 +430,7 @@ class Storage {
     }
   }
 
-  // Обновление области
+  // Обновление области с проверкой лимитов зданий
   async updateRegion(id: number, updates: Partial<Region>): Promise<Region | null> {
     try {
       const regions = await this.getRegions();
@@ -406,12 +439,36 @@ class Storage {
       if (index === -1) {
         return null;
       }
+      
+      const currentRegion = regions[index];
+      
+      // Если обновляем здания, проверяем лимиты
+      if (updates.buildings) {
+        const buildingCounts: Record<string, number> = {};
+        
+        // Считаем количество каждого типа зданий
+        updates.buildings.forEach(building => {
+          buildingCounts[building] = (buildingCounts[building] || 0) + 1;
+        });
+        
+        // Проверяем, не превышены ли лимиты
+        if (currentRegion.buildingLimits) {
+          for (const [buildingId, count] of Object.entries(buildingCounts)) {
+            const limit = currentRegion.buildingLimits[buildingId] || 999;
+            if (count > limit) {
+              console.error(`Building limit exceeded for ${buildingId}. Limit: ${limit}, Attempted: ${count}`);
+              return null;
+            }
+          }
+        }
+      }
 
-      const updatedRegion = { ...regions[index], ...updates };
+      const updatedRegion = { ...currentRegion, ...updates };
       regions[index] = updatedRegion;
 
       await fs.writeFile(INFO_FILE, JSON.stringify(regions, null, 2));
       this.cities = regions;
+      this.citiesLastLoaded = Date.now();
 
       return updatedRegion;
     } catch (error) {
@@ -425,6 +482,7 @@ class Storage {
     try {
       await fs.writeFile(INFO_FILE, JSON.stringify(regions, null, 2));
       this.cities = regions;
+      this.citiesLastLoaded = Date.now();
       return true;
     } catch (error) {
       console.error('Error updating all regions:', error);
@@ -443,10 +501,17 @@ class Storage {
 
   async getGameState(): Promise<any> {
     try {
-      if (!this.gameState) {
-        const data = await fs.readFile(GAME_STATE_FILE, 'utf8');
-        this.gameState = JSON.parse(data);
+      const now = Date.now();
+      
+      // Используем кэш, если он не устарел
+      if (this.gameState && now - this.gameStateLastLoaded < this.CACHE_TTL) {
+        return this.gameState;
       }
+      
+      const data = await fs.readFile(GAME_STATE_FILE, 'utf8');
+      this.gameState = JSON.parse(data);
+      this.gameStateLastLoaded = now;
+      
       return this.gameState;
     } catch (error) {
       console.error('Error reading game state:', error);
@@ -458,6 +523,7 @@ class Storage {
     try {
       await fs.writeFile(GAME_STATE_FILE, JSON.stringify(state, null, 2));
       this.gameState = state;
+      this.gameStateLastLoaded = Date.now();
       return true;
     } catch (error) {
       console.error('Error setting game state:', error);
@@ -483,10 +549,7 @@ class Storage {
   // Метод для обновления данных об областях только в памяти (не сохраняя в файл)
   updateInMemoryRegionsData(regions: Region[]) {
     this.cities = regions;
-    // После обновления в памяти, также сохраняем в файл
-    this.updateRegionsData(regions).catch(err => 
-      console.error('Ошибка при сохранении областей в файл:', err)
-    );
+    this.citiesLastLoaded = Date.now();
     return true;
   }
 }

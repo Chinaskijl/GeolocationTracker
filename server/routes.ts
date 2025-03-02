@@ -45,22 +45,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: 'City not found' });
       }
 
+      // Проверяем, доступно ли это здание для постройки в данной области
+      if (city.availableBuildings && !city.availableBuildings.includes(buildingId)) {
+        return res.status(400).json({ 
+          message: `Building ${buildingId} cannot be built in this region` 
+        });
+      }
+
       const building = BUILDINGS.find(b => b.id === buildingId);
       if (!building) {
         return res.status(404).json({ message: 'Building not found' });
       }
 
-      // Проверка лимита зданий с учетом специфичных лимитов для города
+      // Проверка лимита зданий для данной области
       const existingBuildingCount = city.buildings.filter(b => b === buildingId).length;
 
       // Получаем лимит для этого здания в этом городе
       const cityBuildingLimit = city.buildingLimits && city.buildingLimits[buildingId];
 
-      // Используем либо лимит города, либо глобальный лимит здания
-      const effectiveLimit = cityBuildingLimit !== undefined ? cityBuildingLimit : building.maxCount;
+      // Используем либо лимит города, либо глобальный лимит здания, либо 999 если ничего не задано
+      const effectiveLimit = cityBuildingLimit !== undefined 
+        ? cityBuildingLimit 
+        : (building.maxCount || 999);
+
+      console.log(`Building ${buildingId} in ${city.name}: ${existingBuildingCount}/${effectiveLimit}`);
 
       if (existingBuildingCount >= effectiveLimit) {
-        return res.status(400).json({ message: 'Building limit reached' });
+        return res.status(400).json({ 
+          message: `Building limit reached (${existingBuildingCount}/${effectiveLimit})` 
+        });
       }
 
       // Получение текущего состояния игры
@@ -92,6 +105,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedCity = await storage.updateCity(Number(id), {
         buildings: [...city.buildings, buildingId]
       });
+
+      if (!updatedCity) {
+        // Если не удалось обновить город (например, из-за превышения лимитов)
+        return res.status(400).json({ message: 'Failed to update city. Building limits may have been exceeded.' });
+      }
 
       // Немедленная отправка обновленных данных через WebSocket
       gameLoop.broadcastGameState();

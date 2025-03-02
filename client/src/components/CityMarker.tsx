@@ -18,10 +18,11 @@ export function CityMarker({ city }: { city: Region }) {
   const population = city.owner === 'neutral' ? 0 : city.population;
   const military = city.owner === 'neutral' ? 0 : city.military;
 
-
-  // Get available buildings - Placeholder, needs actual implementation based on game logic
+  // Get available buildings for this region
   const availableBuildings = city.owner === 'neutral' ? [] : city.availableBuildings || [];
 
+  // Get building limits if defined
+  const buildingLimits = city.buildingLimits || {};
 
   const isCapital = city.owner === 'player' && city.buildings.includes('capital');
 
@@ -86,16 +87,29 @@ export function CityMarker({ city }: { city: Region }) {
               {city.resources.metal > 0 && <span>⚙️ {city.resources.metal}</span>}
             </div>
 
-            {/* Отображаем ресурсы, которые добываются в области */}
-            {city.buildings && city.buildings.length > 0 && (
+            {/* Отображаем доступные для постройки здания */}
+            {city.availableBuildings && city.availableBuildings.length > 0 && (
               <>
-                <small className="mt-1">Производство:</small>
-                <div className="resource-items">
-                  {city.production.food > 0 && <span>🌾 +{city.production.food}</span>}
-                  {city.production.wood > 0 && <span>🌲 +{city.production.wood}</span>}
-                  {city.production.gold > 0 && <span>💰 +{city.production.gold}</span>}
-                  {city.production.oil > 0 && <span>🛢️ +{city.production.oil}</span>}
-                  {city.production.metal > 0 && <span>⚙️ +{city.production.metal}</span>}
+                <small className="mt-1">Доступные постройки:</small>
+                <div className="building-items">
+                  {city.availableBuildings.map((buildingId) => {
+                    const building = BUILDINGS.find(b => b.id === buildingId);
+                    if (!building) return null;
+                    
+                    // Подсчитываем, сколько таких зданий уже построено
+                    const builtCount = city.buildings.filter(b => b === buildingId).length;
+                    
+                    // Получаем лимит для этого здания в этом городе
+                    const limit = city.buildingLimits && city.buildingLimits[buildingId] 
+                      ? city.buildingLimits[buildingId] 
+                      : (building.maxCount || 999);
+                    
+                    return (
+                      <span key={buildingId}>
+                        {building.icon || '🏢'} {building.name || buildingId} ({builtCount}/{limit})
+                      </span>
+                    );
+                  })}
                 </div>
               </>
             )}
