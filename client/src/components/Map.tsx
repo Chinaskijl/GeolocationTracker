@@ -4,6 +4,7 @@ import 'leaflet/dist/leaflet.css';
 import 'leaflet-polylinedecorator';
 import { useGameStore } from '@/lib/store';
 import { TERRITORY_COLORS } from '@/lib/game';
+import { getResourceIcon } from '@/lib/resources'; // Ensure this import is present
 
 interface MilitaryMovement {
   fromCity: any;
@@ -199,6 +200,3 @@ export function Map() {
 
   return <div id="map" className="w-full h-screen" />;
 }
-
-// Using the imported getResourceIcon from @/lib/resources
-import { getResourceIcon } from '@/lib/resources';
