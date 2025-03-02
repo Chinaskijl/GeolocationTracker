@@ -373,6 +373,12 @@ class Storage {
     this.armyTransfers = this.armyTransfers.filter(t => t.id !== id);
     return true;
   }
+
+  // Метод для обновления данных об областях только в памяти (не сохраняя в файл)
+  updateInMemoryRegionsData(regions: Region[]) {
+    this.cities = regions;
+    return true;
+  }
 }
 
 export const storage = new Storage();
