@@ -137,8 +137,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const cityId = parseInt(id);
       const { isCapital } = req.body; // Флаг указывающий, что это выбор столицы
 
-      console.log(`Capture request for city ${cityId}, isCapital: ${isCapital}`);
-
       // Получаем данные города и состояние игры
       const cities = await storage.getCities();
       const city = cities.find(c => c.id === cityId);
@@ -148,17 +146,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: 'City not found' });
       }
 
-      // Проверка: если город уже захвачен
-      if (city.owner === 'player') {
-        return res.status(400).json({ error: 'City already owned by player' });
-      }
-
       if (isCapital) {
-        // Это первый выбор столицы - добавляем здание "capital" и устанавливаем владельца
+        // Это первый выбор столицы - захватываем без военных
         const capturedCity = await storage.updateCity(cityId, { 
           owner: 'player',
-          population: Math.floor(city.maxPopulation / 2), // Устанавливаем начальное население
-          buildings: [...city.buildings, 'capital']
+          population: Math.floor(city.maxPopulation / 2) // Устанавливаем начальное население
         });
 
         console.log("Capital city captured successfully");

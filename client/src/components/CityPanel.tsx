@@ -7,31 +7,6 @@ import { Progress } from '@/components/ui/progress';
 import { useQueryClient } from '@tanstack/react-query';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/components/ui/use-toast';
-import { getResourceIcon } from "../lib/resources";
-
-// Эмодзи для зданий
-const buildingEmojis: Record<string, string> = {
-  house: '🏠',
-  farm: '🌾',
-  barracks: '⚔️',
-  gold_mine: '💰',
-  metal_mine: '⛏️',
-  research_center: '🔬',
-  oil_rig: '🛢️',
-  factory: '🏭',
-  market: '🏪',
-  capital: '👑',
-  port: '⚓',
-  shipyard: '🚢',
-  airport: '✈️',
-  university: '🎓',
-  hospital: '🏥'
-};
-
-// Функция для получения эмодзи здания
-const getBuildingEmoji = (buildingId: string): string => {
-  return buildingEmojis[buildingId] || buildingId;
-};
 
 
 export function CityPanel() {
@@ -203,37 +178,19 @@ export function CityPanel() {
         </div>
 
         <div className="space-y-2">
-          <h3 className="font-medium">Информация</h3>
-          <div className="grid grid-cols-1 gap-2">
-            <div className="flex justify-between">
-              <span>Население:</span>
-              <span>{selectedCity.population} / {selectedCity.maxPopulation}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Военные:</span>
-              <span>{selectedCity.military || 0}</span>
-            </div>
+          <div className="flex justify-between">
+            <span>Население</span>
+            <span>{selectedCity.population} / {selectedCity.maxPopulation}</span>
           </div>
-
-          <h3 className="font-medium mt-4">Возможные постройки</h3>
-          <div className="grid grid-cols-1 gap-2">
-            {selectedCity.availableBuildings && selectedCity.buildingLimits && 
-              selectedCity.availableBuildings.map(buildingId => {
-                const limit = selectedCity.buildingLimits?.[buildingId] || 0;
-                const built = selectedCity.buildings.filter(b => b === buildingId).length;
-                return (
-                  <div key={buildingId} className="flex justify-between items-center">
-                    <span>
-                      {getBuildingEmoji(buildingId)} {buildingId}:
-                    </span>
-                    <span>{built} / {limit}</span>
-                  </div>
-                );
-              })
-            }
-          </div>
+          <Progress value={(selectedCity.population / selectedCity.maxPopulation) * 100} />
         </div>
 
+        <div className="space-y-2">
+          <div className="flex justify-between">
+            <span>Военные</span>
+            <span>{selectedCity.military || 0}</span>
+          </div>
+        </div>
 
         {selectedCity.owner === 'player' && playerCities.length > 0 && (
           <div className="space-y-2">
@@ -408,6 +365,20 @@ function getResourceIcon(resource: string): string {
     case 'food': return '🌾';
     case 'oil': return '🛢️';
     default: return '📦';
+  }
+}
+
+function getBuildingEmoji(buildingId: string): string {
+  switch (buildingId) {
+    case 'house': return '🏠';
+    case 'farm': return '🌾';
+    case 'sawmill': return '🪵';
+    case 'barracks': return '⚔️';
+    case 'metal_mine': return '⛏️';
+    case 'gold_mine': return '💰';
+    case 'research_center': return '🧪';
+    case 'oil_rig': return '🛢️';
+    default: return '🏢';
   }
 }
 

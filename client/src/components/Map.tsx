@@ -4,7 +4,6 @@ import 'leaflet/dist/leaflet.css';
 import 'leaflet-polylinedecorator';
 import { useGameStore } from '@/lib/store';
 import { TERRITORY_COLORS } from '@/lib/game';
-import { getResourceIcon } from '@/lib/resources'; // Ensure this import is present
 
 interface MilitaryMovement {
   fromCity: any;
@@ -199,4 +198,17 @@ export function Map() {
   };
 
   return <div id="map" className="w-full h-screen" />;
+}
+
+export function getResourceIcon(resource: string): string {
+  switch (resource) {
+    case 'gold': return '💰';
+    case 'wood': return '🌲';
+    case 'food': return '🍗';
+    case 'oil': return '🛢️';
+    case 'metal': return '⛏️';
+    case 'steel': return '🔩';
+    case 'weapons': return '⚔️';
+    default: return '📦';
+  }
 }
