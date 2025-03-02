@@ -238,9 +238,10 @@ export function CityPanel() {
                   <ul className="list-disc pl-5 space-y-1">
                     {selectedCity.availableBuildings.map((buildingId: string) => {
                       const limit = selectedCity.buildingLimits?.[buildingId] || 0;
+                      const emoji = getBuildingEmoji(buildingId); // Added emoji function call
                       return (
                         <li key={buildingId}>
-                          {buildingId.replace('_', ' ')} - макс. {limit} шт.
+                          {emoji} {buildingId.replace('_', ' ')} - макс. {limit} шт.
                         </li>
                       );
                     })}
@@ -272,6 +273,8 @@ export function CityPanel() {
                     const maxCount = selectedCity.buildingLimits?.[building.id] || building.maxCount;
                     const atLimit = currentCount >= maxCount;
 
+                    const emoji = getBuildingEmoji(building.id); // Added emoji function call
+
                     return (
                       <Button
                         key={building.id}
@@ -281,7 +284,7 @@ export function CityPanel() {
                         onClick={() => handleBuild(building.id)}
                       >
                         <div className="flex flex-col items-start">
-                          <span className="font-medium">{building.name}</span>
+                          <span className="font-medium">{emoji} {building.name}</span> {/* Added emoji */}
                           <span className="text-xs text-muted-foreground">{building.description}</span>
 
                           {building.resourceProduction && (
@@ -327,9 +330,10 @@ export function CityPanel() {
               {selectedCity.buildings.map((buildingId, index) => {
                 const building = BUILDINGS.find(b => b.id === buildingId);
                 if (!building) return null;
+                const emoji = getBuildingEmoji(buildingId); // Added emoji function call
                 return (
                   <div key={`${buildingId}-${index}`} className="flex justify-between items-center">
-                    <span>{building.name}</span>
+                    <span>{emoji} {building.name}</span> {/* Added emoji */}
                     <div className="flex items-center gap-2 text-sm">
                       {building.resourceProduction && (
                         <span>
@@ -361,6 +365,20 @@ function getResourceIcon(resource: string): string {
     case 'food': return '🌾';
     case 'oil': return '🛢️';
     default: return '📦';
+  }
+}
+
+function getBuildingEmoji(buildingId: string): string {
+  switch (buildingId) {
+    case 'house': return '🏠';
+    case 'farm': return '🌾';
+    case 'sawmill': return '🪵';
+    case 'barracks': return '⚔️';
+    case 'metal_mine': return '⛏️';
+    case 'gold_mine': return '💰';
+    case 'research_center': return '🧪';
+    case 'oil_rig': return '🛢️';
+    default: return '🏢';
   }
 }
 
