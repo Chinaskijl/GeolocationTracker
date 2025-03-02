@@ -200,8 +200,5 @@ export function Map() {
   return <div id="map" className="w-full h-screen" />;
 }
 
-// Using the imported getResourceIcon from @/lib/resources @/lib/resources
-import { getResourceIcon } from '@/lib/resources';: return '⚔️';
-    default: return '📦';
-  }
-}
+// Using the imported getResourceIcon from @/lib/resources
+import { getResourceIcon } from '@/lib/resources';
