@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useMap } from 'react-leaflet';
 import { useGameStore } from '@/lib/store';
@@ -14,7 +13,7 @@ export function CityMarker({ city }: { city: Region }) {
   const selectedCity = useGameStore(state => state.selectedCity);
 
   const isSelected = selectedCity && selectedCity.id === city.id;
-  
+
   // Получаем только доступные в городе ресурсы (не производство)
   const availableResources = Object.entries(city.resources || {})
     .filter(([_, value]) => value > 0)
@@ -50,11 +49,11 @@ export function CityMarker({ city }: { city: Region }) {
         `}>
           {isCapital ? <Crown size={16} /> : <MapPinIcon size={16} />}
         </div>
-        
+
         {/* Всплывающая карточка с информацией */}
         <Card className="absolute bottom-full mb-2 p-2 w-40 opacity-0 group-hover:opacity-100 transition-opacity">
           <div className="text-sm font-bold mb-1 truncate">{city.name}</div>
-          
+
           <div className="flex justify-between text-xs mb-1">
             <span className="flex items-center">
               <Users size={14} className="mr-1" />
@@ -67,25 +66,33 @@ export function CityMarker({ city }: { city: Region }) {
               </span>
             )}
           </div>
-          
+
           {/* Доступные в городе ресурсы */}
-          {availableResources.length > 0 && (
-            <div className="border-t pt-1 mt-1">
-              <div className="text-xs font-semibold mb-1">Доступные ресурсы:</div>
-              <div className="flex flex-wrap gap-1">
-                {availableResources.map(resource => {
-                  const ResourceIcon = getResourceIcon(resource.type);
-                  return (
-                    <div key={resource.type} className="flex items-center text-xs">
-                      <ResourceIcon size={12} className="mr-1" />
-                      {resource.amount}
-                    </div>
-                  );
-                })}
-              </div>
+          <div className="resources-info">
+            <small>Доступные ресурсы:</small>
+            <div className="resource-items">
+              {city.resources.food > 0 && <span>🌾 {city.resources.food}</span>}
+              {city.resources.wood > 0 && <span>🌲 {city.resources.wood}</span>}
+              {city.resources.gold > 0 && <span>💰 {city.resources.gold}</span>}
+              {city.resources.oil > 0 && <span>🛢️ {city.resources.oil}</span>}
+              {city.resources.metal > 0 && <span>⚙️ {city.resources.metal}</span>}
             </div>
-          )}
-          
+
+            {/* Отображаем ресурсы, которые добываются в области */}
+            {city.buildings && city.buildings.length > 0 && (
+              <>
+                <small className="mt-1">Производство:</small>
+                <div className="resource-items">
+                  {city.production.food > 0 && <span>🌾 +{city.production.food}</span>}
+                  {city.production.wood > 0 && <span>🌲 +{city.production.wood}</span>}
+                  {city.production.gold > 0 && <span>💰 +{city.production.gold}</span>}
+                  {city.production.oil > 0 && <span>🛢️ +{city.production.oil}</span>}
+                  {city.production.metal > 0 && <span>⚙️ +{city.production.metal}</span>}
+                </div>
+              </>
+            )}
+          </div>
+
           {/* Построенные здания */}
           {city.buildings.length > 0 && (
             <div className="border-t pt-1 mt-1">

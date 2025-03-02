@@ -405,6 +405,10 @@ class Storage {
   // Метод для обновления данных об областях только в памяти (не сохраняя в файл)
   updateInMemoryRegionsData(regions: Region[]) {
     this.cities = regions;
+    // После обновления в памяти, также сохраняем в файл
+    this.updateRegionsData(regions).catch(err => 
+      console.error('Ошибка при сохранении областей в файл:', err)
+    );
     return true;
   }
 }

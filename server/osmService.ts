@@ -200,9 +200,9 @@ export async function updateAllRegionBoundaries(): Promise<void> {
     // Обновляем данные об областях только в памяти для текущей сессии
     // Не сохраняем границы в файл - они будут загружаться при каждом запуске
     if (regionsWithBoundaries.length > 0) {
-      // Обновляем только в памяти
-      storage.updateInMemoryRegionsData(regionsWithBoundaries);
-      console.log('Region boundaries updated in memory successfully');
+      // Обновляем данные о границах и сохраняем их в файл
+      await storage.updateRegionsData(regionsWithBoundaries);
+      console.log('Region boundaries updated and saved successfully');
     } else {
       console.log('No boundary updates needed');
     }
