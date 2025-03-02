@@ -211,98 +211,114 @@ export function CityPanel() {
           </div>
         )}
 
-        {/* Информация о ресурсах города удалена */}
 
-        {selectedCity.owner === 'neutral' && (
-          <>
-          <div className="space-y-2">
-            <h3 className="font-medium">Административные действия</h3>
-            <Button 
-              onClick={handleCapture}
-              disabled={hasCapital && gameState.military < selectedCity.maxPopulation / 4}
-              className="w-full"
-            >
-              {!hasCapital ? 'Выбрать столицей' : 'Захватить город'}
-            </Button>
-            {hasCapital && gameState.military < selectedCity.maxPopulation / 4 && (
-              <p className="text-sm text-red-500">
-                Требуется {Math.ceil(selectedCity.maxPopulation / 4)} военных
+        {!selectedCity.owner || selectedCity.owner === 'neutral' ? (
+          <div className="space-y-4">
+            <Card className="p-4">
+              <h3 className="font-medium mb-2">Захват территории</h3>
+              <p className="text-sm mb-4">
+                {!cities.some(city => city.owner === 'player') 
+                  ? "Выберите эту область в качестве своей столицы" 
+                  : "Вы можете захватить эту территорию, но вам понадобятся военные."}
               </p>
+              <Button 
+                onClick={handleCapture}
+                disabled={hasCapital && gameState.military < selectedCity.maxPopulation / 4}
+                className="w-full"
+              >
+                {!hasCapital ? "Выбрать столицей" : "Захватить территорию"}
+              </Button>
+            </Card>
+
+            {/* Отображаем возможные постройки для нейтральной области */}
+            {selectedCity.availableBuildings && selectedCity.availableBuildings.length > 0 && (
+              <Card className="p-4">
+                <h3 className="font-medium mb-2">Возможные постройки</h3>
+                <div className="text-sm">
+                  <ul className="list-disc pl-5 space-y-1">
+                    {selectedCity.availableBuildings.map((buildingId: string) => {
+                      const limit = selectedCity.buildingLimits?.[buildingId] || 0;
+                      return (
+                        <li key={buildingId}>
+                          {buildingId.replace('_', ' ')} - макс. {limit} шт.
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              </Card>
             )}
           </div>
-          </>
-        )}
+        ) : selectedCity.owner === 'player' ? (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <h3 className="font-medium">Строительство</h3>
+              <p className="text-sm">Постройте здания для производства ресурсов и расширения города.</p>
 
-        {selectedCity.owner === 'player' && (
-          <div className="space-y-2">
-            <h3 className="font-medium">Строительство</h3>
-            <ScrollArea className="h-60 w-full rounded-md border">
-              <div className="p-4 space-y-4">
-                {BUILDINGS.map(building => {
-                  // Обновляем чтение количества зданий напрямую из выбранного города
-                  const buildingCount = selectedCity.buildings.filter(b => b === building.id).length;
+              <ScrollArea className="h-[300px] pr-3">
+                <div className="space-y-2">
+                  {BUILDINGS.filter(building => 
+                    // Фильтруем только доступные для этой области здания
+                    selectedCity.availableBuildings && 
+                    selectedCity.availableBuildings.includes(building.id)
+                  ).map(building => {
+                    // Проверяем, можно ли построить здание с текущими ресурсами
+                    const canAfford = Object.entries(building.cost).every(
+                      ([resource, amount]) => gameState.resources[resource as keyof typeof gameState.resources] >= amount
+                    );
 
-                  // Проверяем лимит зданий данного типа для этого города
-                  const cityBuildingLimit = selectedCity.buildingLimits 
-                    ? selectedCity.buildingLimits[building.id] 
-                    : building.maxCount;
+                    // Проверяем лимит построек данного типа
+                    const currentCount = selectedCity.buildings.filter((b: string) => b === building.id).length;
+                    const maxCount = selectedCity.buildingLimits?.[building.id] || building.maxCount;
+                    const atLimit = currentCount >= maxCount;
 
-                  // Используем либо лимит города, либо глобальный лимит здания
-                  const effectiveLimit = cityBuildingLimit !== undefined 
-                    ? cityBuildingLimit 
-                    : building.maxCount;
+                    return (
+                      <Button
+                        key={building.id}
+                        variant={canAfford && !atLimit ? "outline" : "ghost"}
+                        disabled={!canAfford || atLimit}
+                        className={`w-full flex justify-between items-start p-3 h-auto ${(!canAfford || atLimit) ? 'opacity-50' : ''}`}
+                        onClick={() => handleBuild(building.id)}
+                      >
+                        <div className="flex flex-col items-start">
+                          <span className="font-medium">{building.name}</span>
+                          <span className="text-xs text-muted-foreground">{building.description}</span>
 
-                  const atLimit = buildingCount >= effectiveLimit || effectiveLimit === 0;
-                  const canBuildMore = buildingCount < effectiveLimit;
+                          {building.resourceProduction && (
+                            <span className="text-xs text-green-600 mt-1">
+                              +{building.resourceProduction.amount} {building.resourceProduction.type} в день
+                            </span>
+                          )}
 
-                  return (
-                    <Button
-                      key={building.id}
-                      variant="outline"
-                      onClick={() => handleBuild(building.id)}
-                      className="w-full p-4 h-auto"
-                      disabled={!canBuildMore || !canAffordBuilding(gameState, building) || atLimit}
-                    >
-                      <div className="w-full space-y-2">
-                        <div className="flex justify-between items-center">
-                          <span className="text-lg font-medium">{building.name}</span>
-                          <span className="text-sm text-gray-500">
-                            {buildingCount}/{effectiveLimit}
+                          <span className="text-xs text-blue-600 mt-1">
+                            {currentCount}/{maxCount} построено
                           </span>
                         </div>
-                        <div className="text-sm text-left text-gray-600">
-                          {building.resourceProduction && (
-                            <div>+{building.resourceProduction.amount} {building.resourceProduction.type}/сек</div>
-                          )}
-                          {building.population?.growth && (
-                            <div>+{building.population.growth} население/сек</div>
-                          )}
-                          {building.military?.production && (
-                            <div>+{building.military.production} военные/сек (-{building.military.populationUse} население)</div>
-                          )}
+
+                        <div className="flex flex-col items-end">
+                          <div className="flex flex-wrap gap-1 justify-end">
+                            {Object.entries(building.cost).map(([resource, amount]) => (
+                              <span
+                                key={resource}
+                                className={`text-xs px-1 py-0.5 rounded ${
+                                  gameState.resources[resource as keyof typeof gameState.resources] >= amount
+                                    ? 'bg-green-100 text-green-800'
+                                    : 'bg-red-100 text-red-800'
+                                }`}
+                              >
+                                {getResourceIcon(resource)} {amount}
+                              </span>
+                            ))}
+                          </div>
                         </div>
-                        <div className="flex flex-wrap gap-2 pt-2 border-t">
-                          {Object.entries(building.cost).map(([resource, amount]) => (
-                            <span
-                              key={resource}
-                              className={`text-sm px-2 py-1 rounded ${
-                                gameState.resources[resource as keyof typeof gameState.resources] >= amount
-                                  ? 'bg-green-100 text-green-800'
-                                  : 'bg-red-100 text-red-800'
-                              }`}
-                            >
-                              {getResourceIcon(resource)} {amount}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </Button>
-                  );
-                })}
-              </div>
-            </ScrollArea>
+                      </Button>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
+            </div>
           </div>
-        )}
+        ) : null}
 
         {selectedCity.buildings.length > 0 && (
           <div className="space-y-2">

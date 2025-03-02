@@ -1,154 +1,169 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useMap } from 'react-leaflet';
 import { useGameStore } from '@/lib/store';
-import { getResourceIcon } from '@/lib/resources';
-import { MapPinIcon, Crown, Swords, Users } from 'lucide-react';
+import { MapPinIcon, Crown, Swords, Users, Wheat, Coins, Trees, Droplet } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { BUILDINGS } from '@/lib/game';
 import type { Region } from '@/shared/regionTypes';
+import { Button } from '@/components/ui/button'; // Added import
+import { useQueryClient } from '@tanstack/react-query'; // Added import
+import { apiRequest } from '@/lib/api'; // Added import
+
 
 export function CityMarker({ city }: { city: Region }) {
   const map = useMap();
   const selectCity = useGameStore(state => state.selectCity);
-  const selectedCity = useGameStore(state => state.selectedCity);
+  const { setSelectedCity, gameState, cities } = useGameStore();
+  const [showLabel, setShowLabel] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(false);
+  const { toast } = useToast(); // Assuming useToast is available
+  const queryClient = useQueryClient();
 
-  const isSelected = selectedCity && selectedCity.id === city.id;
+  // Определяем цвет маркера в зависимости от владельца
+  let color = 'gray';  // нейтральный
+  if (city.owner === 'player') {
+    color = 'blue';    // игрок
+  } else if (city.owner === 'ai') {
+    color = 'red';     // ИИ противник
+  }
 
-  // Neutral cities have 0 population and military
-  const population = city.owner === 'neutral' ? 0 : city.population;
-  const military = city.owner === 'neutral' ? 0 : city.military;
+  // Проверяем, выбрал ли игрок уже столицу
+  const hasCapital = cities.some(c => c.owner === 'player' && c.buildings.includes('capital'));
 
-  // Get available buildings for this region
-  const availableBuildings = city.owner === 'neutral' ? [] : city.availableBuildings || [];
+  const handleCapture = async (e: React.MouseEvent) => {
+    e.stopPropagation();
 
-  // Get building limits if defined
-  const buildingLimits = city.buildingLimits || {};
+    try {
+      const response = await apiRequest('PATCH', `/api/cities/${city.id}/capture`, {
+        isCapital: !hasCapital // Если ещё нет столицы, захватываем как столицу
+      });
 
-  const isCapital = city.owner === 'player' && city.buildings.includes('capital');
+      if (response.success) {
+        toast({
+          title: hasCapital ? "Город захвачен!" : "Столица выбрана!",
+          description: hasCapital ? "Вы успешно захватили город" : "Вы успешно выбрали столицу",
+          variant: "success",
+        });
 
-  const handleClick = () => {
-    map.flyTo([city.latitude, city.longitude], 10);
-    selectCity(city);
+        // Обновляем данные
+        await queryClient.invalidateQueries({ queryKey: ['/api/cities'] });
+        await queryClient.invalidateQueries({ queryKey: ['/api/game-state'] });
+      }
+    } catch (error) {
+      console.error('Ошибка при захвате города:', error);
+
+      toast({
+        title: "Ошибка захвата",
+        description: "Не удалось захватить город. Возможно, не хватает военных.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const getBuildingName = (buildingId: string): string => {
-    const building = BUILDINGS.find(b => b.id === buildingId);
-    return building?.name || buildingId;
+  // Справочник иконок для ресурсов
+  const resourceIcons: Record<string, JSX.Element> = {
+    food: <Wheat size={14} />,
+    gold: <Coins size={14} />,
+    wood: <Trees size={14} />,
+    oil: <Droplet size={14} />
   };
+
+  // Получаем список доступных зданий для постройки
+  const availableBuildings = city.availableBuildings || [];
+
+  // Получаем счетчик каждого типа зданий в городе
+  const buildingCounts: Record<string, number> = {};
+  (city.buildings || []).forEach((buildingId: string) => {
+    buildingCounts[buildingId] = (buildingCounts[buildingId] || 0) + 1;
+  });
 
   return (
     <div 
-      className={`absolute transform -translate-x-1/2 -translate-y-1/2 z-50 ${
-        isSelected ? 'z-[1000]' : 'z-50'
-      }`} 
-      style={{ 
-        left: map.latLngToLayerPoint([city.latitude, city.longitude]).x,
-        top: map.latLngToLayerPoint([city.latitude, city.longitude]).y
+      className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer z-10"
+      style={{ left: `${city.x}px`, top: `${city.y}px` }} //Using x and y coordinates directly, assuming they are present in the city object
+      onMouseEnter={() => { setShowLabel(true); setShowTooltip(true); }}
+      onMouseLeave={() => { setShowLabel(false); setShowTooltip(false); }}
+      onClick={() => {
+        selectCity(city);
+        setSelectedCity(city);
       }}
-      onClick={handleClick}
     >
-      <div className="relative cursor-pointer group">
-        {/* Маркер города */}
-        <div className={`
-          flex items-center justify-center w-8 h-8 rounded-full 
-          ${city.owner === 'player' ? 'bg-blue-500' : 
-            city.owner === 'ai' ? 'bg-red-500' : 'bg-gray-500'} 
-          text-white shadow-md hover:scale-110 transition-transform
-          ${isSelected ? 'ring-2 ring-white scale-110' : ''}
-        `}>
-          {isCapital ? <Crown size={16} /> : <MapPinIcon size={16} />}
+      {/* Маркер города */}
+      <div className={`w-4 h-4 rounded-full bg-${color}-500 border-2 border-white`}></div>
+
+      {/* Название города */}
+      {showLabel && (
+        <div className="absolute whitespace-nowrap bg-gray-800 text-white px-2 py-1 rounded-md text-xs -mt-8 left-1/2 transform -translate-x-1/2">
+          {city.name}
         </div>
+      )}
 
-        {/* Всплывающая карточка с информацией */}
-        <Card className="absolute bottom-full mb-2 p-2 w-40 opacity-0 group-hover:opacity-100 transition-opacity">
-          <div className="text-sm font-bold mb-1 truncate">{city.name}</div>
+      {/* Всплывающая подсказка с информацией о городе */}
+      {showTooltip && (
+        <Card className="absolute z-20 p-2 min-w-[200px] shadow-lg -mt-6 ml-3">
+          <div className="text-sm font-semibold">{city.name}</div>
 
-          <div className="flex justify-between text-xs mb-1">
-            <span className="flex items-center">
-              <Users size={14} className="mr-1" />
-              {population}
-            </span>
-            {military > 0 && (
-              <span className="flex items-center">
-                <Swords size={14} className="mr-1" />
-                {military}
-              </span>
-            )}
-          </div>
+          {city.owner === 'neutral' ? (
+            <>
+              {/* Информация для нейтрального города */}
+              <div className="text-xs mt-1">Нейтральный город</div>
 
-          {/* Доступные в городе ресурсы */}
-          <div className="resources-info">
-            <small>Доступные ресурсы:</small>
-            <div className="resource-items">
-              {city.resources.food > 0 && <span>🌾 {city.resources.food}</span>}
-              {city.resources.wood > 0 && <span>🌲 {city.resources.wood}</span>}
-              {city.resources.gold > 0 && <span>💰 {city.resources.gold}</span>}
-              {city.resources.oil > 0 && <span>🛢️ {city.resources.oil}</span>}
-              {city.resources.metal > 0 && <span>⚙️ {city.resources.metal}</span>}
-            </div>
-
-            {/* Отображаем доступные для постройки здания */}
-            {city.availableBuildings && city.availableBuildings.length > 0 && (
-              <>
-                <small className="mt-1">Доступные постройки:</small>
-                <div className="building-items">
-                  {city.availableBuildings.map((buildingId) => {
-                    const building = BUILDINGS.find(b => b.id === buildingId);
-                    if (!building) return null;
-                    
-                    // Подсчитываем, сколько таких зданий уже построено
-                    const builtCount = city.buildings.filter(b => b === buildingId).length;
-                    
-                    // Получаем лимит для этого здания в этом городе
-                    const limit = city.buildingLimits && city.buildingLimits[buildingId] 
-                      ? city.buildingLimits[buildingId] 
-                      : (building.maxCount || 999);
-                    
-                    return (
-                      <span key={buildingId}>
-                        {building.icon || '🏢'} {building.name || buildingId} ({builtCount}/{limit})
-                      </span>
-                    );
-                  })}
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* Построенные здания */}
-          {city.buildings.length > 0 && (
-            <div className="border-t pt-1 mt-1">
-              <div className="text-xs font-semibold mb-1">Постройки:</div>
-              <div className="flex flex-wrap gap-1">
-                {city.buildings.map((buildingId, index) => {
-                  const building = BUILDINGS.find(b => b.id === buildingId);
-                  return (
-                    <div key={`${buildingId}-${index}`} className="text-xs">
-                      {building?.name || buildingId}
+              <div className="mt-2 space-y-1">
+                {availableBuildings.length > 0 ? (
+                  <div className="text-xs">
+                    <div className="font-semibold">Возможные постройки:</div>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {availableBuildings.map((buildingId: string) => {
+                        // Получаем лимит для здания
+                        const limit = city.buildingLimits?.[buildingId] || 0;
+                        return (
+                          <div key={buildingId} className="flex items-center gap-1 bg-gray-100 rounded px-1">
+                            {buildingId.replace('_', ' ')} ({limit})
+                          </div>
+                        );
+                      })}
                     </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Available Buildings */}
-          {city.availableBuildings && city.availableBuildings.length > 0 && (
-            <div className="border-t pt-1 mt-1">
-              <div className="text-xs font-semibold mb-1">Доступные здания:</div>
-              <div className="flex flex-wrap gap-1">
-                {city.availableBuildings.map((buildingId, indexx) => (
-                  <div key={`${buildingId}-${index}`} className="text-xs">
-                    {getBuildingName(buildingId)}
                   </div>
-                ))}
+                ) : null}
+
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full mt-2" 
+                  onClick={handleCapture}
+                >
+                  {!hasCapital ? "Выбрать столицей" : "Захватить"}
+                </Button>
               </div>
-            </div>
+            </>
+          ) : (
+            <>
+              {/* Информация для города игрока или ИИ */}
+              <div className="text-xs mt-1">
+                Владелец: {city.owner === 'player' ? 'Вы' : 'Противник'}
+              </div>
+
+              <div className="mt-2 space-y-1">
+                <div className="text-xs">Население: {city.population}</div>
+                <div className="text-xs">Военные: {city.military || 0}</div>
+
+                {Object.keys(buildingCounts).length > 0 ? (
+                  <div className="text-xs">
+                    <div className="font-semibold">Постройки:</div>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {Object.entries(buildingCounts).map(([buildingId, count]) => (
+                        <div key={buildingId} className="flex items-center gap-1 bg-gray-100 rounded px-1">
+                          {buildingId.replace('_', ' ')} x{count}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            </>
           )}
-
-
         </Card>
-      </div>
+      )}
     </div>
   );
 }

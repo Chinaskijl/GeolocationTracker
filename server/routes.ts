@@ -153,6 +153,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           population: Math.floor(city.maxPopulation / 2) // Устанавливаем начальное население
         });
 
+        console.log("Capital city captured successfully");
+        
         res.json({ 
           success: true,
           city: capturedCity,
