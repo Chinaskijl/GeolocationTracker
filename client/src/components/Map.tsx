@@ -200,16 +200,8 @@ export function Map() {
   return <div id="map" className="w-full h-screen" />;
 }
 
-// Use the imported getResourceIcon from @/lib/resources instead
-function getMapResourceIcon(resource: string): string {
-  switch (resource) {
-    case 'gold': return '💰';
-    case 'wood': return '🌲';
-    case 'food': return '🍗';
-    case 'oil': return '🛢️';
-    case 'metal': return '⛏️';
-    case 'steel': return '🔩';
-    case 'weapons': return '⚔️';
+// Using the imported getResourceIcon from @/lib/resources @/lib/resources
+import { getResourceIcon } from '@/lib/resources';: return '⚔️';
     default: return '📦';
   }
 }
