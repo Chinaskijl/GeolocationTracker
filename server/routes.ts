@@ -131,21 +131,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/cities/:id/capture", async (req, res) => {
+  app.patch("/api/cities/:id/capture", async (req, res) => {
     try {
       const { id } = req.params;
-      const { owner } = req.body;
+      const cityId = parseInt(id);
+      const { isCapital } = req.body; // Флаг указывающий, что это выбор столицы
 
-      const city = await storage.updateCity(Number(id), { owner });
+      // Получаем данные города и состояние игры
+      const cities = await storage.getCities();
+      const city = cities.find(c => c.id === cityId);
+      const gameState = await storage.getGameState();
 
-      res.json(city);
+      if (!city) {
+        return res.status(404).json({ error: 'City not found' });
+      }
+
+      if (isCapital) {
+        // Это первый выбор столицы - захватываем без военных
+        const capturedCity = await storage.updateCity(cityId, { 
+          owner: 'player',
+          population: Math.floor(city.maxPopulation / 2) // Устанавливаем начальное население
+        });
+
+        res.json({ 
+          success: true,
+          city: capturedCity,
+          gameState,
+          message: 'Столица выбрана успешно!'
+        });
+      } else {
+        // Обычный захват города
+        // Проверяем, есть ли у нас достаточно военных для захвата
+        const requiredMilitary = Math.ceil(city.maxPopulation / 4);
+
+        if (gameState.military < requiredMilitary) {
+          return res.status(400).json({ 
+            error: 'Not enough military units',
+            required: requiredMilitary
+          });
+        }
+
+        // Захватываем город
+        const capturedCity = await storage.updateCity(cityId, { 
+          owner: 'player',
+          population: Math.floor(city.maxPopulation / 2) // Устанавливаем начальное население
+        });
+
+        // Уменьшаем количество военных
+        gameState.military -= requiredMilitary;
+        await storage.setGameState(gameState);
+
+        res.json({ 
+          success: true,
+          city: capturedCity,
+          gameState
+        });
+      }
     } catch (error) {
       console.error('Error capturing city:', error);
-      res.status(500).json({ message: 'Failed to capture city' });
+      res.status(500).json({ error: 'Server error' });
     }
   });
 
-  // Новый эндпоинт для отправки армии между городами
+
   app.post("/api/military/transfer", async (req, res) => {
     try {
       const { fromCityId, toCityId, amount } = req.body;

@@ -133,11 +133,11 @@ export function CityMarker({ city }: { city: Region }) {
           )}
 
           {/* Available Buildings */}
-          {availableBuildings.length > 0 && (
+          {city.availableBuildings && city.availableBuildings.length > 0 && (
             <div className="border-t pt-1 mt-1">
               <div className="text-xs font-semibold mb-1">Доступные здания:</div>
               <div className="flex flex-wrap gap-1">
-                {availableBuildings.map((buildingId, index) => (
+                {city.availableBuildings.map((buildingId, indexx) => (
                   <div key={`${buildingId}-${index}`} className="text-xs">
                     {getBuildingName(buildingId)}
                   </div>

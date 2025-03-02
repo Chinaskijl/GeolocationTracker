@@ -17,3 +17,11 @@ export async function initDb() {
     console.error("Database initialization error:", error);
   }
 }
+
+// Перед экспортом, добавляем возможность повторной инициализации
+// при перезапуске игры
+export function reinitializeGame() {
+  return initDb();
+}
+
+export default initDb;

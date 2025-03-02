@@ -253,6 +253,7 @@ export function CityPanel() {
                     : building.maxCount;
 
                   const atLimit = buildingCount >= effectiveLimit || effectiveLimit === 0;
+                  const canBuildMore = buildingCount < effectiveLimit;
 
                   return (
                     <Button
@@ -260,7 +261,7 @@ export function CityPanel() {
                       variant="outline"
                       onClick={() => handleBuild(building.id)}
                       className="w-full p-4 h-auto"
-                      disabled={!canAffordBuilding(gameState, building) || atLimit}
+                      disabled={!canBuildMore || !canAffordBuilding(gameState, building) || atLimit}
                     >
                       <div className="w-full space-y-2">
                         <div className="flex justify-between items-center">

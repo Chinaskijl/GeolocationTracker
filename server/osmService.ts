@@ -28,8 +28,8 @@ interface OverpassResponse {
   }>;
 }
 
-//Interface for info.json data
-interface RegionInfo {
+//Interface for region data (info.json is removed)
+interface RegionData {
     id: number;
     name: string;
     population: number;
@@ -182,47 +182,27 @@ function createSimpleBoundary(latitude: number, longitude: number, regionId: num
 /**
  * Обновляет данные о границах областей
  */
-export async function updateAllRegionBoundaries(): Promise<void> {
+export async function updateAllRegionBoundaries(): Promise<boolean> {
   try {
     console.log('Starting update of all region boundaries...');
     // Получаем текущие данные об областях
     const regions = await storage.getRegions();
-    let boundariesUpdated = false;
 
-    // Обновляем границы для каждой области, но не меняем исходные данные
-    const regionsWithBoundaries = await Promise.all(regions.map(async (region) => {
-      try {
-        console.log(`Processing region: ${region.name}`);
-        // Пытаемся получить реальные границы из OSM
-        const boundaries = await fetchRegionBoundaries(region.name);
-
-        if (boundaries.length > 0) {
-          console.log(`Got real boundaries for ${region.name} with ${boundaries.length} points`);
-          // Создаем копию области с обновленными границами
-          return { ...region, boundaries };
-        } else {
-          console.log(`Using simple boundary for ${region.name}`);
-          // Если не удалось получить границы, создаем простую границу
-          return { ...region, boundaries: createSimpleBoundary(region.latitude, region.longitude, region.id) };
-        }
-      } catch (error) {
-        console.warn(`Failed to update boundaries for ${region.name}:`, error);
-        // В случае ошибки используем простую границу
-        return { ...region, boundaries: createSimpleBoundary(region.latitude, region.longitude, region.id) };
+    // Обновляем границы для каждой области, но только в памяти
+    for (const region of regions) {
+      if (!region.boundaries || region.boundaries.length === 0) {
+        await updateRegionBoundary(region);
       }
-    }));
-
-    // Обновляем данные об областях только в памяти для текущей сессии
-    // Не сохраняем границы в файл - они будут загружаться при каждом запуске
-    if (regionsWithBoundaries.length > 0) {
-      // Обновляем данные о границах и сохраняем их в файл
-      await storage.updateRegionsData(regionsWithBoundaries);
-      console.log('Region boundaries updated and saved successfully');
-    } else {
-      console.log('No boundary updates needed');
     }
+
+    // Обновляем только в памяти, не сохраняя в файл
+    storage.updateInMemoryRegionsData(regions);
+
+    console.log("Updated all region boundaries (in memory only)");
+    return true;
   } catch (error) {
-    console.error('Error updating region boundaries:', error);
+    console.error("Error updating region boundaries:", error);
+    return false;
   }
 }
 
@@ -231,47 +211,30 @@ export async function updateAllRegionBoundaries(): Promise<void> {
  * @param regionId ID области
  * @returns Обновленные данные об области
  */
-export async function updateRegionBoundary(regionId: number): Promise<any> {
+export async function updateRegionBoundary(region: RegionData): Promise<void> {
   try {
-    // Получаем данные об области
-    const regions = await storage.getRegions();
-    const region = regions.find(r => r.id === regionId);
+    console.log(`Updating boundary for region: ${region.name}`);
+    // Пытаемся получить реальные границы из OSM
+    const boundaries = await fetchRegionBoundaries(region.name);
 
-    if (!region) {
-      throw new Error(`Region with ID ${regionId} not found`);
-    }
-
-    try {
-      console.log(`Updating boundary for region: ${region.name}`);
-      // Пытаемся получить реальные границы из OSM
-      const boundaries = await fetchRegionBoundaries(region.name);
-
-      if (boundaries.length > 0) {
-        console.log(`Got real boundaries for ${region.name}`);
-        region.boundaries = boundaries;
-      } else {
-        console.log(`Using simple boundary for ${region.name}`);
-        region.boundaries = createSimpleBoundary(region.latitude, region.longitude, region.id);
-      }
-    } catch (error) {
-      console.warn(`Failed to update boundaries for ${region.name}:`, error);
+    if (boundaries.length > 0) {
+      console.log(`Got real boundaries for ${region.name}`);
+      region.boundaries = boundaries;
+    } else {
+      console.log(`Using simple boundary for ${region.name}`);
       region.boundaries = createSimpleBoundary(region.latitude, region.longitude, region.id);
     }
-
-    // Обновляем данные об области
-    await storage.updateRegion(regionId, { boundaries: region.boundaries });
-
-    return region;
   } catch (error) {
-    console.error(`Error updating boundary for region ${regionId}:`, error);
-    throw error;
+    console.warn(`Failed to update boundaries for ${region.name}:`, error);
+    region.boundaries = createSimpleBoundary(region.latitude, region.longitude, region.id);
   }
 }
 
-// Added functions to manage info.json and randomize data
+
+// Added functions to manage game data and randomize data
 
 async function resetGameData() {
-    const regions: RegionInfo[] = [];
+    const regions: RegionData[] = [];
     const numRegions = 5; //Example number of regions - adjust as needed
     const buildableBuildings = ["farm", "barracks", "mine"];
 
@@ -283,7 +246,7 @@ async function resetGameData() {
             name: `Region ${i + 1}`,
             population: randomInt(maxPop / 2, maxPop),
             military: randomInt(maxPop / 10, maxPop / 5),
-            buildableBuildings: buildableBuildings.map((building) => building + '_' + i), //unique names
+            buildableBuildings: buildableBuildings.map((building) => `${building}_${i}`), //unique names
             resources: {
                 wood: randomInt(100, 500),
                 stone: randomInt(50, 250),
