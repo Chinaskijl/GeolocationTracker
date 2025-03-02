@@ -5,6 +5,7 @@ import fetch from 'node-fetch';
 import fs from 'fs/promises';
 import path from 'path';
 import { storage } from './storage';
+import { randomInt } from './utils'; // Added utility function
 
 // Интерфейс для данных от Overpass API
 interface OverpassResponse {
@@ -26,6 +27,20 @@ interface OverpassResponse {
     geometry?: Array<{ lat: number; lon: number }>;
   }>;
 }
+
+//Interface for info.json data
+interface RegionInfo {
+    id: number;
+    name: string;
+    population: number;
+    military: number;
+    buildableBuildings: string[];
+    resources: { [resource: string]: number };
+    boundaries: number[][];
+    latitude: number;
+    longitude: number;
+}
+
 
 /**
  * Получает границы области из Overpass API
@@ -251,4 +266,41 @@ export async function updateRegionBoundary(regionId: number): Promise<any> {
     console.error(`Error updating boundary for region ${regionId}:`, error);
     throw error;
   }
+}
+
+// Added functions to manage info.json and randomize data
+
+async function resetGameData() {
+    const regions: RegionInfo[] = [];
+    const numRegions = 5; //Example number of regions - adjust as needed
+    const buildableBuildings = ["farm", "barracks", "mine"];
+
+    for (let i = 0; i < numRegions; i++) {
+        const maxPop = i < 2 ? 10000 : 5000; //larger regions have higher max population
+
+        regions.push({
+            id: i + 1,
+            name: `Region ${i + 1}`,
+            population: randomInt(maxPop / 2, maxPop),
+            military: randomInt(maxPop / 10, maxPop / 5),
+            buildableBuildings: buildableBuildings.map((building) => building + '_' + i), //unique names
+            resources: {
+                wood: randomInt(100, 500),
+                stone: randomInt(50, 250),
+                gold: randomInt(20, 100)
+            },
+            boundaries: createSimpleBoundary(randomInt(40,60)/10 ,randomInt(40,60)/10, i + 1),
+            latitude: randomInt(40,60)/10,
+            longitude: randomInt(40,60)/10
+        });
+    }
+    await storage.saveRegions(regions);
+}
+
+
+//Helper function for generating random integers within a range.
+function randomInt(min: number, max: number): number {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min + 1)) + min;
 }

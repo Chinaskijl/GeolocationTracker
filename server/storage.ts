@@ -10,7 +10,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Пути к файлам данных
-const REGIONS_FILE = path.join(__dirname, "../data/regions.json");
+const INFO_FILE = path.join(__dirname, "../data/info.json");
 const GAME_STATE_FILE = path.join(__dirname, "../data/game-state.json");
 
 // Создаем директорию для данных, если ее нет
@@ -43,27 +43,49 @@ export async function initDb() {
   }
 }
 
-// Функция для генерации случайных ограничений для зданий
-function generateRandomBuildingLimits() {
-  // Список основных производственных зданий
-  const productionBuildings = ['farm', 'logging_camp', 'gold_mine', 'oil_rig', 'metal_mine'];
+// Функция для генерации случайных доступных зданий
+function generateRandomAvailableBuildings() {
+  // Список всех возможных зданий
+  const allBuildings = [
+    'farm', 'logging_camp', 'gold_mine', 'oil_rig', 'metal_mine', 
+    'house', 'barracks', 'market', 'research_center'
+  ];
   
-  // Создаем объект с ограничениями
-  const buildingLimits: {[key: string]: number} = {};
+  // Выбираем случайное количество зданий (от 4 до 7)
+  const buildingCount = Math.floor(Math.random() * 4) + 4;
   
-  // Генерируем случайное ограничение для каждого типа производственного здания
-  productionBuildings.forEach(building => {
-    // Генерируем случайное число от 1 до 5 для каждого здания
-    buildingLimits[building] = Math.floor(Math.random() * 5) + 1;
-  });
+  // Обязательные здания
+  const mandatoryBuildings = ['house', 'farm'];
+  const availableBuildings = [...mandatoryBuildings];
   
-  // Добавляем ограничения для важных зданий
-  buildingLimits['house'] = Math.floor(Math.random() * 3) + 3; // 3-5 домов
-  buildingLimits['barracks'] = Math.floor(Math.random() * 2) + 1; // 1-2 казармы
-  buildingLimits['market'] = 1; // только 1 рынок
-  buildingLimits['research_center'] = 1; // только 1 исследовательский центр
+  // Копируем и перемешиваем массив остальных зданий
+  const optionalBuildings = allBuildings
+    .filter(b => !mandatoryBuildings.includes(b))
+    .sort(() => Math.random() - 0.5);
   
-  return buildingLimits;
+  // Добавляем случайные здания до нужного количества
+  for (let i = 0; i < buildingCount - mandatoryBuildings.length && i < optionalBuildings.length; i++) {
+    availableBuildings.push(optionalBuildings[i]);
+  }
+  
+  return availableBuildings;
+}
+
+// Функция для генерации случайного населения
+function generateRandomPopulation(isLarge: boolean) {
+  if (isLarge) {
+    // Для больших областей: 5000-10000
+    return Math.floor(Math.random() * 5001) + 5000;
+  } else {
+    // Для малых областей: 1000-5000
+    return Math.floor(Math.random() * 4001) + 1000;
+  }
+}
+
+// Функция для генерации случайного числа военных
+function generateRandomMilitary(population: number) {
+  // Военные составляют от 5% до 15% от населения
+  return Math.floor(population * (Math.random() * 0.1 + 0.05));
 }
 
 // Функция для сброса данных игры
@@ -88,74 +110,115 @@ async function resetGameData() {
   // Сохраняем начальное состояние
   await writeDataFile('game-state.json', initialGameState);
 
-  // Проверяем, существуют ли уже регионы
-  const regionsData = await readDataFile('regions.json');
+  // Проверяем, существуют ли уже регионы в info.json
+  const infoData = await readDataFile('info.json');
 
-  if (regionsData && Array.isArray(regionsData) && regionsData.length > 0) {
-    // Сбрасываем владельцев и постройки для всех регионов и генерируем случайные ограничения
-    const resetRegions = regionsData.map(region => ({
-      ...region,
-      owner: 'neutral',
-      buildings: [],
-      military: 0,
-      // Сохраняем только базовую информацию о границах, если они есть
-      boundaries: region.boundaries || [],
-      // Генерируем случайные ограничения для зданий
-      buildingLimits: generateRandomBuildingLimits()
-    }));
+  if (infoData && Array.isArray(infoData) && infoData.length > 0) {
+    // Обновляем данные для всех регионов с рандомными значениями
+    const resetRegions = infoData.map(region => {
+      // Определяем, является ли область "большой"
+      const isLargeRegion = region.id <= 2; // Московская и Ленинградская считаются большими
+      
+      // Генерируем случайное население
+      const population = generateRandomPopulation(isLargeRegion);
+      
+      // Генерируем случайное количество военных
+      const military = generateRandomMilitary(population);
+      
+      // Обновляем максимальное население в зависимости от текущего
+      const maxPopulation = Math.floor(population * (Math.random() * 0.3 + 1.1)); // На 10-40% больше текущего
+      
+      return {
+        ...region,
+        population,
+        maxPopulation,
+        military,
+        owner: 'neutral',
+        buildings: [],
+        availableBuildings: generateRandomAvailableBuildings()
+      };
+    });
 
-    await writeDataFile('regions.json', resetRegions);
+    await writeDataFile('info.json', resetRegions);
   } else {
-    // Если регионов нет, создаем базовые
-    console.log("Creating initial regions data...");
+    // Если данных нет, создаем начальные
+    console.log("Creating initial info data...");
 
-    // Базовые параметры для областей 
+    // Базовые параметры для областей
     const regions = [
       {
         id: 1,
         name: "Московская область",
         latitude: 55.7558,
         longitude: 37.6173,
-        population: 0,
-        maxPopulation: 150000,
-        resources: { food: 10, gold: 8 },
-        boundaries: [],
+        population: generateRandomPopulation(true),
+        maxPopulation: 10000,
+        military: 0, // будет заполнено после генерации населения
+        resources: { food: 10, gold: 8, wood: 5, oil: 2 },
+        availableBuildings: generateRandomAvailableBuildings(),
         owner: "neutral",
-        buildings: [],
-        military: 0,
-        buildingLimits: generateRandomBuildingLimits()
+        buildings: []
       },
       {
         id: 2,
         name: "Ленинградская область",
         latitude: 59.9343,
         longitude: 30.3351,
-        population: 0,
-        maxPopulation: 100000,
-        resources: { food: 8, oil: 3 },
-        boundaries: [],
-        owner: "neutral",
-        buildings: [],
+        population: generateRandomPopulation(true),
+        maxPopulation: 10000,
         military: 0,
-        buildingLimits: generateRandomBuildingLimits()
+        resources: { food: 8, oil: 5, wood: 7, gold: 3 },
+        availableBuildings: generateRandomAvailableBuildings(),
+        owner: "neutral",
+        buildings: []
       },
       {
         id: 3,
         name: "Новосибирская область",
         latitude: 55.0084,
         longitude: 82.9357,
-        population: 0,
-        maxPopulation: 80000,
-        resources: { gold: 7, wood: 5 },
-        boundaries: [],
-        owner: "neutral",
-        buildings: [],
+        population: generateRandomPopulation(false),
+        maxPopulation: 5000,
         military: 0,
-        buildingLimits: generateRandomBuildingLimits()
+        resources: { gold: 7, wood: 5, food: 3, metal: 4 },
+        availableBuildings: generateRandomAvailableBuildings(),
+        owner: "neutral",
+        buildings: []
+      },
+      {
+        id: 4,
+        name: "Свердловская область",
+        latitude: 56.8389,
+        longitude: 60.6057,
+        population: generateRandomPopulation(false),
+        maxPopulation: 6000,
+        military: 0,
+        resources: { metal: 12, wood: 6, gold: 4, food: 2 },
+        availableBuildings: generateRandomAvailableBuildings(),
+        owner: "neutral",
+        buildings: []
+      },
+      {
+        id: 5,
+        name: "Нижегородская область",
+        latitude: 56.2965,
+        longitude: 43.9361,
+        population: generateRandomPopulation(false),
+        maxPopulation: 5000,
+        military: 0,
+        resources: { wood: 8, food: 5, gold: 3, oil: 2 },
+        availableBuildings: generateRandomAvailableBuildings(),
+        owner: "neutral",
+        buildings: []
       }
     ];
 
-    await writeDataFile('regions.json', regions);
+    // Заполняем военными на основе сгенерированного населения
+    regions.forEach(region => {
+      region.military = generateRandomMilitary(region.population);
+    });
+
+    await writeDataFile('info.json', regions);
   }
 }
 
@@ -273,7 +336,7 @@ async function resetGameDataOld() {
 
 // Функция для инициализации данных игры (для обратной совместимости)
 async function initializeGameData() {
-  return resetGameDataOld();
+  return resetGameData();
 }
 
 async function readDataFile(filename: string) {
@@ -309,12 +372,12 @@ class Storage {
   async getRegions(): Promise<Region[]> {
     try {
       if (this.cities.length === 0) {
-        const data = await fs.readFile(REGIONS_FILE, 'utf8');
+        const data = await fs.readFile(INFO_FILE, 'utf8');
         this.cities = JSON.parse(data);
       }
       return this.cities;
     } catch (error) {
-      console.error('Error reading regions:', error);
+      console.error('Error reading regions from info.json:', error);
       return [];
     }
   }
@@ -332,7 +395,7 @@ class Storage {
       const updatedRegion = { ...regions[index], ...updates };
       regions[index] = updatedRegion;
 
-      await fs.writeFile(REGIONS_FILE, JSON.stringify(regions, null, 2));
+      await fs.writeFile(INFO_FILE, JSON.stringify(regions, null, 2));
       this.cities = regions;
 
       return updatedRegion;
@@ -345,7 +408,7 @@ class Storage {
   // Обновление всех областей
   async updateRegionsData(regions: Region[]): Promise<boolean> {
     try {
-      await fs.writeFile(REGIONS_FILE, JSON.stringify(regions, null, 2));
+      await fs.writeFile(INFO_FILE, JSON.stringify(regions, null, 2));
       this.cities = regions;
       return true;
     } catch (error) {

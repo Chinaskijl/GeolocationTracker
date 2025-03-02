@@ -31,7 +31,7 @@ export interface Region {
   };
   
   /** Координаты границ области в формате многоугольника [[lat, lng], ...] */
-  boundaries: number[][];
+  boundaries?: number[][];
   
   /** Владелец области: 'player', 'ai', 'neutral' */
   owner: string;
@@ -42,7 +42,10 @@ export interface Region {
   /** Количество военных единиц */
   military: number;
   
-  /** Ограничения на количество зданий каждого типа */
+  /** Список доступных для строительства зданий */
+  availableBuildings?: string[];
+  
+  /** Ограничения на количество зданий каждого типа (для обратной совместимости) */
   buildingLimits?: {
     [buildingId: string]: number;
   };
