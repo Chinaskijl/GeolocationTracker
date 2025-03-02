@@ -65,16 +65,18 @@ async function resetGameData() {
   // Сохраняем начальное состояние
   await writeDataFile('game-state.json', initialGameState);
 
-  // Получаем текущие регионы
-  const regionsData = await readDataFile<Region[]>('regions.json');
+  // Проверяем, существуют ли уже регионы
+  const regionsData = await readDataFile('regions.json');
 
-  if (regionsData && regionsData.length > 0) {
+  if (regionsData && Array.isArray(regionsData) && regionsData.length > 0) {
     // Сбрасываем владельцев и постройки для всех регионов
     const resetRegions = regionsData.map(region => ({
       ...region,
       owner: 'neutral',
       buildings: [],
-      military: 0
+      military: 0,
+      // Сохраняем только базовую информацию о границах, если они есть
+      boundaries: region.boundaries || []
     }));
 
     await writeDataFile('regions.json', resetRegions);

@@ -174,8 +174,8 @@ export async function updateAllRegionBoundaries(): Promise<void> {
     const regions = await storage.getRegions();
     let boundariesUpdated = false;
 
-    // Обновляем границы для каждой области
-    for (const region of regions) {
+    // Обновляем границы для каждой области, но не меняем исходные данные
+    const regionsWithBoundaries = await Promise.all(regions.map(async (region) => {
       try {
         console.log(`Processing region: ${region.name}`);
         // Пытаемся получить реальные границы из OSM
@@ -183,27 +183,26 @@ export async function updateAllRegionBoundaries(): Promise<void> {
 
         if (boundaries.length > 0) {
           console.log(`Got real boundaries for ${region.name} with ${boundaries.length} points`);
-          // Обновляем границы области
-          region.boundaries = boundaries;
-          boundariesUpdated = true;
+          // Создаем копию области с обновленными границами
+          return { ...region, boundaries };
         } else {
           console.log(`Using simple boundary for ${region.name}`);
           // Если не удалось получить границы, создаем простую границу
-          region.boundaries = createSimpleBoundary(region.latitude, region.longitude, region.id);
-          boundariesUpdated = true;
+          return { ...region, boundaries: createSimpleBoundary(region.latitude, region.longitude, region.id) };
         }
       } catch (error) {
         console.warn(`Failed to update boundaries for ${region.name}:`, error);
         // В случае ошибки используем простую границу
-        region.boundaries = createSimpleBoundary(region.latitude, region.longitude, region.id);
-        boundariesUpdated = true;
+        return { ...region, boundaries: createSimpleBoundary(region.latitude, region.longitude, region.id) };
       }
-    }
+    }));
 
-    // Сохраняем обновленные данные об областях
-    if (boundariesUpdated) {
-      await storage.updateRegionsData(regions);
-      console.log('Region boundaries updated successfully');
+    // Обновляем данные об областях только в памяти для текущей сессии
+    // Не сохраняем границы в файл - они будут загружаться при каждом запуске
+    if (regionsWithBoundaries.length > 0) {
+      // Обновляем только в памяти
+      storage.updateInMemoryRegionsData(regionsWithBoundaries);
+      console.log('Region boundaries updated in memory successfully');
     } else {
       console.log('No boundary updates needed');
     }
