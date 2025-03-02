@@ -4,9 +4,9 @@
     "name": "Московская область",
     "latitude": 55.7558,
     "longitude": 37.6173,
-    "population": 8715,
-    "maxPopulation": 10313,
-    "military": 841,
+    "population": 0,
+    "maxPopulation": 8492,
+    "military": 0,
     "resources": {
       "food": 10,
       "gold": 8,
@@ -16,17 +16,15 @@
     "availableBuildings": [
       "house",
       "farm",
+      "metal_mine",
+      "logging_camp",
       "gold_mine",
-      "barracks"
+      "research_center"
     ],
     "owner": "player",
     "buildings": [
       "sawmill",
-      "sawmill",
-      "steel_factory",
-      "steel_factory",
-      "metal_factory",
-      "metal_factory"
+      "sawmill"
     ],
     "boundaries": [
       [
@@ -82764,9 +82762,9 @@
     "name": "Ленинградская область",
     "latitude": 59.9343,
     "longitude": 30.3351,
-    "population": 9904,
-    "maxPopulation": 13599,
-    "military": 652,
+    "population": 0,
+    "maxPopulation": 11629,
+    "military": 0,
     "resources": {
       "food": 8,
       "oil": 5,
@@ -82776,11 +82774,9 @@
     "availableBuildings": [
       "house",
       "farm",
-      "metal_mine",
-      "oil_rig",
-      "gold_mine",
+      "logging_camp",
       "research_center",
-      "logging_camp"
+      "barracks"
     ],
     "owner": "neutral",
     "buildings": [],
@@ -102556,9 +102552,9 @@
     "name": "Новосибирская область",
     "latitude": 55.0084,
     "longitude": 82.9357,
-    "population": 4569,
-    "maxPopulation": 5110,
-    "military": 230,
+    "population": 0,
+    "maxPopulation": 4913,
+    "military": 0,
     "resources": {
       "gold": 7,
       "wood": 5,
@@ -102568,9 +102564,11 @@
     "availableBuildings": [
       "house",
       "farm",
-      "metal_mine",
+      "market",
+      "gold_mine",
+      "logging_camp",
       "oil_rig",
-      "market"
+      "barracks"
     ],
     "owner": "neutral",
     "buildings": [],
@@ -141118,9 +141116,9 @@
     "name": "Свердловская область",
     "latitude": 56.8389,
     "longitude": 60.6057,
-    "population": 2744,
-    "maxPopulation": 3197,
-    "military": 343,
+    "population": 0,
+    "maxPopulation": 2196,
+    "military": 0,
     "resources": {
       "metal": 12,
       "wood": 6,
@@ -141130,7 +141128,6 @@
     "availableBuildings": [
       "house",
       "farm",
-      "research_center",
       "logging_camp",
       "gold_mine",
       "oil_rig"
@@ -173709,9 +173706,9 @@
     "name": "Нижегородская область",
     "latitude": 56.2965,
     "longitude": 43.9361,
-    "population": 2034,
-    "maxPopulation": 2536,
-    "military": 296,
+    "population": 0,
+    "maxPopulation": 1528,
+    "military": 0,
     "resources": {
       "wood": 8,
       "food": 5,
@@ -173722,9 +173719,9 @@
       "house",
       "farm",
       "market",
-      "logging_camp",
+      "metal_mine",
       "gold_mine",
-      "research_center"
+      "logging_camp"
     ],
     "owner": "neutral",
     "buildings": [],
