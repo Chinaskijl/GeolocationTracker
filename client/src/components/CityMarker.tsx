@@ -14,17 +14,25 @@ export function CityMarker({ city }: { city: Region }) {
 
   const isSelected = selectedCity && selectedCity.id === city.id;
 
-  // Получаем только доступные в городе ресурсы (не производство)
-  const availableResources = Object.entries(city.resources || {})
-    .filter(([_, value]) => value > 0)
-    .map(([key, value]) => ({ type: key, amount: value }));
+  // Neutral cities have 0 population and military
+  const population = city.owner === 'neutral' ? 0 : city.population;
+  const military = city.owner === 'neutral' ? 0 : city.military;
 
-  // Определяем, является ли город столицей игрока
+
+  // Get available buildings - Placeholder, needs actual implementation based on game logic
+  const availableBuildings = city.owner === 'neutral' ? [] : city.availableBuildings || [];
+
+
   const isCapital = city.owner === 'player' && city.buildings.includes('capital');
 
   const handleClick = () => {
     map.flyTo([city.latitude, city.longitude], 10);
     selectCity(city);
+  };
+
+  const getBuildingName = (buildingId: string): string => {
+    const building = BUILDINGS.find(b => b.id === buildingId);
+    return building?.name || buildingId;
   };
 
   return (
@@ -57,12 +65,12 @@ export function CityMarker({ city }: { city: Region }) {
           <div className="flex justify-between text-xs mb-1">
             <span className="flex items-center">
               <Users size={14} className="mr-1" />
-              {city.population}
+              {population}
             </span>
-            {city.military > 0 && (
+            {military > 0 && (
               <span className="flex items-center">
                 <Swords size={14} className="mr-1" />
-                {city.military}
+                {military}
               </span>
             )}
           </div>
@@ -109,6 +117,22 @@ export function CityMarker({ city }: { city: Region }) {
               </div>
             </div>
           )}
+
+          {/* Available Buildings */}
+          {availableBuildings.length > 0 && (
+            <div className="border-t pt-1 mt-1">
+              <div className="text-xs font-semibold mb-1">Доступные здания:</div>
+              <div className="flex flex-wrap gap-1">
+                {availableBuildings.map((buildingId, index) => (
+                  <div key={`${buildingId}-${index}`} className="text-xs">
+                    {getBuildingName(buildingId)}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+
         </Card>
       </div>
     </div>

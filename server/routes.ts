@@ -52,13 +52,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Проверка лимита зданий с учетом специфичных лимитов для города
       const existingBuildingCount = city.buildings.filter(b => b === buildingId).length;
-      
+
       // Получаем лимит для этого здания в этом городе
       const cityBuildingLimit = city.buildingLimits && city.buildingLimits[buildingId];
-      
+
       // Используем либо лимит города, либо глобальный лимит здания
       const effectiveLimit = cityBuildingLimit !== undefined ? cityBuildingLimit : building.maxCount;
-      
+
       if (existingBuildingCount >= effectiveLimit) {
         return res.status(400).json({ message: 'Building limit reached' });
       }
@@ -459,22 +459,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Failed to update region boundaries' });
     }
   });
-  
+
   // Эндпоинт для исправления пересечений границ
   app.post("/api/regions/fix-intersections", async (_req, res) => {
     try {
       // Импортируем необходимые функции
       const { fixBoundaryIntersections } = await import('./osmService');
-      
+
       // Получаем текущие регионы
       const regions = await storage.getRegions();
-      
+
       // Исправляем пересечения границ
       const fixedRegions = fixBoundaryIntersections(regions);
-      
+
       // Сохраняем обновленные данные
       await storage.updateRegionsData(fixedRegions);
-      
+
       res.json(fixedRegions);
     } catch (error) {
       console.error('Ошибка при исправлении пересечений границ:', error);
@@ -493,6 +493,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Failed to update region boundaries' });
     }
   });
+
+  // Построить здание в области
+  app.post('/api/build/:cityId', async (req, res) => {
+    const { cityId } = req.params;
+    const { buildingId } = req.body;
+
+    try {
+      const cities = await storage.getCities();
+      const city = cities.find(c => c.id === parseInt(cityId));
+
+      if (!city) {
+        return res.status(404).json({ error: `City with ID ${cityId} not found` });
+      }
+
+      // Проверяем, доступно ли это здание для строительства
+      if (city.availableBuildings && !city.availableBuildings.includes(buildingId)) {
+        return res.status(400).json({ error: `Building ${buildingId} is not available in this city` });
+      }
+
+      // Проверяем, не превышен ли лимит данного типа зданий
+      if (city.buildingLimits) {
+        const currentCount = city.buildings.filter(b => b === buildingId).length;
+        const limit = city.buildingLimits[buildingId] || 0;
+
+        if (currentCount >= limit) {
+          return res.status(400).json({ 
+            error: `Cannot build more than ${limit} ${buildingId} buildings in this city` 
+          });
+        }
+      }
+
+      // Добавляем здание к городу
+      const updatedCity = await storage.updateCity(parseInt(cityId), {
+        buildings: [...city.buildings, buildingId]
+      });
+
+      res.json(updatedCity);
+    } catch (error) {
+      console.error('Error building:', error);
+      res.status(500).json({ error: 'An error occurred during building' });
+    }
+  });
+
 
   return httpServer;
 }

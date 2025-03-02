@@ -241,17 +241,17 @@ export function CityPanel() {
                 {BUILDINGS.map(building => {
                   // Обновляем чтение количества зданий напрямую из выбранного города
                   const buildingCount = selectedCity.buildings.filter(b => b === building.id).length;
-                  
+
                   // Проверяем лимит зданий данного типа для этого города
                   const cityBuildingLimit = selectedCity.buildingLimits 
                     ? selectedCity.buildingLimits[building.id] 
                     : building.maxCount;
-                    
+
                   // Используем либо лимит города, либо глобальный лимит здания
                   const effectiveLimit = cityBuildingLimit !== undefined 
                     ? cityBuildingLimit 
                     : building.maxCount;
-                    
+
                   const atLimit = buildingCount >= effectiveLimit || effectiveLimit === 0;
 
                   return (

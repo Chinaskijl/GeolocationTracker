@@ -50,24 +50,24 @@ function generateRandomAvailableBuildings() {
     'farm', 'logging_camp', 'gold_mine', 'oil_rig', 'metal_mine', 
     'house', 'barracks', 'market', 'research_center'
   ];
-  
+
   // Выбираем случайное количество зданий (от 4 до 7)
   const buildingCount = Math.floor(Math.random() * 4) + 4;
-  
+
   // Обязательные здания
   const mandatoryBuildings = ['house', 'farm'];
   const availableBuildings = [...mandatoryBuildings];
-  
+
   // Копируем и перемешиваем массив остальных зданий
   const optionalBuildings = allBuildings
     .filter(b => !mandatoryBuildings.includes(b))
     .sort(() => Math.random() - 0.5);
-  
+
   // Добавляем случайные здания до нужного количества
   for (let i = 0; i < buildingCount - mandatoryBuildings.length && i < optionalBuildings.length; i++) {
     availableBuildings.push(optionalBuildings[i]);
   }
-  
+
   return availableBuildings;
 }
 
@@ -118,16 +118,16 @@ async function resetGameData() {
     const resetRegions = infoData.map(region => {
       // Определяем, является ли область "большой"
       const isLargeRegion = region.id <= 2; // Московская и Ленинградская считаются большими
-      
+
       // Генерируем случайное население
       const population = generateRandomPopulation(isLargeRegion);
-      
+
       // Генерируем случайное количество военных
       const military = generateRandomMilitary(population);
-      
+
       // Обновляем максимальное население в зависимости от текущего
       const maxPopulation = Math.floor(population * (Math.random() * 0.3 + 1.1)); // На 10-40% больше текущего
-      
+
       return {
         ...region,
         population,
@@ -137,6 +137,16 @@ async function resetGameData() {
         buildings: [],
         availableBuildings: generateRandomAvailableBuildings()
       };
+    });
+
+    // Заполняем военными на основе сгенерированного населения для не-нейтральных областей
+    resetRegions.forEach(region => {
+      if (region.owner === 'neutral') {
+        region.population = 0;
+        region.military = 0;
+      } else {
+        region.military = generateRandomMilitary(region.population);
+      }
     });
 
     await writeDataFile('info.json', resetRegions);
@@ -213,9 +223,14 @@ async function resetGameData() {
       }
     ];
 
-    // Заполняем военными на основе сгенерированного населения
+    // Заполняем военными на основе сгенерированного населения для не-нейтральных областей
     regions.forEach(region => {
-      region.military = generateRandomMilitary(region.population);
+      if (region.owner === 'neutral') {
+        region.population = 0;
+        region.military = 0;
+      } else {
+        region.military = generateRandomMilitary(region.population);
+      }
     });
 
     await writeDataFile('info.json', regions);
