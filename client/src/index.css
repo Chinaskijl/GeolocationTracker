@@ -55,6 +55,37 @@
   text-align: center;
 }
 
+/* Стили для маркеров городов */
+.city-marker {
+  z-index: 950 !important;
+  transition: transform 0.2s, z-index 0.2s;
+}
+
+.city-marker:hover {
+  transform: scale(1.05);
+  z-index: 1000 !important;
+}
+
+.city-marker .tooltip {
+  position: relative;
+  display: inline-block;
+}
+
+.city-marker .tooltip:hover::after {
+  content: attr(title);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 2px 5px;
+  border-radius: 3px;
+  white-space: nowrap;
+  font-size: 10px;
+  z-index: 9999;
+}
+
 .leaflet-div-icon.military-marker {
   background: #ff4500;
   border-radius: 50%;
