@@ -168,6 +168,19 @@ export function ResourcePanel() {
             </span>
           </div>
         </div>
+        
+        {/* Удовлетворенность населения */}
+        {cities.filter(city => city.owner === 'player').map(city => (
+          <div key={`satisfaction-${city.id}`} className="border-l pl-4">
+            <div className="flex items-center gap-2">
+              <span>{city.satisfaction >= 70 ? '😃' : city.satisfaction >= 30 ? '😐' : '😠'}</span>
+              <span className="font-medium">
+                {city.name.split(' ')[0]}: {Math.floor(city.satisfaction || 0)}%
+                {city.protestTimer ? <span className="ml-1 text-xs text-red-500">(⚠️ {Math.floor(city.protestTimer)}s)</span> : ''}
+              </span>
+            </div>
+          </div>
+        ))}
         <div className="border-l pl-4">
           <div className="flex items-center gap-2">
             <span>⚔️</span>

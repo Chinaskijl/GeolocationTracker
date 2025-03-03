@@ -22,7 +22,9 @@ export const cities = pgTable("cities", {
   boundaries: jsonb("boundaries").$type<[number, number][]>().notNull(),
   owner: text("owner").default("neutral"),
   buildings: jsonb("buildings").$type<string[]>().default([]).notNull(),
-  military: integer("military").default(0).notNull()
+  military: integer("military").default(0).notNull(),
+  satisfaction: real("satisfaction").default(100).notNull(),
+  protestTimer: real("protest_timer").default(null)
 });
 
 export const insertCitySchema = createInsertSchema(cities);
@@ -54,7 +56,7 @@ export interface Building {
     oil?: number;
   };
   resourceProduction?: {
-    type: 'gold' | 'wood' | 'food' | 'oil' | 'metal' | 'steel' | 'weapons';
+    type: 'gold' | 'wood' | 'food' | 'oil' | 'metal' | 'steel' | 'weapons' | 'influence';
     amount: number;
   };
   resourceConsumption?: {
@@ -76,5 +78,7 @@ export interface Building {
     housing: number;
     growth: number;
   };
+  workers?: number; // Required workers to operate the building
+  satisfactionBonus?: number; // Bonus to region satisfaction
   maxCount: number;
 }

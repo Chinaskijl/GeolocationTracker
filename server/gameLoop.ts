@@ -39,8 +39,14 @@ export class GameLoop {
       let totalPopulationGrowth = 0;
       let totalMilitaryGrowth = 0;
       let totalPopulationUsed = 0;
+      let totalInfluenceProduction = 0;
 
       const newResources = { ...gameState.resources };
+      
+      // Инициализируем influence, если его нет
+      if (!newResources.influence) {
+        newResources.influence = 0;
+      }
 
       // Обработка всех городов
       for (const city of cities) {
@@ -50,7 +56,17 @@ export class GameLoop {
           let cityPopulationGrowth = 0;
           let cityMilitaryGrowth = 0;
           let cityPopulationUsed = 0;
-
+          let cityAvailableWorkers = city.population; // Доступные работники
+          let cityTotalWorkers = 0; // Общее количество требуемых работников
+          let citySatisfactionBonus = 0; // Бонус к удовлетворенности от зданий
+          let cityInfluenceProduction = 0; // Производство влияния городом
+          
+          // Флаг протеста (производство замедляется)
+          const isProtesting = city.protestTimer !== null && city.protestTimer !== undefined && city.protestTimer > 0;
+          
+          // Множитель производства (замедление при протестах)
+          const productionMultiplier = isProtesting ? 0.5 : 1.0;
+          
           // Проверяем наличие еды для роста населения
           const noFood = gameState.resources.food <= 0;
 
@@ -61,12 +77,31 @@ export class GameLoop {
 
             console.log(`Processing building ${building.name} in ${city.name}`);
 
+            // Расчет требуемых работников
+            if (building.workers) {
+              cityTotalWorkers += building.workers;
+            }
+            
+            // Добавляем бонус к удовлетворенности, если есть
+            if (building.satisfactionBonus) {
+              citySatisfactionBonus += building.satisfactionBonus;
+            }
+            
             // Производство ресурсов
             if (building.resourceProduction) {
               const { type, amount } = building.resourceProduction;
               
-              // Проверяем потребление ресурсов
+              // Проверяем потребление ресурсов и наличие работников
               let canProduce = true;
+              
+              // Проверка на достаточное количество работников
+              if (building.workers && cityAvailableWorkers < building.workers) {
+                canProduce = false;
+                console.log(`Not enough workers for ${building.id} in ${city.name}: needs ${building.workers}, available ${cityAvailableWorkers}`);
+              } else if (building.workers) {
+                // Если работники есть, уменьшаем доступное количество
+                cityAvailableWorkers -= building.workers;
+              }
               if (building.resourceConsumption) {
                 if (building.resourceConsumption.type && building.resourceConsumption.amount) {
                   // Простое потребление одного типа ресурсов
@@ -106,11 +141,18 @@ export class GameLoop {
                 }
               }
               
-              // Производим ресурсы только если есть необходимые ресурсы для потребления
+              // Производим ресурсы только если есть необходимые ресурсы и работники
               if (canProduce) {
-                const production = amount * deltaTime;
+                // Применяем множитель производства (замедление при протестах)
+                const production = amount * deltaTime * productionMultiplier;
                 newResources[type] += production;
-                console.log(`Resource production: +${production} ${type}`);
+                
+                // Учитываем производство влияния отдельно
+                if (type === 'influence') {
+                  cityInfluenceProduction += production;
+                }
+                
+                console.log(`Resource production: +${production} ${type}${isProtesting ? ' (reduced due to protests)' : ''}`);
               }
             }
 
@@ -139,6 +181,64 @@ export class GameLoop {
             }
           });
 
+          // Рассчитываем новый уровень удовлетворенности
+          let newSatisfaction = city.satisfaction || 100; // По умолчанию 100% если не задано
+          
+          // Базовое падение удовлетворенности из-за нехватки работников
+          if (cityTotalWorkers > 0) {
+            const workerSatisfactionImpact = (cityAvailableWorkers < 0) ? 
+              -5 : // Сильное падение если вообще не хватает работников
+              Math.min(0, -5 * (1 - cityAvailableWorkers / cityTotalWorkers)); // Постепенное падение
+            
+            newSatisfaction += workerSatisfactionImpact * deltaTime;
+          }
+          
+          // Добавляем бонус от культурных зданий
+          newSatisfaction += citySatisfactionBonus * deltaTime * 0.1; // Умножаем на маленький коэффициент
+          
+          // Ограничиваем удовлетворенность в диапазоне 0-100%
+          newSatisfaction = Math.max(0, Math.min(100, newSatisfaction));
+          
+          // Проверяем на начало протестов (если удовлетворенность < 30% и протесты еще не начались)
+          let newProtestTimer = city.protestTimer;
+          
+          if (newSatisfaction < 30 && !isProtesting) {
+            // Начинаем протесты с таймером 5 минут (300 секунд)
+            newProtestTimer = 300;
+            console.log(`⚠️ Protests started in ${city.name}! Satisfaction: ${newSatisfaction.toFixed(1)}%. 5 minutes to resolve.`);
+          } else if (isProtesting) {
+            // Если протесты уже идут, уменьшаем таймер
+            newProtestTimer -= deltaTime;
+            
+            // Если удовлетворенность поднялась выше 30%, останавливаем протесты
+            if (newSatisfaction >= 30) {
+              newProtestTimer = null;
+              console.log(`✅ Protests resolved in ${city.name}. Satisfaction recovered to ${newSatisfaction.toFixed(1)}%.`);
+            } 
+            // Если время вышло, город становится нейтральным
+            else if (newProtestTimer <= 0) {
+              console.log(`🚨 Time's up! ${city.name} is now neutral due to unresolved protests!`);
+              await storage.updateCity(city.id, {
+                owner: 'neutral',
+                protestTimer: null
+              });
+              continue; // Пропускаем дальнейшую обработку города
+            } else {
+              console.log(`⏳ Protests ongoing in ${city.name}. ${Math.floor(newProtestTimer)} seconds remaining to resolve.`);
+            }
+          }
+          
+          // Базовое производство влияния в зависимости от удовлетворенности
+          if (city.owner === 'player') {
+            if (newSatisfaction > 90) {
+              cityInfluenceProduction += 3 * deltaTime;
+            } else if (newSatisfaction > 70) {
+              cityInfluenceProduction += 1 * deltaTime;
+            }
+          }
+          
+          totalInfluenceProduction += cityInfluenceProduction;
+          
           // Обновление населения города, учитывая наличие еды
           let newPopulation;
           if (gameState.resources.food <= 0) {
@@ -159,7 +259,9 @@ export class GameLoop {
           // Обновление города
           await storage.updateCity(city.id, {
             population: Math.floor(newPopulation),
-            military: Math.floor((city.military || 0) + cityMilitaryGrowth)
+            military: Math.floor((city.military || 0) + cityMilitaryGrowth),
+            satisfaction: newSatisfaction,
+            protestTimer: newProtestTimer
           });
         }
       }
@@ -176,6 +278,9 @@ export class GameLoop {
         console.log(`Not enough food! Population decreasing rapidly: -${deltaTime * 5}`);
       }
 
+      // Добавляем влияние к ресурсам
+      newResources.influence = (newResources.influence || 0) + totalInfluenceProduction;
+      
       // Обновление состояния игры
       const newGameState = {
         ...gameState,

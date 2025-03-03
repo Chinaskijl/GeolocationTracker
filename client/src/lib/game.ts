@@ -16,6 +16,7 @@ export const BUILDINGS = [
     description: "Производит еду для населения.",
     cost: { wood: 15, gold: 5 },
     resourceProduction: { type: "food", amount: 2 },
+    workers: 10,
     maxCount: 5,
     icon: "🌾"
   },
@@ -25,6 +26,7 @@ export const BUILDINGS = [
     description: "Производит древесину для строительства.",
     cost: { gold: 15 },
     resourceProduction: { type: "wood", amount: 2 },
+    workers: 10,
     maxCount: 3,
     icon: "🪓"
   },
@@ -34,6 +36,7 @@ export const BUILDINGS = [
     description: "Добывает золото для экономики.",
     cost: { wood: 25, food: 10 },
     resourceProduction: { type: "gold", amount: 2 },
+    workers: 15,
     maxCount: 2,
     icon: "⛏️"
   },
@@ -43,6 +46,7 @@ export const BUILDINGS = [
     description: "Добывает нефть для промышленности.",
     cost: { wood: 30, gold: 25 },
     resourceProduction: { type: "oil", amount: 1 },
+    workers: 20,
     maxCount: 3,
     icon: "🛢️"
   },
@@ -52,6 +56,7 @@ export const BUILDINGS = [
     description: "Увеличивает торговые возможности.",
     cost: { wood: 25, gold: 20 },
     resourceProduction: { type: "gold", amount: 1 },
+    workers: 8,
     maxCount: 1,
     icon: "🏪"
   },
@@ -72,6 +77,7 @@ export const BUILDINGS = [
     cost: { wood: 30, gold: 20, oil: 5 },
     resourceProduction: { type: "metal", amount: 2 },
     resourceConsumption: { type: "oil", amount: 1 },
+    workers: 25,
     maxCount: 5,
     icon: "🔧"
   },
@@ -92,6 +98,7 @@ export const BUILDINGS = [
     cost: { gold: 200, wood: 50, steel: 100 },
     resourceProduction: { type: "weapons", amount: 1 },
     resourceConsumption: { type: "steel", amount: 5 },
+    workers: 20,
     maxCount: 2,
     icon: "🔫"
   },

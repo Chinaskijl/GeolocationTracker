@@ -32,6 +32,12 @@ export interface Region {
   /** Количество военных единиц */
   military: number;
 
+  /** Уровень удовлетворенности населения (в процентах) */
+  satisfaction: number;
+
+  /** Счетчик времени протестов (в секундах), null если нет протестов */
+  protestTimer?: number | null;
+
   /** Список доступных для строительства зданий */
   availableBuildings?: string[];
 
