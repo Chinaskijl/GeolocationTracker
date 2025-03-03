@@ -15,7 +15,27 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-export function CityPanel() {
+const CityPanel: React.FC<CityPanelProps> = ({ 
+  selectedCity, 
+  closePanel, 
+  onBuild,
+  cityStats,
+  onBuyResource,
+  canBuyResource
+}) => {
+  // Update the building descriptions for theater and park
+  const getBuildingDescription = (buildingId: string) => {
+    switch(buildingId) {
+      case 'theater':
+        return "Повышает удовлетворённость населения на 10%";
+      case 'park':
+        return "Повышает удовлетворённость населения на 5%";
+      default:
+        const building = BUILDINGS.find(b => b.id === buildingId);
+        return building?.description || "";
+    }
+  };
+
   const { selectedCity, gameState, cities } = useGameStore();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -185,27 +205,27 @@ export function CityPanel() {
   const playerCities = cities.filter(city => city.owner === 'player' && city.id !== selectedCity.id);
 
   return (
-    <Card className="fixed bottom-4 left-4 w-96 max-h-[80vh] overflow-hidden z-[1000]">
-      <div className="p-4 space-y-4">
-        <div className="flex justify-between items-center">
-          <h2 className="text-xl font-bold">{selectedCity.name}</h2>
-          <span className={`px-2 py-1 rounded-full text-sm ${
-            selectedCity.owner === 'player' ? 'bg-blue-100 text-blue-800' :
-            selectedCity.owner === 'neutral' ? 'bg-gray-100 text-gray-800' :
-            'bg-red-100 text-red-800'
-          }`}>
-            {selectedCity.owner === 'player' ? 'Ваш город' :
-             selectedCity.owner === 'neutral' ? 'Нейтральный' : 'Вражеский город'}
-          </span>
-        </div>
+    <TooltipProvider>
+      <Card className="fixed bottom-4 left-4 w-96 max-h-[80vh] overflow-hidden z-[1000]">
+        <div className="p-4 space-y-4">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-bold">{selectedCity.name}</h2>
+            <span className={`px-2 py-1 rounded-full text-sm ${
+              selectedCity.owner === 'player' ? 'bg-blue-100 text-blue-800' :
+              selectedCity.owner === 'neutral' ? 'bg-gray-100 text-gray-800' :
+              'bg-red-100 text-red-800'
+            }`}>
+              {selectedCity.owner === 'player' ? 'Ваш город' :
+               selectedCity.owner === 'neutral' ? 'Нейтральный' : 'Вражеский город'}
+            </span>
+          </div>
 
-        <div className="space-y-2">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <span className="font-medium">Удовлетворенность:</span>
-              <TooltipProvider>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span className="font-medium">Удовлетворенность:</span>
                 <Tooltip>
-                  <TooltipTrigger>
+                  <TooltipTrigger asChild>
                     <span className={`${selectedCity.satisfaction < 30 ? 'text-red-500' : 'text-green-500'}`}>
                       {Math.round(selectedCity.satisfaction)}%
                     </span>
@@ -231,254 +251,249 @@ export function CityPanel() {
                     </ul>
                   </TooltipContent>
                 </Tooltip>
-              </TooltipProvider>
+              </div>
+              <div>
+                <span className="font-medium">Население:</span> {Math.floor(selectedCity.population)}/{selectedCity.maxPopulation}
+              </div>
             </div>
-            <div>
-              <span className="font-medium">Население:</span> {Math.floor(selectedCity.population)}/{selectedCity.maxPopulation}
-            </div>
+            <Progress value={(selectedCity.population / selectedCity.maxPopulation) * 100} />
           </div>
-          <Progress value={(selectedCity.population / selectedCity.maxPopulation) * 100} />
-        </div>
 
-        <div className="space-y-2">
-          <div className="flex justify-between">
-            <span>Военные</span>
-            <span>{selectedCity.military || 0}</span>
-          </div>
-        </div>
-
-        {selectedCity.owner === 'player' && playerCities.length > 0 && (
           <div className="space-y-2">
-            <h3 className="font-medium">Перемещение войск</h3>
-            <div className="grid grid-cols-1 gap-2">
-              {playerCities.map(city => (
-                <Button
-                  key={city.id}
-                  variant="outline"
-                  onClick={() => handleTransferMilitary(city.id)}
-                  disabled={!selectedCity.military}
-                  className="w-full"
-                >
-                  Отправить в {city.name}
-                </Button>
-              ))}
+            <div className="flex justify-between">
+              <span>Военные</span>
+              <span>{selectedCity.military || 0}</span>
             </div>
           </div>
-        )}
 
-
-        {!selectedCity.owner || selectedCity.owner === 'neutral' ? (
-          <div className="space-y-4">
-            <Card className="p-4">
-              <h3 className="font-medium mb-2">Захват территории</h3>
-              <p className="text-sm mb-4">
-                {!cities.some(city => city.owner === 'player') 
-                  ? "Выберите эту область в качестве своей столицы" 
-                  : "Вы можете захватить эту территорию, но вам понадобятся военные или влияние."}
-              </p>
-              <div className="space-y-2">
-                <Button 
-                  onClick={handleCapture}
-                  className="w-full"
-                  disabled={hasCapital && gameState.military < Math.ceil(selectedCity.maxPopulation / 4)}
-                >
-                  {hasCapital ? "Военный захват" : "Выбрать столицей"}
-                </Button>
-                {hasCapital && <p className="text-xs text-center">Будет использовано {Math.ceil(selectedCity.maxPopulation / 4)} военных</p>}
-
-                <Button 
-                  onClick={() => handleCapture('influence')}
-                  className="w-full mt-2"
-                  variant="outline"
-                  disabled={hasCapital && gameState.resources.influence < Math.ceil(selectedCity.maxPopulation / 500)}
-                >
-                  Мирное присоединение
-                </Button>
-                {hasCapital && <p className="text-xs text-center">Будет использовано {Math.ceil(selectedCity.maxPopulation / 500)} влияния</p>}
+          {selectedCity.owner === 'player' && playerCities.length > 0 && (
+            <div className="space-y-2">
+              <h3 className="font-medium">Перемещение войск</h3>
+              <div className="grid grid-cols-1 gap-2">
+                {playerCities.map(city => (
+                  <Button
+                    key={city.id}
+                    variant="outline"
+                    onClick={() => handleTransferMilitary(city.id)}
+                    disabled={!selectedCity.military}
+                    className="w-full"
+                  >
+                    Отправить в {city.name}
+                  </Button>
+                ))}
               </div>
-            </Card>
+            </div>
+          )}
 
-            <div className="space-y-2 mb-4">
-                <h4 className="text-sm font-medium">Стоимость захвата</h4>
-                <p className="text-xs">
-                  Для военного захвата города требуется {Math.ceil(selectedCity.maxPopulation / 4)} военных единиц.
-                </p>
-                <p className="text-xs">
-                  Для мирного присоединения через влияние требуется {Math.ceil(selectedCity.maxPopulation / 500)} влияния.
-                </p>
-              </div>
 
-            {/* Отображаем возможные постройки для нейтральной области */}
-            {selectedCity.buildings && selectedCity.buildings.length > 0 && (
+          {!selectedCity.owner || selectedCity.owner === 'neutral' ? (
+            <div className="space-y-4">
               <Card className="p-4">
-                <h3 className="font-medium mb-2">Построенные здания</h3>
-                <div className="text-sm">
-                  <ul className="list-disc pl-5 space-y-1">
-                    {selectedCity.buildings.map((buildingId, index) => {
-                      const building = BUILDINGS.find(b => b.id === buildingId);
-                      return building ? (
-                        <li key={`${buildingId}-${index}`}>
-                          {building.name || buildingId.replace('_', ' ')}
-                        </li>
-                      ) : null;
-                    })}
-                  </ul>
+                <h3 className="font-medium mb-2">Захват территории</h3>
+                <p className="text-sm mb-4">
+                  {!cities.some(city => city.owner === 'player') 
+                    ? "Выберите эту область в качестве своей столицы" 
+                    : "Вы можете захватить эту территорию, но вам понадобятся военные или влияние."}
+                </p>
+                <div className="space-y-2">
+                  <Button 
+                    onClick={handleCapture}
+                    className="w-full"
+                    disabled={hasCapital && gameState.military < Math.ceil(selectedCity.maxPopulation / 4)}
+                  >
+                    {hasCapital ? "Военный захват" : "Выбрать столицей"}
+                  </Button>
+                  {hasCapital && <p className="text-xs text-center">Будет использовано {Math.ceil(selectedCity.maxPopulation / 4)} военных</p>}
+
+                  <Button 
+                    onClick={() => handleCapture('influence')}
+                    className="w-full mt-2"
+                    variant="outline"
+                    disabled={hasCapital && gameState.resources.influence < Math.ceil(selectedCity.maxPopulation / 500)}
+                  >
+                    Мирное присоединение
+                  </Button>
+                  {hasCapital && <p className="text-xs text-center">Будет использовано {Math.ceil(selectedCity.maxPopulation / 500)} влияния</p>}
                 </div>
               </Card>
-            )}
 
-            {selectedCity.availableBuildings && selectedCity.availableBuildings.length > 0 && (
-              <Card className="p-4">
-                <h3 className="font-medium mb-2">Возможные постройки</h3>
-                <div className="text-sm">
-                  <ul className="list-disc pl-5 space-y-1">
-                    {selectedCity.availableBuildings.map((buildingId: string, index) => {
-                      const limit = selectedCity.buildingLimits?.[buildingId] || 0;
-                      const building = BUILDINGS.find(b => b.id === buildingId);
-                      const currentCount = selectedCity.buildings.filter(b => b === buildingId).length;
+              <div className="space-y-2 mb-4">
+                  <h4 className="text-sm font-medium">Стоимость захвата</h4>
+                  <p className="text-xs">
+                    Для военного захвата города требуется {Math.ceil(selectedCity.maxPopulation / 4)} военных единиц.
+                  </p>
+                  <p className="text-xs">
+                    Для мирного присоединения через влияние требуется {Math.ceil(selectedCity.maxPopulation / 500)} влияния.
+                  </p>
+                </div>
+
+              {/* Отображаем возможные постройки для нейтральной области */}
+              {selectedCity.buildings && selectedCity.buildings.length > 0 && (
+                <Card className="p-4">
+                  <h3 className="font-medium mb-2">Построенные здания</h3>
+                  <div className="text-sm">
+                    <ul className="list-disc pl-5 space-y-1">
+                      {selectedCity.buildings.map((buildingId, index) => {
+                        const building = BUILDINGS.find(b => b.id === buildingId);
+                        return building ? (
+                          <li key={`${buildingId}-${index}`}>
+                            {building.name || buildingId.replace('_', ' ')}
+                          </li>
+                        ) : null;
+                      })}
+                    </ul>
+                  </div>
+                </Card>
+              )}
+
+              {selectedCity.availableBuildings && selectedCity.availableBuildings.length > 0 && (
+                <Card className="p-4">
+                  <h3 className="font-medium mb-2">Возможные постройки</h3>
+                  <div className="text-sm">
+                    <ul className="list-disc pl-5 space-y-1">
+                      {selectedCity.availableBuildings.map((buildingId: string, index) => {
+                        const limit = selectedCity.buildingLimits?.[buildingId] || 0;
+                        const building = BUILDINGS.find(b => b.id === buildingId);
+                        const currentCount = selectedCity.buildings.filter(b => b === buildingId).length;
+                        return (
+                          <li key={`${buildingId}-${index}`}>
+                            {building?.name || buildingId.replace('_', ' ')} - построено {currentCount}/{limit} шт.
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                </Card>
+              )}
+            </div>
+          ) : selectedCity.owner === 'player' ? (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <h3 className="font-medium">Строительство</h3>
+                <p className="text-sm">Постройте здания для производства ресурсов и расширения города.</p>
+
+                <ScrollArea className="h-[300px] pr-3">
+                  <div className="space-y-2">
+                    {BUILDINGS.filter(building => 
+                      // Фильтруем только доступные для этой области здания
+                      (selectedCity as any).availableBuildings && 
+                      (selectedCity as any).availableBuildings.includes(building.id)
+                    ).map(building => {
+                      // Проверяем, можно ли построить здание с текущими ресурсами
+                      const canAfford = Object.entries(building.cost).every(
+                        ([resource, amount]) => gameState.resources[resource as keyof typeof gameState.resources] >= amount
+                      );
+
+                      // Проверяем лимит построек данного типа
+                      const currentCount = selectedCity.buildings.filter((b: string) => b === building.id).length;
+                      const maxCount = selectedCity.buildingLimits?.[building.id] || building.maxCount;
+                      const atLimit = currentCount >= maxCount;
+
                       return (
-                        <li key={`${buildingId}-${index}`}>
-                          {building?.name || buildingId.replace('_', ' ')} - построено {currentCount}/{limit} шт.
-                        </li>
+                        <Button
+                          key={building.id}
+                          variant={canAfford && !atLimit ? "outline" : "ghost"}
+                          disabled={!canAfford || atLimit}
+                          className={`w-full flex justify-between items-start p-3 h-auto ${(!canAfford || atLimit) ? 'opacity-50' : ''}`}
+                          onClick={() => handleBuild(building.id)}
+                        >
+                          <div className="flex flex-col items-start">
+                            <span className="font-medium">{building.name}</span>
+                            {/* Отображение описания */}
+                            <p className="text-xs text-gray-600 mt-1">{getBuildingDescription(building.id)}</p>
+
+                            {/* Отображение производства ресурсов */}
+                            {building.resourceProduction && (
+                              <span className="text-xs text-green-600 mt-1">
+                                {getResourceIcon(building.resourceProduction.type)} +{building.resourceProduction.amount}/сек
+                              </span>
+                            )}
+
+                            {/* Отображение потребления ресурсов */}
+                            {building.resourceConsumption && building.resourceConsumption.type && (
+                              <span className="text-xs text-red-600 mt-1">
+                                {getResourceIcon(building.resourceConsumption.type)} -{building.resourceConsumption.amount}/сек
+                              </span>
+                            )}
+
+                            {/* Отображение производства населения */}
+                            {building.population?.growth > 0 && (
+                              <span className="text-xs text-green-600 mt-1">
+                                👥 +{building.population.growth}/сек
+                              </span>
+                            )}
+
+                            {/* Отображение производства военной мощи */}
+                            {building.military?.production > 0 && (
+                              <span className="text-xs text-green-600 mt-1">
+                                🪖 +{building.military.production}/сек
+                              </span>
+                            )}
+
+                            <span className="text-xs text-blue-600 mt-1">
+                              {currentCount}/{maxCount} построено
+                            </span>
+                          </div>
+
+                          <div className="flex flex-col items-end">
+                            <div className="flex flex-wrap gap-1 justify-end">
+                              {Object.entries(building.cost).map(([resource, amount]) => (
+                                <span
+                                  key={resource}
+                                  className={`text-xs px-1 py-0.5 rounded ${
+                                    gameState.resources[resource as keyof typeof gameState.resources] >= amount
+                                      ? 'bg-green-100 text-green-800'
+                                      : 'bg-red-100 text-red-800'
+                                  }`}
+                                >
+                                  {getResourceIcon(resource)} {amount}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        </Button>
                       );
                     })}
-                  </ul>
-                </div>
-              </Card>
-            )}
-          </div>
-        ) : selectedCity.owner === 'player' ? (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <h3 className="font-medium">Строительство</h3>
-              <p className="text-sm">Постройте здания для производства ресурсов и расширения города.</p>
-
-              <ScrollArea className="h-[300px] pr-3">
-                <div className="space-y-2">
-                  {BUILDINGS.filter(building => 
-                    // Фильтруем только доступные для этой области здания
-                    (selectedCity as any).availableBuildings && 
-                    (selectedCity as any).availableBuildings.includes(building.id)
-                  ).map(building => {
-                    // Проверяем, можно ли построить здание с текущими ресурсами
-                    const canAfford = Object.entries(building.cost).every(
-                      ([resource, amount]) => gameState.resources[resource as keyof typeof gameState.resources] >= amount
-                    );
-
-                    // Проверяем лимит построек данного типа
-                    const currentCount = selectedCity.buildings.filter((b: string) => b === building.id).length;
-                    const maxCount = selectedCity.buildingLimits?.[building.id] || building.maxCount;
-                    const atLimit = currentCount >= maxCount;
-
-                    return (
-                      <Button
-                        key={building.id}
-                        variant={canAfford && !atLimit ? "outline" : "ghost"}
-                        disabled={!canAfford || atLimit}
-                        className={`w-full flex justify-between items-start p-3 h-auto ${(!canAfford || atLimit) ? 'opacity-50' : ''}`}
-                        onClick={() => handleBuild(building.id)}
-                      >
-                        <div className="flex flex-col items-start">
-                          <span className="font-medium">{building.name}</span>
-                          <span className="text-xs text-gray-500">
-                            {building.id === 'theater' ? 
-                              'Увеличивает удовлетворенность населения на 5%' : 
-                              building.id === 'park' ? 
-                              'Увеличивает удовлетворенность населения на 3%' :
-                              building.description || `${building.id.replace('_', ' ')}`}
-                          </span>
-
-                          {/* Отображение производства ресурсов */}
-                          {building.resourceProduction && (
-                            <span className="text-xs text-green-600 mt-1">
-                              {getResourceIcon(building.resourceProduction.type)} +{building.resourceProduction.amount}/сек
-                            </span>
-                          )}
-
-                          {/* Отображение потребления ресурсов */}
-                          {building.resourceConsumption && building.resourceConsumption.type && (
-                            <span className="text-xs text-red-600 mt-1">
-                              {getResourceIcon(building.resourceConsumption.type)} -{building.resourceConsumption.amount}/сек
-                            </span>
-                          )}
-
-                          {/* Отображение производства населения */}
-                          {building.population?.growth > 0 && (
-                            <span className="text-xs text-green-600 mt-1">
-                              👥 +{building.population.growth}/сек
-                            </span>
-                          )}
-
-                          {/* Отображение производства военной мощи */}
-                          {building.military?.production > 0 && (
-                            <span className="text-xs text-green-600 mt-1">
-                              🪖 +{building.military.production}/сек
-                            </span>
-                          )}
-
-                          <span className="text-xs text-blue-600 mt-1">
-                            {currentCount}/{maxCount} построено
-                          </span>
-                        </div>
-
-                        <div className="flex flex-col items-end">
-                          <div className="flex flex-wrap gap-1 justify-end">
-                            {Object.entries(building.cost).map(([resource, amount]) => (
-                              <span
-                                key={resource}
-                                className={`text-xs px-1 py-0.5 rounded ${
-                                  gameState.resources[resource as keyof typeof gameState.resources] >= amount
-                                    ? 'bg-green-100 text-green-800'
-                                    : 'bg-red-100 text-red-800'
-                                }`}
-                              >
-                                {getResourceIcon(resource)} {amount}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      </Button>
-                    );
-                  })}
-                </div>
-              </ScrollArea>
-            </div>
-          </div>
-        ) : null}
-
-        {selectedCity.buildings.length > 0 && (
-          <div className="space-y-2">
-            <h3 className="font-medium">Постройки</h3>
-            <div className="space-y-1">
-              {selectedCity.buildings.map((buildingId, index) => {
-                const building = BUILDINGS.find(b => b.id === buildingId);
-                if (!building) return null;
-                return (
-                  <div key={`${buildingId}-${index}`} className="flex justify-between items-center">
-                    <span>{building.name}</span>
-                    <div className="flex items-center gap-2 text-sm">
-                      {building.resourceProduction && (
-                        <span>
-                          {getResourceIcon(building.resourceProduction.type)} +{building.resourceProduction.amount}
-                        </span>
-                      )}
-                      {building.population?.growth && (
-                        <span>👥 +{building.population.growth}</span>
-                      )}
-                      {building.military?.production && (
-                        <span>⚔️ +{building.military.production}</span>
-                      )}
-                    </div>
                   </div>
-                );
-              })}
+                </ScrollArea>
+              </div>
             </div>
-          </div>
-        )}
-      </div>
-    </Card>
+          ) : null}
+
+          {selectedCity.buildings.length > 0 && (
+            <div className="space-y-2">
+              <h3 className="font-medium">Постройки</h3>
+              <div className="space-y-1">
+                {selectedCity.buildings.map((buildingId, index) => {
+                  const building = BUILDINGS.find(b => b.id === buildingId);
+                  if (!building) return null;
+                  return (
+                    <div key={`${buildingId}-${index}`} className="flex justify-between items-center">
+                      <span>{building.name}</span>
+                      <div className="flex items-center gap-2 text-sm">
+                        {building.resourceProduction && (
+                          <span>
+                            {getResourceIcon(building.resourceProduction.type)} +{building.resourceProduction.amount}
+                          </span>
+                        )}
+                        {building.population?.growth && (
+                          <span>👥 +{building.population.growth}</span>
+                        )}
+                        {building.military?.production && (
+                          <span>⚔️ +{building.military.production}</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      </Card>
+    </TooltipProvider>
   );
-}
+};
 
 function getResourceIcon(resource: string): string {
   switch (resource) {
