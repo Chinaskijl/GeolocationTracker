@@ -1,3 +1,4 @@
+
 import type { Building } from '@shared/schema';
 
 export const BUILDINGS = [
@@ -40,7 +41,7 @@ export const BUILDINGS = [
   {
     id: "gold_mine",
     name: "Золотой рудник",
-    description: "Добывает золото. Производит +5 золота в секунду.",
+    description: "Добывает золото из месторождений.",
     cost: { wood: 25, gold: 10 },
     resourceProduction: { type: "gold", amount: 5 },
     maxCount: 20,
@@ -49,7 +50,7 @@ export const BUILDINGS = [
   {
     id: "oil_rig",
     name: "Нефтяная вышка",
-    description: "Добывает нефть. Производит +3 нефти в секунду.",
+    description: "Добывает нефть из месторождений.",
     cost: { wood: 30, gold: 25, metal: 10 },
     resourceProduction: { type: "oil", amount: 3 },
     maxCount: 10,
@@ -67,7 +68,7 @@ export const BUILDINGS = [
   {
     id: "metal_factory",
     name: "Металлургический завод",
-    description: "Производит металл. Производит +2 металла в секунду, потребляет 1 нефть.",
+    description: "Производит металл. Потребляет 1 нефть.",
     cost: { wood: 30, gold: 20, oil: 5 },
     resourceProduction: { type: "metal", amount: 2 },
     resourceConsumption: { type: "oil", amount: 1 },
@@ -77,7 +78,7 @@ export const BUILDINGS = [
   {
     id: "steel_factory",
     name: "Сталелитейный завод",
-    description: "Перерабатывает металл в сталь для тяжелой промышленности",
+    description: "Перерабатывает металл в сталь для тяжелой промышленности.",
     cost: { gold: 150, wood: 100, metal: 50 },
     resourceProduction: { type: "steel", amount: 1 },
     resourceConsumption: { metal: 2 },
@@ -87,7 +88,7 @@ export const BUILDINGS = [
   {
     id: "weapons_factory",
     name: "Оружейный завод",
-    description: "Производит оружие для армии",
+    description: "Производит оружие для армии.",
     cost: { gold: 200, wood: 50, steel: 100 },
     resourceProduction: { type: "weapons", amount: 1 },
     resourceConsumption: { steel: 2 },
@@ -97,7 +98,7 @@ export const BUILDINGS = [
   {
     id: "embassy",
     name: "Посольство",
-    description: "Развивает дипломатические отношения и увеличивает влияние",
+    description: "Развивает дипломатические отношения и увеличивает влияние.",
     cost: { gold: 300, wood: 100 },
     resourceProduction: { type: "influence", amount: 1 },
     maxCount: 1,
@@ -106,22 +107,12 @@ export const BUILDINGS = [
   {
     id: "cultural_center",
     name: "Культурный центр",
-    description: "Распространяет культурное влияние на окружающие регионы",
+    description: "Распространяет культурное влияние на окружающие регионы.",
     cost: { gold: 200, wood: 150 },
     resourceProduction: { type: "influence", amount: 0.5 },
     population: { growth: 0.5 },
     maxCount: 2,
     icon: "🎭"
-  },
-  {
-    id: "steel_mill",
-    name: "Сталелитейный завод",
-    description: "Производит сталь. Потребляет 2 металла.",
-    cost: { wood: 40, gold: 30, metal: 15 },
-    resourceProduction: { type: "steel", amount: 1 },
-    resourceConsumption: { type: "metal", amount: 2 },
-    maxCount: 3,
-    icon: "⚙️"
   }
 ];
 
