@@ -182,7 +182,7 @@ export class GameLoop {
           });
 
           // Рассчитываем новый уровень удовлетворенности
-          let newSatisfaction = city.satisfaction || 100; // По умолчанию 100% если не задано
+          let newSatisfaction = city.satisfaction || 50; // По умолчанию 50% если не задано
           
           // Базовое падение удовлетворенности из-за нехватки работников
           if (cityTotalWorkers > 0) {
@@ -195,6 +195,17 @@ export class GameLoop {
           
           // Добавляем бонус от культурных зданий
           newSatisfaction += citySatisfactionBonus * deltaTime * 0.1; // Умножаем на маленький коэффициент
+          
+          // Проверяем, если удовлетворенность упала до 0 или ниже - область становится нейтральной
+          if (newSatisfaction <= 0) {
+            console.log(`🚨 ${city.name} has lost all satisfaction and is now neutral!`);
+            await storage.updateCity(city.id, {
+              owner: 'neutral',
+              satisfaction: 50, // Сбрасываем удовлетворенность для нейтральной территории
+              protestTimer: null
+            });
+            continue; // Пропускаем дальнейшую обработку города
+          }
           
           // Ограничиваем удовлетворенность в диапазоне 0-100%
           newSatisfaction = Math.max(0, Math.min(100, newSatisfaction));
@@ -220,6 +231,7 @@ export class GameLoop {
               console.log(`🚨 Time's up! ${city.name} is now neutral due to unresolved protests!`);
               await storage.updateCity(city.id, {
                 owner: 'neutral',
+                satisfaction: 50, // Сбрасываем удовлетворенность для нейтральной территории
                 protestTimer: null
               });
               continue; // Пропускаем дальнейшую обработку города
