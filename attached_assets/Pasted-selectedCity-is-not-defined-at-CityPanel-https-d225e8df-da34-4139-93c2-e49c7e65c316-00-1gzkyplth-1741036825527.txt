@@ -1,0 +1,26 @@
+selectedCity is not defined
+at CityPanel (https://d225e8df-da34-4139-93c2-e49c7e65c316-00-1gzkyplthnuc.pike.replit.dev:5000/src/components/CityPanel.tsx:185:179)
+at renderWithHooks (https://d225e8df-da34-4139-93c2-e49c7e65c316-00-1gzkyplthnuc.pike.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-WERSD76P.js?v=16fd0a06:11548:26)
+at updateFunctionComponent (https://d225e8df-da34-4139-93c2-e49c7e65c316-00-1gzkyplthnuc.pike.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-WERSD76P.js?v=16fd0a06:14582:28)
+at beginWork (https://d225e8df-da34-4139-93c2-e49c7e65c316-00-1gzkyplthnuc.pike.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-WERSD76P.js?v=16fd0a06:15924:22)
+at HTMLUnknownElement.callCallback2 (https://d225e8df-da34-4139-93c2-e49c7e65c316-00-1gzkyplthnuc.pike.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-WERSD76P.js?v=16fd0a06:3674:22)
+at Object.invokeGuardedCallbackDev (https://d225e8df-da34-4139-93c2-e49c7e65c316-00-1gzkyplthnuc.pike.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-WERSD76P.js?v=16fd0a06:3699:24)
+at invokeGuardedCallback (https://d225e8df-da34-4139-93c2-e49c7e65c316-00-1gzkyplthnuc.pike.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-WERSD76P.js?v=16fd0a06:3733:39)
+at beginWork$1 (https://d225e8df-da34-4139-93c2-e49c7e65c316-00-1gzkyplthnuc.pike.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-WERSD76P.js?v=16fd0a06:19765:15)
+at performUnitOfWork (https://d225e8df-da34-4139-93c2-e49c7e65c316-00-1gzkyplthnuc.pike.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-WERSD76P.js?v=16fd0a06:19198:20)
+at workLoopSync (https://d225e8df-da34-4139-93c2-e49c7e65c316-00-1gzkyplthnuc.pike.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-WERSD76P.js?v=16fd0a06:19137:13)
+selectedCity is not defined
+The above error occurred in the <CityPanel> component:
+
+    at CityPanel (https://d225e8df-da34-4139-93c2-e49c7e65c316-00-1gzkyplthnuc.pike.replit.dev:5000/src/components/CityPanel.tsx:35:17)
+    at div
+    at Game (https://d225e8df-da34-4139-93c2-e49c7e65c316-00-1gzkyplthnuc.pike.replit.dev:5000/src/pages/Game.tsx:165:39)
+    at Route (https://d225e8df-da34-4139-93c2-e49c7e65c316-00-1gzkyplthnuc.pike.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=16fd0a06:323:16)
+    at Switch (https://d225e8df-da34-4139-93c2-e49c7e65c316-00-1gzkyplthnuc.pike.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=16fd0a06:379:17)
+    at Router
+    at QueryClientProvider (https://d225e8df-da34-4139-93c2-e49c7e65c316-00-1gzkyplthnuc.pike.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=16fd0a06:2805:3)
+    at App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+selectedCity is not defined
