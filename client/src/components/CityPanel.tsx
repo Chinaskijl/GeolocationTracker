@@ -349,6 +349,13 @@ export function CityPanel() {
                               {getResourceIcon(building.resourceProduction.type)} +{building.resourceProduction.amount}/сек
                             </span>
                           )}
+                          
+                          {/* Отображение потребления ресурсов */}
+                          {building.resourceConsumption && building.resourceConsumption.type && (
+                            <span className="text-xs text-red-600 mt-1">
+                              {getResourceIcon(building.resourceConsumption.type)} -{building.resourceConsumption.amount}/сек
+                            </span>
+                          )}
 
                           {/* Отображение производства населения */}
                           {building.population?.growth > 0 && (

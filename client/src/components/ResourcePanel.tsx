@@ -128,7 +128,7 @@ export function ResourcePanel() {
       production: resourceProduction.steel
     },
     { 
-      icon: <span className="w-5 h-5 flex items-center justify-center">⚔️</span>, 
+      icon: <span className="w-5 h-5 flex items-center justify-center">🔫</span>, 
       value: Math.floor(gameState.resources.weapons), 
       name: 'Weapons',
       production: resourceProduction.weapons

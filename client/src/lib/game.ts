@@ -1,69 +1,69 @@
-
 import type { Building } from '@shared/schema';
 
 export const BUILDINGS = [
   {
     id: "house",
     name: "Жилой дом",
-    description: "Обеспечивает жильем население.",
+    description: "Обеспечивает жильем население и способствует его росту.",
     cost: { wood: 10, gold: 5 },
-    population: { housing: 10, growth: 3 },
-    maxCount: 100,
+    population: { housing: 10, growth: 0.1 },
+    maxCount: 5,
     icon: "🏠"
   },
   {
     id: "farm",
     name: "Ферма",
-    description: "Производит пищу для населения.",
+    description: "Производит еду для населения.",
     cost: { wood: 15, gold: 5 },
-    resourceProduction: { type: "food", amount: 10 },
-    maxCount: 50,
+    resourceProduction: { type: "food", amount: 2 },
+    maxCount: 5,
     icon: "🌾"
   },
   {
-    id: "market",
-    name: "Рынок",
-    description: "Увеличивает доход золота.",
-    cost: { wood: 20, gold: 15 },
-    resourceProduction: { type: "gold", amount: 3 },
-    maxCount: 20,
-    icon: "🏪"
-  },
-  {
     id: "logging_camp",
-    name: "Лесопилка",
-    description: "Производит древесину из лесных ресурсов.",
+    name: "Лесорубка",
+    description: "Производит древесину для строительства.",
     cost: { gold: 15 },
-    resourceProduction: { type: "wood", amount: 3 },
-    maxCount: 30,
+    resourceProduction: { type: "wood", amount: 2 },
+    maxCount: 3,
     icon: "🪓"
   },
   {
     id: "gold_mine",
     name: "Золотой рудник",
-    description: "Добывает золото из месторождений.",
-    cost: { wood: 25, gold: 10 },
-    resourceProduction: { type: "gold", amount: 5 },
-    maxCount: 20,
+    description: "Добывает золото для экономики.",
+    cost: { wood: 25, food: 10 },
+    resourceProduction: { type: "gold", amount: 2 },
+    maxCount: 2,
     icon: "⛏️"
   },
   {
     id: "oil_rig",
     name: "Нефтяная вышка",
-    description: "Добывает нефть из месторождений.",
-    cost: { wood: 30, gold: 25, metal: 10 },
-    resourceProduction: { type: "oil", amount: 3 },
-    maxCount: 10,
+    description: "Добывает нефть для промышленности.",
+    cost: { wood: 30, gold: 25 },
+    resourceProduction: { type: "oil", amount: 1 },
+    maxCount: 3,
     icon: "🛢️"
   },
   {
-    id: "barracks",
-    name: "Казармы",
-    description: "Обучает военных.",
-    cost: { wood: 20, gold: 15, food: 10 },
-    military: { production: 1, populationUse: 1 },
-    maxCount: 5,
-    icon: "🛡️"
+    id: "market",
+    name: "Рынок",
+    description: "Увеличивает торговые возможности.",
+    cost: { wood: 25, gold: 20 },
+    resourceProduction: { type: "gold", amount: 1 },
+    maxCount: 1,
+    icon: "🏪"
+  },
+  {
+    id: "theater",
+    name: "Театр",
+    description: "Повышает культурное влияние и счастье населения.",
+    cost: { wood: 35, gold: 25 },
+    resourceProduction: { type: "influence", amount: 0.5 },
+    population: { growth: 0.5 },
+    maxCount: 2,
+    icon: "🎭"
   },
   {
     id: "metal_factory",
@@ -72,14 +72,14 @@ export const BUILDINGS = [
     cost: { wood: 30, gold: 20, oil: 5 },
     resourceProduction: { type: "metal", amount: 2 },
     resourceConsumption: { type: "oil", amount: 1 },
-    maxCount: 5,
-    icon: "🏭"
+    maxCount: 3,
+    icon: "🔨"
   },
   {
-    id: "steel_factory",
+    id: "steel_mill",
     name: "Сталелитейный завод",
-    description: "Перерабатывает металл в сталь для тяжелой промышленности.",
-    cost: { gold: 150, wood: 100, metal: 50 },
+    description: "Производит сталь для тяжелой промышленности.",
+    cost: { wood: 40, gold: 30, metal: 15 },
     resourceProduction: { type: "steel", amount: 1 },
     resourceConsumption: { type: "metal", amount: 2 },
     maxCount: 3,
@@ -94,6 +94,15 @@ export const BUILDINGS = [
     resourceConsumption: { type: "steel", amount: 2 },
     maxCount: 2,
     icon: "🔫"
+  },
+  {
+    id: "barracks",
+    name: "Казармы",
+    description: "Обучает военных.",
+    cost: { wood: 20, gold: 15, food: 10 },
+    military: { production: 1, populationUse: 1 },
+    maxCount: 5,
+    icon: "🛡️"
   },
   {
     id: "embassy",
