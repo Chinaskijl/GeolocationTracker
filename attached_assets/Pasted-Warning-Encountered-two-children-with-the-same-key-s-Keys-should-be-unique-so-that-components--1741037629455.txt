@@ -1,0 +1,26 @@
+Warning: Encountered two children with the same key, `%s`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version.%s barracks 
+    at div
+    at div
+    at div
+    at https://d225e8df-da34-4139-93c2-e49c7e65c316-00-1gzkyplthnuc.pike.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RDHMCQ3E.js?v=16fd0a06:41:13
+    at https://d225e8df-da34-4139-93c2-e49c7e65c316-00-1gzkyplthnuc.pike.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-scroll-area.js?v=16fd0a06:122:13
+    at div
+    at https://d225e8df-da34-4139-93c2-e49c7e65c316-00-1gzkyplthnuc.pike.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RDHMCQ3E.js?v=16fd0a06:41:13
+    at Provider (https://d225e8df-da34-4139-93c2-e49c7e65c316-00-1gzkyplthnuc.pike.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-BKREU65R.js?v=16fd0a06:22:15)
+    at https://d225e8df-da34-4139-93c2-e49c7e65c316-00-1gzkyplthnuc.pike.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-scroll-area.js?v=16fd0a06:60:7
+    at _c (https://d225e8df-da34-4139-93c2-e49c7e65c316-00-1gzkyplthnuc.pike.replit.dev:5000/src/components/ui/scroll-area.tsx:21:11)
+    at div
+    at div
+    at div
+    at div
+    at _c (https://d225e8df-da34-4139-93c2-e49c7e65c316-00-1gzkyplthnuc.pike.replit.dev:5000/src/components/ui/card.tsx:20:11)
+    at Provider (https://d225e8df-da34-4139-93c2-e49c7e65c316-00-1gzkyplthnuc.pike.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-BKREU65R.js?v=16fd0a06:22:15)
+    at TooltipProvider (https://d225e8df-da34-4139-93c2-e49c7e65c316-00-1gzkyplthnuc.pike.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=16fd0a06:2561:5)
+    at CityPanel (https://d225e8df-da34-4139-93c2-e49c7e65c316-00-1gzkyplthnuc.pike.replit.dev:5000/src/components/CityPanel.tsx:35:17)
+    at div
+    at Game (https://d225e8df-da34-4139-93c2-e49c7e65c316-00-1gzkyplthnuc.pike.replit.dev:5000/src/pages/Game.tsx:165:39)
+    at Route (https://d225e8df-da34-4139-93c2-e49c7e65c316-00-1gzkyplthnuc.pike.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=16fd0a06:323:16)
+    at Switch (https://d225e8df-da34-4139-93c2-e49c7e65c316-00-1gzkyplthnuc.pike.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=16fd0a06:379:17)
+    at Router
+    at QueryClientProvider (https://d225e8df-da34-4139-93c2-e49c7e65c316-00-1gzkyplthnuc.pike.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=16fd0a06:2805:3)
+    at App
