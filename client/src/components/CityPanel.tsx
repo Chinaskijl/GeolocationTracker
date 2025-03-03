@@ -335,14 +335,11 @@ export const CityPanel: React.FC<CityPanelProps> = ({
                   <h3 className="font-medium mb-2">Построенные здания</h3>
                   <div className="text-sm">
                     <ul className="list-disc pl-5 space-y-1">
-                      {city.buildings.map((buildingId, index) => {
-                        const building = BUILDINGS.find(b => b.id === buildingId);
-                        return building ? (
-                          <li key={`${buildingId}-${index}`}>
-                            {building.name || buildingId.replace('_', ' ')}
-                          </li>
-                        ) : null;
-                      })}
+                      {city.buildings.map((buildingId, index) => (
+                        <li key={`${buildingId}-${index}`}>
+                          {BUILDINGS.find(b => b.id === buildingId)?.name || buildingId.replace('_', ' ')}
+                        </li>
+                      ))}
                     </ul>
                   </div>
                 </Card>
@@ -380,7 +377,7 @@ export const CityPanel: React.FC<CityPanelProps> = ({
                       // Фильтруем только доступные для этой области здания
                       city.availableBuildings && 
                       city.availableBuildings.includes(building.id)
-                    ).map(building => {
+                    ).map((building, index) => {
                       // Проверяем, можно ли построить здание с текущими ресурсами
                       const canAfford = Object.entries(building.cost).every(
                         ([resource, amount]) => gameState.resources[resource as keyof typeof gameState.resources] >= amount
@@ -393,7 +390,7 @@ export const CityPanel: React.FC<CityPanelProps> = ({
 
                       return (
                         <Button
-                          key={building.id}
+                          key={`${building.id}-${index}`}
                           variant={canAfford && !atLimit ? "outline" : "ghost"}
                           disabled={!canAfford || atLimit}
                           className={`w-full flex justify-between items-start p-3 h-auto ${(!canAfford || atLimit) ? 'opacity-50' : ''}`}
