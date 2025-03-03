@@ -61,6 +61,28 @@
         </div>
       )}
 
+      {/* Отображение производства населения */}
+      {building.population?.growth > 0 && (
+        <div className="flex mt-1 items-center">
+          <div className="font-semibold mr-2">Производит:</div>
+          <div className="flex items-center">
+            <span className="mr-1">👥</span>
+            <span>+{building.population.growth}/сек населения</span>
+          </div>
+        </div>
+      )}
+
+      {/* Отображение производства военной мощи */}
+      {building.military?.production > 0 && (
+        <div className="flex mt-1 items-center">
+          <div className="font-semibold mr-2">Производит:</div>
+          <div className="flex items-center">
+            <span className="mr-1">🪖</span>
+            <span>+{building.military.production}/сек военной мощи</span>
+          </div>
+        </div>
+      )}
+
       {/* Отображение потребления ресурсов */}
       {building.resourceConsumption && (
         <div className="flex mt-1 items-center">
@@ -90,12 +112,7 @@
                 <span>+{building.population.housing} макс.</span>
               </div>
             )}
-            {building.population.growth && (
-              <div className="flex items-center">
-                <span className="mr-1">👥</span>
-                <span>+{building.population.growth}/сек</span>
-              </div>
-            )}
+            {/* Population growth is already handled above */}
           </div>
         </div>
       )}
@@ -105,12 +122,7 @@
         <div className="flex mt-1 items-center">
           <div className="font-semibold mr-2">Военные:</div>
           <div className="flex space-x-2">
-            {building.military.production && (
-              <div className="flex items-center">
-                <span className="mr-1">⚔️</span>
-                <span>+{building.military.production}/сек</span>
-              </div>
-            )}
+            {/* Military production is already handled above */}
             {building.military.populationUse && (
               <div className="flex items-center">
                 <span className="mr-1">👥</span>

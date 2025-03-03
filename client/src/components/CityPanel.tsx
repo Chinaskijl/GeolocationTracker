@@ -292,9 +292,24 @@ export function CityPanel() {
                           <span className="font-medium">{building.name}</span>
                           <span className="text-xs text-muted-foreground">{building.description}</span>
 
+                          {/* Отображение производства ресурсов */}
                           {building.resourceProduction && (
                             <span className="text-xs text-green-600 mt-1">
-                              +{building.resourceProduction.amount} {building.resourceProduction.type} в день
+                              {getResourceIcon(building.resourceProduction.type)} +{building.resourceProduction.amount}/сек
+                            </span>
+                          )}
+
+                          {/* Отображение производства населения */}
+                          {building.population?.growth > 0 && (
+                            <span className="text-xs text-green-600 mt-1">
+                              👥 +{building.population.growth}/сек
+                            </span>
+                          )}
+
+                          {/* Отображение производства военной мощи */}
+                          {building.military?.production > 0 && (
+                            <span className="text-xs text-green-600 mt-1">
+                              🪖 +{building.military.production}/сек
                             </span>
                           )}
 
