@@ -4,10 +4,10 @@ export const BUILDINGS = [
   {
     id: "house",
     name: "Жилой дом",
-    description: "Обеспечивает жильем население и способствует его росту.",
+    description: "Обеспечивает жильем население.",
     cost: { wood: 10, gold: 5 },
-    population: { housing: 10, growth: 0.1 },
-    maxCount: 5,
+    population: { housing: 10, growth: 1 },
+    maxCount: 100,
     icon: "🏠"
   },
   {
@@ -72,18 +72,18 @@ export const BUILDINGS = [
     cost: { wood: 30, gold: 20, oil: 5 },
     resourceProduction: { type: "metal", amount: 2 },
     resourceConsumption: { type: "oil", amount: 1 },
-    maxCount: 3,
-    icon: "🔨"
+    maxCount: 5,
+    icon: "🔧"
   },
   {
-    id: "steel_mill",
+    id: "steel_factory",
     name: "Сталелитейный завод",
-    description: "Производит сталь для тяжелой промышленности.",
-    cost: { wood: 40, gold: 30, metal: 15 },
+    description: "Перерабатывает металл в сталь для тяжелой промышленности.",
+    cost: { gold: 150, wood: 100, metal: 50 },
     resourceProduction: { type: "steel", amount: 1 },
-    resourceConsumption: { type: "metal", amount: 2 },
+    resourceConsumption: { type: "metal", amount: 5 },
     maxCount: 3,
-    icon: "⚙️"
+    icon: "⚒️"
   },
   {
     id: "weapons_factory",
@@ -91,7 +91,7 @@ export const BUILDINGS = [
     description: "Производит оружие для армии.",
     cost: { gold: 200, wood: 50, steel: 100 },
     resourceProduction: { type: "weapons", amount: 1 },
-    resourceConsumption: { type: "steel", amount: 2 },
+    resourceConsumption: { type: "steel", amount: 5 },
     maxCount: 2,
     icon: "🔫"
   },

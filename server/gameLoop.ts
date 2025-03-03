@@ -116,8 +116,9 @@ export class GameLoop {
 
             // Рост населения - только если есть еда
             if (building.population?.growth && !noFood) {
-              cityPopulationGrowth += building.population.growth * deltaTime;
-              console.log(`Population growth: +${building.population.growth * deltaTime}`);
+              const populationGrowth = building.population.growth * deltaTime;
+              cityPopulationGrowth += populationGrowth;
+              console.log(`Population growth: +${populationGrowth} in ${city.name}`);
             } else if (building.population?.growth && noFood) {
               console.log(`Жилой дом в городе ${city.name} не даёт прирост населения из-за нехватки еды`);
             }
@@ -129,7 +130,7 @@ export class GameLoop {
                 cityMilitaryGrowth += building.military.production * deltaTime;
                 cityPopulationUsed += building.military.populationUse;
                 newResources.weapons -= building.military.production * deltaTime;
-                console.log(`Military production: +${building.military.production * deltaTime}, Population used: -${building.military.populationUse}, Weapons used: -${building.military.production * deltaTime}`);
+                console.log(`Military production: +${building.military.production * deltaTime} in ${city.name}`);ary.production * deltaTime}, Population used: -${building.military.populationUse}, Weapons used: -${building.military.production * deltaTime}`);
               } else if (city.population < building.military.populationUse) {
                 console.log(`Недостаточно населения для производства военных в ${city.name}`);
               } else {

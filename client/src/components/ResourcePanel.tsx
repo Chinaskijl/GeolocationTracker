@@ -178,3 +178,17 @@ export function ResourcePanel() {
     </Card>
   );
 }
+
+export function getResourceIcon(type: string): string {
+  const icons: { [key: string]: string } = {
+    food: '🍞',
+    gold: '💰',
+    wood: '🪵',
+    oil: '🛢️',
+    influence: '🌐',
+    weapons: '🔫',
+    metal: '🔧',
+    steel: '⚒️'
+  };
+  return icons[type] || '❓';
+}
