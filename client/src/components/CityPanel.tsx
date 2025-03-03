@@ -239,7 +239,7 @@ export function CityPanel() {
             </Card>
 
             {/* Отображаем возможные постройки для нейтральной области */}
-            {selectedCity.availableBuildings && selectedCity.availableBuildings.length > 0 && (
+            {(selectedCity as any).availableBuildings && (selectedCity as any).availableBuildings.length > 0 && (
               <Card className="p-4">
                 <h3 className="font-medium mb-2">Возможные постройки</h3>
                 <div className="text-sm">
@@ -267,8 +267,8 @@ export function CityPanel() {
                 <div className="space-y-2">
                   {BUILDINGS.filter(building => 
                     // Фильтруем только доступные для этой области здания
-                    selectedCity.availableBuildings && 
-                    selectedCity.availableBuildings.includes(building.id)
+                    (selectedCity as any).availableBuildings && 
+                    (selectedCity as any).availableBuildings.includes(building.id)
                   ).map(building => {
                     // Проверяем, можно ли построить здание с текущими ресурсами
                     const canAfford = Object.entries(building.cost).every(
