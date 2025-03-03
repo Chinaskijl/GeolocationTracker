@@ -236,14 +236,14 @@ export const CityPanel: React.FC<CityPanelProps> = ({
                     <h4 className="font-bold mb-1">Факторы влияющие на удовлетворенность:</h4>
                     <ul className="text-sm space-y-1">
                       <li>- Базовое значение: 50%</li>
-                      <li>- Количество рабочих мест: {selectedCity.satisfaction < 50 ? 
+                      <li>- Количество рабочих мест: {city.satisfaction < 50 ? 
                         <span className="text-red-500">Недостаточно рабочих мест</span> : 
                         <span className="text-green-500">Достаточно</span>}
                       </li>
-                      <li>- Бонусы от зданий: {selectedCity.buildings.some(b => b === 'theater' || b === 'park' || b === 'temple') ? 
-                        <span className="text-green-500">+{selectedCity.buildings.filter(b => b === 'theater').length * 5 + 
-                        selectedCity.buildings.filter(b => b === 'park').length * 3 + 
-                        selectedCity.buildings.filter(b => b === 'temple').length * 10}%</span> : 
+                      <li>- Бонусы от зданий: {city.buildings.some(b => b === 'theater' || b === 'park' || b === 'temple') ? 
+                        <span className="text-green-500">+{city.buildings.filter(b => b === 'theater').length * 5 + 
+                        city.buildings.filter(b => b === 'park').length * 3 + 
+                        city.buildings.filter(b => b === 'temple').length * 10}%</span> : 
                         <span className="text-gray-500">0%</span>}
                       </li>
                       <li>- Протесты: {selectedCity.protestTimer ? 
@@ -311,31 +311,31 @@ export const CityPanel: React.FC<CityPanelProps> = ({
                     onClick={() => handleCapture('influence')}
                     className="w-full mt-2"
                     variant="outline"
-                    disabled={hasCapital && gameState.resources.influence < Math.ceil(selectedCity.maxPopulation / 500)}
+                    disabled={hasCapital && gameState.resources.influence < Math.ceil(city.maxPopulation / 500)}
                   >
                     Мирное присоединение
                   </Button>
-                  {hasCapital && <p className="text-xs text-center">Будет использовано {Math.ceil(selectedCity.maxPopulation / 500)} влияния</p>}
+                  {hasCapital && <p className="text-xs text-center">Будет использовано {Math.ceil(city.maxPopulation / 500)} влияния</p>}
                 </div>
               </Card>
 
               <div className="space-y-2 mb-4">
                   <h4 className="text-sm font-medium">Стоимость захвата</h4>
                   <p className="text-xs">
-                    Для военного захвата города требуется {Math.ceil(selectedCity.maxPopulation / 4)} военных единиц.
+                    Для военного захвата города требуется {Math.ceil(city.maxPopulation / 4)} военных единиц.
                   </p>
                   <p className="text-xs">
-                    Для мирного присоединения через влияние требуется {Math.ceil(selectedCity.maxPopulation / 500)} влияния.
+                    Для мирного присоединения через влияние требуется {Math.ceil(city.maxPopulation / 500)} влияния.
                   </p>
                 </div>
 
               {/* Отображаем возможные постройки для нейтральной области */}
-              {selectedCity.buildings && selectedCity.buildings.length > 0 && (
+              {city.buildings && city.buildings.length > 0 && (
                 <Card className="p-4">
                   <h3 className="font-medium mb-2">Построенные здания</h3>
                   <div className="text-sm">
                     <ul className="list-disc pl-5 space-y-1">
-                      {selectedCity.buildings.map((buildingId, index) => {
+                      {city.buildings.map((buildingId, index) => {
                         const building = BUILDINGS.find(b => b.id === buildingId);
                         return building ? (
                           <li key={`${buildingId}-${index}`}>
@@ -348,7 +348,7 @@ export const CityPanel: React.FC<CityPanelProps> = ({
                 </Card>
               )}
 
-              {selectedCity.availableBuildings && selectedCity.availableBuildings.length > 0 && (
+              {city.availableBuildings && city.availableBuildings.length > 0 && (
                 <Card className="p-4">
                   <h3 className="font-medium mb-2">Возможные постройки</h3>
                   <div className="text-sm">
