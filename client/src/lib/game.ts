@@ -1,104 +1,88 @@
 import type { Building } from '@shared/schema';
 
-export const BUILDINGS: Building[] = [
+export const BUILDINGS = [
   {
-    id: 'sawmill',
-    name: 'Лесорубка',
-    cost: { wood: 250 },
-    resourceProduction: {
-      type: 'wood',
-      amount: 10
-    },
-    maxCount: 3
+    id: "house",
+    name: "Жилой дом",
+    description: "Обеспечивает жильем население. Производит +3 населения в секунду.",
+    cost: { wood: 10, gold: 5 },
+    population: { housing: 10, growth: 3 }, // Увеличено до 3 населения в секунду
+    maxCount: 100,
+    icon: "🏠"
   },
   {
-    id: 'metal_factory',
-    name: 'Завод металла',
-    cost: { wood: 250, gold: 150 },
-    resourceProduction: {
-      type: 'metal',
-      amount: 2
-    },
-    maxCount: 2
+    id: "farm",
+    name: "Ферма",
+    description: "Производит пищу для населения. Производит +10 еды в секунду.",
+    cost: { wood: 15, gold: 5 },
+    resourceProduction: { type: "food", amount: 10 }, // Увеличено до 10 еды в секунду
+    maxCount: 50,
+    icon: "🌾"
   },
   {
-    id: 'steel_factory',
-    name: 'Завод стали',
-    cost: { wood: 350, gold: 100 },
-    resourceProduction: {
-      type: 'steel',
-      amount: 1
-    },
-    resourceConsumption: {
-      type: 'metal',
-      amount: 5
-    },
-    maxCount: 2
+    id: "market",
+    name: "Рынок",
+    description: "Увеличивает доход золота. Производит +3 золота в секунду.",
+    cost: { wood: 20, gold: 15 },
+    resourceProduction: { type: "gold", amount: 3 },
+    maxCount: 20,
+    icon: "🏪"
   },
   {
-    id: 'weapons_factory',
-    name: 'Станок для оружия',
-    cost: { wood: 150 },
-    resourceProduction: {
-      type: 'weapons',
-      amount: 1
-    },
-    resourceConsumption: {
-      type: 'steel',
-      amount: 1,
-      wood: 15
-    },
-    maxCount: 3
+    id: "logging_camp",
+    name: "Лесопилка",
+    description: "Производит древесину. Производит +3 дерева в секунду.",
+    cost: { gold: 15 },
+    resourceProduction: { type: "wood", amount: 3 },
+    maxCount: 30,
+    icon: "🪓"
   },
   {
-    id: 'house',
-    name: 'Жилой дом',
-    cost: { wood: 250, gold: 200 },
-    population: {
-      housing: 1000,
-      growth: 3 // per second
-    },
-    maxCount: 5
+    id: "gold_mine",
+    name: "Золотой рудник",
+    description: "Добывает золото. Производит +5 золота в секунду.",
+    cost: { wood: 25, gold: 10 },
+    resourceProduction: { type: "gold", amount: 5 },
+    maxCount: 20,
+    icon: "⛏️"
   },
   {
-    id: 'barracks',
-    name: 'Бараки',
-    cost: { wood: 700 },
-    military: {
-      production: 10, // per second
-      populationUse: 1
-    },
-    maxCount: 2
+    id: "oil_rig",
+    name: "Нефтяная вышка",
+    description: "Добывает нефть. Производит +3 нефти в секунду.",
+    cost: { wood: 30, gold: 25, metal: 10 },
+    resourceProduction: { type: "oil", amount: 3 },
+    maxCount: 10,
+    icon: "🛢️"
   },
   {
-    id: 'farm',
-    name: 'Ферма',
-    cost: { wood: 300, gold: 150 },
-    resourceProduction: {
-      type: 'food',
-      amount: 10
-    },
-    maxCount: 3
+    id: "barracks",
+    name: "Казармы",
+    description: "Обучает военных. Производит +1 военного в секунду, потребляет 1 человека.",
+    cost: { wood: 20, gold: 15, food: 10 },
+    military: { production: 1, populationUse: 1 },
+    maxCount: 5,
+    icon: "🛡️"
   },
   {
-    id: 'mine',
-    name: 'Шахта',
-    cost: { wood: 400, gold: 100 },
-    resourceProduction: {
-      type: 'gold',
-      amount: 8
-    },
-    maxCount: 3
+    id: "metal_factory",
+    name: "Металлургический завод",
+    description: "Производит металл. Производит +2 металла в секунду, потребляет 1 нефть.",
+    cost: { wood: 30, gold: 20, oil: 5 },
+    resourceProduction: { type: "metal", amount: 2 },
+    resourceConsumption: { type: "oil", amount: 1 },
+    maxCount: 5,
+    icon: "🏭"
   },
   {
-    id: 'oilrig',
-    name: 'Нефтяная вышка',
-    cost: { wood: 500, gold: 500 },
-    resourceProduction: {
-      type: 'oil',
-      amount: 5
-    },
-    maxCount: 2
+    id: "steel_factory",
+    name: "Сталелитейный завод",
+    description: "Производит сталь из металла. Производит +1 стали в секунду, потребляет 2 металла.",
+    cost: { wood: 40, gold: 30, metal: 15 },
+    resourceProduction: { type: "steel", amount: 1 },
+    resourceConsumption: { type: "metal", amount: 2 },
+    maxCount: 3,
+    icon: "⚙️"
   }
 ];
 

@@ -24,28 +24,28 @@ async function ensureDataDir() {
 }
 
 // Функция для генерации случайных доступных зданий и их лимитов
-function generateRandomAvailableBuildings() {
-  // Список всех возможных зданий
+function generateRandomAvailableBuildings(): string[] {
   const allBuildings = [
-    'farm', 'logging_camp', 'gold_mine', 'oil_rig', 'metal_mine', 
-    'house', 'barracks', 'market', 'research_center'
+    'house', 'farm', 'market', 'logging_camp', 'gold_mine', 'oil_rig', 
+    'barracks', 'metal_factory', 'steel_factory'
   ];
 
-  // Выбираем случайное количество зданий (от 4 до 7)
-  const buildingCount = Math.floor(Math.random() * 4) + 4;
+  // Случайно выбираем от 5 до 9 типов зданий
+  const numBuildings = Math.floor(Math.random() * 5) + 5;
+  const availableBuildings: string[] = [];
 
-  // Обязательные здания
-  const mandatoryBuildings = ['house', 'farm'];
-  const availableBuildings = [...mandatoryBuildings];
+  // Дом и ферма всегда доступны для строительства
+  availableBuildings.push('house');
+  availableBuildings.push('farm');
 
-  // Копируем и перемешиваем массив остальных зданий
-  const optionalBuildings = allBuildings
-    .filter(b => !mandatoryBuildings.includes(b))
-    .sort(() => Math.random() - 0.5);
+  // Создаем копию массива всех зданий, кроме дома и фермы (которые уже добавлены)
+  const remainingBuildings = allBuildings.filter(b => b !== 'house' && b !== 'farm');
 
-  // Добавляем случайные здания до нужного количества
-  for (let i = 0; i < buildingCount - mandatoryBuildings.length && i < optionalBuildings.length; i++) {
-    availableBuildings.push(optionalBuildings[i]);
+  // Случайно добавляем оставшиеся здания
+  while (availableBuildings.length < numBuildings && remainingBuildings.length > 0) {
+    const randomIndex = Math.floor(Math.random() * remainingBuildings.length);
+    availableBuildings.push(remainingBuildings[randomIndex]);
+    remainingBuildings.splice(randomIndex, 1);
   }
 
   return availableBuildings;

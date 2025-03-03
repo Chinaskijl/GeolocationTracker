@@ -150,7 +150,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Это первый выбор столицы - захватываем без военных
         const capturedCity = await storage.updateCity(cityId, { 
           owner: 'player',
-          population: Math.floor(city.maxPopulation / 2) // Устанавливаем начальное население
+          population: 0 // Устанавливаем начальное население в 0
         });
 
         console.log("Capital city captured successfully");
@@ -176,7 +176,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Захватываем город
         const capturedCity = await storage.updateCity(cityId, { 
           owner: 'player',
-          population: Math.floor(city.maxPopulation / 2) // Устанавливаем начальное население
+          population: 0 // Устанавливаем начальное население в 0
         });
 
         // Уменьшаем количество военных
