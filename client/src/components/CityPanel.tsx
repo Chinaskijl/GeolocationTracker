@@ -36,9 +36,9 @@ export const CityPanel: React.FC<CityPanelProps> = ({
     }
   };
 
-  const { gameState, cities } = useGameStore();
+  const { gameState, cities, selectedCity: cityFromStore } = useGameStore();
   // Use the city from props or from store
-  const city = cityProp || useGameStore().selectedCity;
+  const city = cityProp || cityFromStore;
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -65,34 +65,17 @@ export const CityPanel: React.FC<CityPanelProps> = ({
 
       console.log('Building successful, invalidating queries');
       await queryClient.invalidateQueries({ queryKey: ['/api/cities'] });
+      await queryClient.invalidateQueries({ queryKey: ['game-state'] }); //Invalidate game state
 
-      // Явно получаем обновленные данные с сервера
-      const updatedCities = await queryClient.fetchQuery({ 
-        queryKey: ['/api/cities'],
-        staleTime: 0
-      });
+      // No need to explicitly fetch updated data; invalidateQueries should trigger refetch
 
-      console.log('Received updated cities after building:', updatedCities);
-
-      // Находим обновленный город в полученных данных
-      const updatedCity = updatedCities.find(city => city.id === city.id);
-
-      if (updatedCity) {
-        console.log('Updated city data:', updatedCity);
-
-        // Обновляем список городов
-        useGameStore.getState().setCities(updatedCities);
-
-        // Обновляем выбранный город
-        useGameStore.getState().setSelectedCity(updatedCity);
-
-        // Проверяем, обновились ли данные как ожидалось
-        console.log('Updated selected city in store:', useGameStore.getState().selectedCity);
-      } else {
-        console.error('Could not find updated city in response');
-      }
     } catch (error) {
       console.error('Failed to build:', error);
+      toast({
+        title: "Ошибка строительства",
+        description: error instanceof Error ? error.message : "Не удалось построить здание",
+        variant: "destructive"
+      });
     }
   };
 
@@ -182,15 +165,7 @@ export const CityPanel: React.FC<CityPanelProps> = ({
       });
 
       // Обновляем список городов
-      const updatedCities = cities.map(city => {
-        if (city.id === city.id) {
-          return {
-            ...city,
-            military: (city.military || 0) - amount
-          };
-        }
-        return city;
-      });
+      const updatedCities = cities.map(c => c.id === city.id ? {...c, military: (c.military || 0) - amount} : c);
 
       useGameStore.getState().setCities(updatedCities);
 
