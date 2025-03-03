@@ -1,0 +1,31 @@
+
+DOMException {}
+
+Failed to build: 
+CancelledError {revert: undefined, silent: true}
+
+at t.value (https://d225e8df-da34-4139-93c2-e49c7e65c316-00-1gzkyplthnuc.pike.replit.dev:5000/__replco/static/devtools/eruda/3.2.3/eruda.js:2:17465)
+at new t (https://d225e8df-da34-4139-93c2-e49c7e65c316-00-1gzkyplthnuc.pike.replit.dev:5000/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12630)
+at t.value (https://d225e8df-da34-4139-93c2-e49c7e65c316-00-1gzkyplthnuc.pike.replit.dev:5000/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32766)
+at https://d225e8df-da34-4139-93c2-e49c7e65c316-00-1gzkyplthnuc.pike.replit.dev:5000/__replco/static/devtools/eruda/3.2.3/eruda.js:2:34400
+Failed to build: 
+CancelledError {revert: undefined, silent: true}
+
+Failed to build: 
+Error {}
+
+Failed to build: 
+CancelledError {revert: undefined, silent: true}
+revert: undefined
+silent: true
+message: "CancelledError"
+stack: "Error: CancelledError↵ at Object.cancel (https://d225e8df-da34-4139-93c2-e49c7e65c316-00-1gzkyplthnuc.pike.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=16fd0a06:440:14)↵ at _a4.cancel (https://d225e8df-da34-4139-93c2-e49c7e65c316-00-1gzkyplthnuc.pike.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=16fd0a06:710:63)↵ at _a4.fetch (https://d225e8df-da34-4139-93c2-e49c7e65c316-00-1gzkyplthnuc.pike.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=16fd0a06:793:14)↵ at https://d225e8df-da34-4139-93c2-e49c7e65c316-00-1gzkyplthnuc.pike.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=16fd0a06:1726:29↵ at Array.map (<anonymous>)↵ at https://d225e8df-da34-4139-93c2-e49c7e65c316-00-1gzkyplthnuc.pike.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=16fd0a06:1725:101↵ at Object.batch (https://d225e8df-da34-4139-93c2-e49c7e65c316-00-1gzkyplthnuc.pike.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=16fd0a06:583:18)↵ at _a8.refetchQueries (https://d225e8df-da34-4139-93c2-e49c7e65c316-00-1gzkyplthnuc.pike.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=16fd0a06:1724:36)↵ at https://d225e8df-da34-4139-93c2-e49c7e65c316-00-1gzkyplthnuc.pike.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=16fd0a06:1716:19↵ at Object.batch (https://d225e8df-da34-4139-93c2-e49c7e65c316-00-1gzkyplthnuc.pike.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=16fd0a06:583:18)"
+get stack: ƒ ()
+set stack: ƒ ()
+[[Prototype]]: Object
+
+Failed to build: 
+Error {}
+
+Failed to build: 
+Error {}
