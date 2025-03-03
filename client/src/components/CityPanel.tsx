@@ -73,22 +73,30 @@ export function CityPanel() {
       console.log(`Attempting to capture city ${selectedCity.id}`);
 
       if (!hasCapital) {
-        await apiRequest('POST', `/api/cities/${selectedCity.id}/capture`, {
-          owner: 'player'
+        // Для первой столицы необходимо передать isCapital: true
+        await apiRequest('PATCH', `/api/cities/${selectedCity.id}/capture`, {
+          isCapital: true
         });
         console.log('Capital city captured successfully');
       } else if (gameState.military >= selectedCity.maxPopulation / 4) {
         console.log('Military strength:', gameState.military);
         console.log('Required strength:', selectedCity.maxPopulation / 4);
-        await apiRequest('POST', `/api/cities/${selectedCity.id}/capture`, {
-          owner: 'player'
+        await apiRequest('PATCH', `/api/cities/${selectedCity.id}/capture`, {
+          isCapital: false
         });
         console.log('City captured successfully');
       }
 
-      queryClient.invalidateQueries({ queryKey: ['/api/cities'] });
+      // Обновляем данные после успешного захвата
+      await queryClient.invalidateQueries({ queryKey: ['/api/cities'] });
+      await queryClient.invalidateQueries({ queryKey: ['/api/game-state'] });
     } catch (error) {
       console.error('Failed to capture:', error);
+      toast({
+        title: "Ошибка захвата",
+        description: "Не удалось захватить город",
+        variant: "destructive"
+      });
     }
   };
 
