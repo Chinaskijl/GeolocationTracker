@@ -7,7 +7,6 @@ export const BUILDINGS = [
     description: "Обеспечивает жильем население.",
     cost: { wood: 10, gold: 5 },
     population: { housing: 10, growth: 1 },
-    workers: 5,
     maxCount: 100,
     icon: "🏠"
   },
@@ -15,8 +14,8 @@ export const BUILDINGS = [
     id: "farm",
     name: "Ферма",
     description: "Производит еду для населения.",
-    cost: { wood: 15, gold: 10 },
-    resourceProduction: { type: "food", amount: 5 },
+    cost: { wood: 15, gold: 5 },
+    resourceProduction: { type: "food", amount: 2 },
     workers: 10,
     maxCount: 5,
     icon: "🌾"
@@ -89,7 +88,6 @@ export const BUILDINGS = [
     cost: { gold: 150, wood: 100, metal: 50 },
     resourceProduction: { type: "steel", amount: 1 },
     resourceConsumption: { type: "metal", amount: 5 },
-    workers: 20,
     maxCount: 3,
     icon: "⚒️"
   },
@@ -111,7 +109,6 @@ export const BUILDINGS = [
     cost: { wood: 20, gold: 15, food: 10 },
     military: { production: 1, populationUse: 1 },
     resourceConsumption: { type: "weapons", amount: 1 },
-    workers: 15,
     maxCount: 5,
     icon: "🛡️"
   },

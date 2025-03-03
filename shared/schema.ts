@@ -23,7 +23,7 @@ export const cities = pgTable("cities", {
   owner: text("owner").default("neutral"),
   buildings: jsonb("buildings").$type<string[]>().default([]).notNull(),
   military: integer("military").default(0).notNull(),
-  satisfaction: real("satisfaction").default(50).notNull(),
+  satisfaction: real("satisfaction").default(100).notNull(),
   protestTimer: real("protest_timer").default(null)
 });
 
