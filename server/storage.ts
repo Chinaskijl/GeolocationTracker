@@ -27,7 +27,7 @@ async function ensureDataDir() {
 function generateRandomAvailableBuildings(): string[] {
   const allBuildings = [
     'house', 'farm', 'market', 'logging_camp', 'gold_mine', 'oil_rig', 
-    'barracks', 'metal_factory', 'steel_factory'
+    'barracks', 'metal_factory', 'steel_factory', 'weapons_factory'
   ];
 
   // Случайно выбираем от 5 до 9 типов зданий
