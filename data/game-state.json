@@ -1,13 +1,13 @@
 {
   "resources": {
-    "gold": 470,
-    "wood": 450,
-    "food": 490,
+    "gold": 495,
+    "wood": 490,
+    "food": 493.3954000000001,
     "oil": 500,
     "metal": 0,
     "steel": 0,
     "weapons": 0
   },
-  "population": 0,
+  "population": 12,
   "military": 0
 }
