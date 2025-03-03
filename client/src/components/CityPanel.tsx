@@ -278,7 +278,7 @@ export function CityPanel() {
                     {selectedCity.buildings.map((buildingId, index) => {
                       const building = BUILDINGS.find(b => b.id === buildingId);
                       return building ? (
-                        <li key={index}>
+                        <li key={`${buildingId}-${index}`}>
                           {building.name || buildingId.replace('_', ' ')}
                         </li>
                       ) : null;
@@ -293,12 +293,12 @@ export function CityPanel() {
                 <h3 className="font-medium mb-2">Возможные постройки</h3>
                 <div className="text-sm">
                   <ul className="list-disc pl-5 space-y-1">
-                    {selectedCity.availableBuildings.map((buildingId: string) => {
+                    {selectedCity.availableBuildings.map((buildingId: string, index) => {
                       const limit = selectedCity.buildingLimits?.[buildingId] || 0;
                       const building = BUILDINGS.find(b => b.id === buildingId);
                       const currentCount = selectedCity.buildings.filter(b => b === buildingId).length;
                       return (
-                        <li key={buildingId}>
+                        <li key={`${buildingId}-${index}`}>
                           {building?.name || buildingId.replace('_', ' ')} - построено {currentCount}/{limit} шт.
                         </li>
                       );
@@ -349,7 +349,7 @@ export function CityPanel() {
                               {getResourceIcon(building.resourceProduction.type)} +{building.resourceProduction.amount}/сек
                             </span>
                           )}
-                          
+
                           {/* Отображение потребления ресурсов */}
                           {building.resourceConsumption && building.resourceConsumption.type && (
                             <span className="text-xs text-red-600 mt-1">
