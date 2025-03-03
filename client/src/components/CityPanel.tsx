@@ -8,6 +8,12 @@ import { useQueryClient } from '@tanstack/react-query';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/components/ui/use-toast';
 import { useMemo } from 'react';
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export function CityPanel() {
   const { selectedCity, gameState, cities } = useGameStore();
@@ -194,9 +200,42 @@ export function CityPanel() {
         </div>
 
         <div className="space-y-2">
-          <div className="flex justify-between">
-            <span>Население</span>
-            <span>{selectedCity.population} / {selectedCity.maxPopulation}</span>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <span className="font-medium">Удовлетворенность:</span>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <span className={`${selectedCity.satisfaction < 30 ? 'text-red-500' : 'text-green-500'}`}>
+                      {Math.round(selectedCity.satisfaction)}%
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent className="w-72 p-3">
+                    <h4 className="font-bold mb-1">Факторы влияющие на удовлетворенность:</h4>
+                    <ul className="text-sm space-y-1">
+                      <li>- Базовое значение: 50%</li>
+                      <li>- Количество рабочих мест: {selectedCity.satisfaction < 50 ? 
+                        <span className="text-red-500">Недостаточно рабочих мест</span> : 
+                        <span className="text-green-500">Достаточно</span>}
+                      </li>
+                      <li>- Бонусы от зданий: {selectedCity.buildings.some(b => b === 'theater' || b === 'park' || b === 'temple') ? 
+                        <span className="text-green-500">+{selectedCity.buildings.filter(b => b === 'theater').length * 5 + 
+                        selectedCity.buildings.filter(b => b === 'park').length * 3 + 
+                        selectedCity.buildings.filter(b => b === 'temple').length * 10}%</span> : 
+                        <span className="text-gray-500">0%</span>}
+                      </li>
+                      <li>- Протесты: {selectedCity.protestTimer ? 
+                        <span className="text-red-500">Активны ({Math.ceil(selectedCity.protestTimer / 60)} мин)</span> : 
+                        <span className="text-green-500">Нет</span>}
+                      </li>
+                    </ul>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            <div>
+              <span className="font-medium">Население:</span> {Math.floor(selectedCity.population)}/{selectedCity.maxPopulation}
+            </div>
           </div>
           <Progress value={(selectedCity.population / selectedCity.maxPopulation) * 100} />
         </div>
@@ -341,7 +380,13 @@ export function CityPanel() {
                       >
                         <div className="flex flex-col items-start">
                           <span className="font-medium">{building.name}</span>
-                          <span className="text-xs text-muted-foreground">{building.description}</span>
+                          <span className="text-xs text-gray-500">
+                            {building.id === 'theater' ? 
+                              'Увеличивает удовлетворенность населения на 5%' : 
+                              building.id === 'park' ? 
+                              'Увеличивает удовлетворенность населения на 3%' :
+                              building.description || `${building.id.replace('_', ' ')}`}
+                          </span>
 
                           {/* Отображение производства ресурсов */}
                           {building.resourceProduction && (
