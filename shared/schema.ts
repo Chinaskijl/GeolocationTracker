@@ -17,6 +17,7 @@ export const cities = pgTable("cities", {
     metal?: number;
     steel?: number;
     weapons?: number;
+    influence?: number;
   }>().notNull(),
   boundaries: jsonb("boundaries").$type<[number, number][]>().notNull(),
   owner: text("owner").default("neutral"),
@@ -37,6 +38,7 @@ export interface GameState {
     metal: number;
     steel: number;
     weapons: number;
+    influence: number;
   };
   population: number;
   military: number;

@@ -135,7 +135,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       const cityId = parseInt(id);
-      const { isCapital } = req.body; // Флаг указывающий, что это выбор столицы
+      const { isCapital, captureMethod = 'military' } = req.body; // Флаг указывающий, что это выбор столицы
 
       // Получаем данные города и состояние игры
       const cities = await storage.getCities();
@@ -154,7 +154,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
 
         console.log("Capital city captured successfully");
-        
+
         res.json({ 
           success: true,
           city: capturedCity,

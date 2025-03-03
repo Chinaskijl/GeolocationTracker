@@ -56,7 +56,7 @@ export class AIPlayer {
   
   private calculateResources(cities: any[]) {
     // Сбрасываем значения
-    this.resources = { gold: 0, wood: 0, food: 0, oil: 0 };
+    this.resources = { gold: 0, wood: 0, food: 0, oil: 0, influence: 0 };
     this.population = 0;
     this.military = 0;
     
@@ -141,12 +141,35 @@ export class AIPlayer {
     // Сортируем города по близости к нашим ресурсам
     const targetCity = neutralCities[0]; // Просто берем первый для простоты
     
-    if (targetCity && this.military >= targetCity.maxPopulation / 4) {
-      console.log(`[AI] Attempting to capture ${targetCity.name}`);
+    if (!targetCity) return;
+    
+    const influenceCost = Math.ceil(targetCity.maxPopulation / 500);
+    const militaryCost = Math.ceil(targetCity.maxPopulation / 4);
+    
+    // Предпочитаем мирный захват, если есть достаточно влияния
+    if (this.resources.influence >= influenceCost) {
+      console.log(`[AI] Attempting to peacefully annex ${targetCity.name} using influence`);
       try {
-        await storage.updateCity(targetCity.id, { owner: 'enemy' });
-        this.military -= Math.ceil(targetCity.maxPopulation / 4); // Уменьшаем нашу армию
-        console.log(`[AI] Successfully captured ${targetCity.name}`);
+        await storage.updateCity(targetCity.id, { 
+          owner: 'enemy',
+          population: Math.ceil(targetCity.maxPopulation * 0.1) // 10% населения при мирном захвате
+        });
+        this.resources.influence -= influenceCost;
+        console.log(`[AI] Successfully annexed ${targetCity.name} using influence`);
+      } catch (error) {
+        console.error(`[AI] Failed to annex city:`, error);
+      }
+    }
+    // Используем военную силу, если нет влияния
+    else if (this.military >= militaryCost) {
+      console.log(`[AI] Attempting to capture ${targetCity.name} by military force`);
+      try {
+        await storage.updateCity(targetCity.id, { 
+          owner: 'enemy',
+          population: 0 // 0 населения при военном захвате
+        });
+        this.military -= militaryCost;
+        console.log(`[AI] Successfully captured ${targetCity.name} by military force`);
       } catch (error) {
         console.error(`[AI] Failed to capture city:`, error);
       }

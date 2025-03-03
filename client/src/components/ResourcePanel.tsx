@@ -1,6 +1,6 @@
 import { useGameStore } from '@/lib/store';
 import { Card } from '@/components/ui/card';
-import { Coins, Trees, Wheat, Droplet } from 'lucide-react';
+import { Coins, Trees, Wheat, Droplet, Globe } from 'lucide-react'; // Added Globe icon
 import { useEffect, useState } from 'react';
 import { BUILDINGS } from '@/lib/game';
 
@@ -13,7 +13,8 @@ export function ResourcePanel() {
     oil: 0,
     metal: 0,
     steel: 0,
-    weapons: 0
+    weapons: 0,
+    influence: 0 // Added influence
   });
   const [foodConsumption, setFoodConsumption] = useState(0);
 
@@ -27,11 +28,12 @@ export function ResourcePanel() {
     let steelProd = 0;
     let weaponsProd = 0;
     let foodCons = 0;
+    let influenceProd = 0; // Added influence production
 
     cities.forEach(city => {
       if (city.owner === 'player') {
         // Не учитываем базовое производство города, только постройки
-        
+
         // Обработка зданий и их продукции
         city.buildings.forEach(buildingId => {
           const building = BUILDINGS.find(b => b.id === buildingId);
@@ -61,6 +63,9 @@ export function ResourcePanel() {
               case 'weapons':
                 weaponsProd += amount;
                 break;
+              case 'influence': // Added influence production
+                influenceProd += amount;
+                break;
             }
           }
         });
@@ -77,7 +82,8 @@ export function ResourcePanel() {
       oil: oilProd,
       metal: metalProd,
       steel: steelProd,
-      weapons: weaponsProd
+      weapons: weaponsProd,
+      influence: influenceProd // Added influence
     });
 
     setFoodConsumption(foodCons);
@@ -126,6 +132,12 @@ export function ResourcePanel() {
       value: Math.floor(gameState.resources.weapons), 
       name: 'Weapons',
       production: resourceProduction.weapons
+    },
+    { // Added influence resource
+      icon: <Globe className="h-4 w-4 mr-1 text-purple-500" />,
+      value: Math.floor(gameState.resources.influence),
+      name: 'Influence',
+      production: resourceProduction.influence
     }
   ];
 

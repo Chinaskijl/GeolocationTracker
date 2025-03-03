@@ -77,7 +77,41 @@ export const BUILDINGS = [
   {
     id: "steel_factory",
     name: "Сталелитейный завод",
-    description: "Производит сталь из металла. Производит +1 стали в секунду, потребляет 2 металла.",
+    description: "Перерабатывает металл в сталь для тяжелой промышленности",
+    cost: { gold: 150, wood: 100, metal: 50 },
+    resourceProduction: { type: "steel", amount: 1 },
+    resourceConsumption: { metal: 2 },
+    maxCount: 3,
+    icon: "🔩"
+  },
+  {
+    id: "weapons_factory",
+    name: "Оружейный завод",
+    description: "Производит оружие для армии",
+    cost: { gold: 200, wood: 50, steel: 100 },
+    resourceProduction: { type: "weapons", amount: 1 },
+    resourceConsumption: { steel: 2 },
+    maxCount: 2,
+    icon: "🔫"
+  },
+  {
+    id: "embassy",
+    name: "Посольство",
+    description: "Развивает дипломатические отношения и увеличивает влияние",
+    cost: { gold: 300, wood: 100 },
+    resourceProduction: { type: "influence", amount: 1 },
+    maxCount: 1,
+    icon: "🏛️"
+  },
+  {
+    id: "cultural_center",
+    name: "Культурный центр",
+    description: "Распространяет культурное влияние на окружающие регионы",
+    cost: { gold: 200, wood: 150 },
+    resourceProduction: { type: "influence", amount: 0.5 },
+    population: { growth: 0.5 },
+    maxCount: 2,
+    icon: "🎭"ет 2 металла.",
     cost: { wood: 40, gold: 30, metal: 15 },
     resourceProduction: { type: "steel", amount: 1 },
     resourceConsumption: { type: "metal", amount: 2 },

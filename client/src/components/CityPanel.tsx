@@ -68,9 +68,9 @@ export function CityPanel() {
     }
   };
 
-  const handleCapture = async () => {
+  const handleCapture = async (method: 'military' | 'influence' = 'military') => {
     try {
-      console.log(`Attempting to capture city ${selectedCity.id}`);
+      console.log(`Attempting to capture city ${selectedCity.id} using method: ${method}`);
 
       if (!hasCapital) {
         // Для первой столицы необходимо передать isCapital: true
@@ -78,13 +78,21 @@ export function CityPanel() {
           isCapital: true
         });
         console.log('Capital city captured successfully');
-      } else if (gameState.military >= selectedCity.maxPopulation / 4) {
+      } else if (method === 'military' && gameState.military >= selectedCity.maxPopulation / 4) {
         console.log('Military strength:', gameState.military);
         console.log('Required strength:', selectedCity.maxPopulation / 4);
         await apiRequest('PATCH', `/api/cities/${selectedCity.id}/capture`, {
           isCapital: false
         });
         console.log('City captured successfully');
+      } else if (method === 'influence' && gameState.resources.influence >= Math.ceil(selectedCity.maxPopulation / 500)) {
+        await apiRequest('PATCH', `/api/cities/${selectedCity.id}/capture`, {
+          isCapital: false,
+          method: 'influence'
+        });
+        console.log('City captured successfully using influence');
+      } else {
+        throw new Error('Insufficient resources for capture.');
       }
 
       // Обновляем данные после успешного захвата
@@ -94,7 +102,7 @@ export function CityPanel() {
       console.error('Failed to capture:', error);
       toast({
         title: "Ошибка захвата",
-        description: "Не удалось захватить город",
+        description: error instanceof Error ? error.message : "Не удалось захватить город",
         variant: "destructive"
       });
     }
@@ -227,16 +235,39 @@ export function CityPanel() {
               <p className="text-sm mb-4">
                 {!cities.some(city => city.owner === 'player') 
                   ? "Выберите эту область в качестве своей столицы" 
-                  : "Вы можете захватить эту территорию, но вам понадобятся военные."}
+                  : "Вы можете захватить эту территорию, но вам понадобятся военные или влияние."}
               </p>
-              <Button 
-                onClick={handleCapture}
-                disabled={hasCapital && gameState.military < selectedCity.maxPopulation / 4}
-                className="w-full"
-              >
-                {!hasCapital ? "Выбрать столицей" : "Захватить территорию"}
-              </Button>
+              <div className="space-y-2">
+                <Button 
+                  onClick={handleCapture}
+                  className="w-full"
+                  disabled={hasCapital && gameState.military < Math.ceil(selectedCity.maxPopulation / 4)}
+                >
+                  {hasCapital ? "Военный захват" : "Выбрать столицей"}
+                </Button>
+                {hasCapital && <p className="text-xs text-center">Будет использовано {Math.ceil(selectedCity.maxPopulation / 4)} военных</p>}
+
+                <Button 
+                  onClick={() => handleCapture('influence')}
+                  className="w-full mt-2"
+                  variant="outline"
+                  disabled={hasCapital && gameState.resources.influence < Math.ceil(selectedCity.maxPopulation / 500)}
+                >
+                  Мирное присоединение
+                </Button>
+                {hasCapital && <p className="text-xs text-center">Будет использовано {Math.ceil(selectedCity.maxPopulation / 500)} влияния</p>}
+              </div>
             </Card>
+
+            <div className="space-y-2 mb-4">
+                <h4 className="text-sm font-medium">Стоимость захвата</h4>
+                <p className="text-xs">
+                  Для военного захвата города требуется {Math.ceil(selectedCity.maxPopulation / 4)} военных единиц.
+                </p>
+                <p className="text-xs">
+                  Для мирного присоединения через влияние требуется {Math.ceil(selectedCity.maxPopulation / 500)} влияния.
+                </p>
+              </div>
 
             {/* Отображаем возможные постройки для нейтральной области */}
             {selectedCity.buildings && selectedCity.buildings.length > 0 && (
@@ -403,6 +434,7 @@ function getResourceIcon(resource: string): string {
     case 'wood': return '🌲';
     case 'food': return '🌾';
     case 'oil': return '🛢️';
+    case 'influence': return '👑'; // Added influence icon
     default: return '📦';
   }
 }
