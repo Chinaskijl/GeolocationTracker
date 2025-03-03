@@ -52,6 +52,57 @@ export const BUILDINGS = [
     icon: "🛢️"
   },
   {
+    id: "barracks",
+    name: "Казармы",
+    description: "Тренировка военных единиц.",
+    cost: { wood: 40, gold: 30 },
+    military: { production: 1, populationUse: 10 },
+    workers: 15,
+    maxCount: 3,
+    icon: "🪖"
+  },
+  {
+    id: "weapons_factory",
+    name: "Оружейный завод",
+    description: "Производит оружие для военных.",
+    cost: { wood: 30, gold: 50, metal: 20 },
+    resourceProduction: { type: "weapons", amount: 2 },
+    resourceConsumption: { metal: 1, steel: 0.5 },
+    workers: 25,
+    maxCount: 2,
+    icon: "🔫"
+  },
+  {
+    id: "theater",
+    name: "Театр",
+    description: "Повышает удовлетворенность населения.",
+    cost: { wood: 40, gold: 30 },
+    workers: 15,
+    satisfactionBonus: 5,
+    maxCount: 2,
+    icon: "🎭"
+  },
+  {
+    id: "park",
+    name: "Парк",
+    description: "Место отдыха для жителей, повышает удовлетворенность.",
+    cost: { wood: 20, gold: 15 },
+    workers: 10,
+    satisfactionBonus: 3,
+    maxCount: 3,
+    icon: "🌳"
+  },
+  {
+    id: "temple",
+    name: "Храм",
+    description: "Духовное место, значительно повышает удовлетворенность населения.",
+    cost: { wood: 80, gold: 100 },
+    workers: 5,
+    satisfactionBonus: 10,
+    maxCount: 1,
+    icon: "⛪"
+  },
+  {
     id: "market",
     name: "Рынок",
     description: "Увеличивает торговые возможности.",

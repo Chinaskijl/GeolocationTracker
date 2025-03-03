@@ -23,46 +23,45 @@ async function ensureDataDir() {
   }
 }
 
-// Функция для генерации случайных доступных зданий и их лимитов
-function generateRandomAvailableBuildings(): string[] {
-  const allBuildings = [
+// Функция для генерации доступных зданий
+function generateAvailableBuildings(): string[] {
+  return [
     'house', 'farm', 'market', 'logging_camp', 'gold_mine', 'oil_rig', 
-    'barracks', 'metal_factory', 'steel_factory', 'weapons_factory'
+    'barracks', 'metal_factory', 'steel_factory', 'weapons_factory', 'theater', 'park', 'temple'
   ];
+}
 
-  // Случайно выбираем от 5 до 9 типов зданий
-  const numBuildings = Math.floor(Math.random() * 5) + 5;
-  const availableBuildings: string[] = [];
+// Функция для генерации фиксированных лимитов зданий
+function generateFixedBuildingLimits(availableBuildings: string[]): Record<string, number> {
+  const limits: Record<string, number> = {
+    'house': 4,
+    'farm': 5,
+    'logging_camp': 3,
+    'market': 2,
+    'gold_mine': 3,
+    'oil_rig': 3,
+    'barracks': 3,
+    'weapons_factory': 2,
+    'steel_factory': 3,
+    'metal_factory': 4,
+    'theater': 2,
+    'park': 3,
+    'temple': 1
+  };
 
-  // Дом и ферма всегда доступны для строительства
-  availableBuildings.push('house');
-  availableBuildings.push('farm');
-
-  // Создаем копию массива всех зданий, кроме дома и фермы (которые уже добавлены)
-  const remainingBuildings = allBuildings.filter(b => b !== 'house' && b !== 'farm');
-
-  // Случайно добавляем оставшиеся здания
-  while (availableBuildings.length < numBuildings && remainingBuildings.length > 0) {
-    const randomIndex = Math.floor(Math.random() * remainingBuildings.length);
-    availableBuildings.push(remainingBuildings[randomIndex]);
-    remainingBuildings.splice(randomIndex, 1);
+  // Фильтруем только доступные здания
+  const result: Record<string, number> = {};
+  for (const building of availableBuildings) {
+    if (limits[building]) {
+      result[building] = limits[building];
+    } else {
+      result[building] = 2; // Значение по умолчанию, если здание не найдено в пресетах
+    }
   }
 
-  return availableBuildings;
+  return result;
 }
 
-// Функция для генерации случайных лимитов зданий
-function generateRandomBuildingLimits(availableBuildings: string[]) {
-  const limits: Record<string, number> = {};
-
-  // Установка лимитов для каждого доступного здания
-  availableBuildings.forEach(buildingId => {
-    // Генерируем случайный лимит от 1 до 5
-    limits[buildingId] = Math.floor(Math.random() * 5) + 1;
-  });
-
-  return limits;
-}
 
 // Функция для генерации случайного населения
 function generateRandomPopulation(isLarge: boolean) {
@@ -151,10 +150,10 @@ class Storage {
         maxPopulation: 10000,
         military: 0,
         resources: { food: 10, gold: 8, wood: 5, oil: 2 },
-        availableBuildings: generateRandomAvailableBuildings(),
+        availableBuildings: generateAvailableBuildings(),
         owner: "neutral",
         buildings: [],
-        buildingLimits: {}
+        buildingLimits: generateFixedBuildingLimits(generateAvailableBuildings())
       },
       {
         id: 2,
@@ -165,10 +164,10 @@ class Storage {
         maxPopulation: 10000,
         military: 0,
         resources: { food: 8, oil: 5, wood: 7, gold: 3 },
-        availableBuildings: generateRandomAvailableBuildings(),
+        availableBuildings: generateAvailableBuildings(),
         owner: "neutral",
         buildings: [],
-        buildingLimits: {}
+        buildingLimits: generateFixedBuildingLimits(generateAvailableBuildings())
       },
       {
         id: 3,
@@ -179,10 +178,10 @@ class Storage {
         maxPopulation: 5000,
         military: 0,
         resources: { gold: 7, wood: 5, food: 3, metal: 4 },
-        availableBuildings: generateRandomAvailableBuildings(),
+        availableBuildings: generateAvailableBuildings(),
         owner: "neutral",
         buildings: [],
-        buildingLimits: {}
+        buildingLimits: generateFixedBuildingLimits(generateAvailableBuildings())
       },
       {
         id: 4,
@@ -193,10 +192,10 @@ class Storage {
         maxPopulation: 6000,
         military: 0,
         resources: { metal: 12, wood: 6, gold: 4, food: 2 },
-        availableBuildings: generateRandomAvailableBuildings(),
+        availableBuildings: generateAvailableBuildings(),
         owner: "neutral",
         buildings: [],
-        buildingLimits: {}
+        buildingLimits: generateFixedBuildingLimits(generateAvailableBuildings())
       },
       {
         id: 5,
@@ -207,19 +206,12 @@ class Storage {
         maxPopulation: 5000,
         military: 0,
         resources: { wood: 8, food: 5, gold: 3, oil: 2 },
-        availableBuildings: generateRandomAvailableBuildings(),
+        availableBuildings: generateAvailableBuildings(),
         owner: "neutral",
         buildings: [],
-        buildingLimits: {}
+        buildingLimits: generateFixedBuildingLimits(generateAvailableBuildings())
       }
     ];
-
-    // Устанавливаем лимиты зданий
-    regions.forEach(region => {
-      if (region.availableBuildings) {
-        region.buildingLimits = generateRandomBuildingLimits(region.availableBuildings);
-      }
-    });
 
     this.cities = regions;
   }
