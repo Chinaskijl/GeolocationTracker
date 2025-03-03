@@ -158,7 +158,7 @@ export default function Game() {
     <div className="relative">
       <Map />
       <ResourcePanel />
-      <CityPanel />
+      {selectedCity && <CityPanel />}
       <MarketButton onOpenMarket={() => setIsMarketOpen(true)} />
       <MarketPanel open={isMarketOpen} onClose={() => setIsMarketOpen(false)} />
     </div>

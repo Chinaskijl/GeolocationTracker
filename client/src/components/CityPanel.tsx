@@ -59,7 +59,7 @@ export const CityPanel: React.FC<CityPanelProps> = ({
       console.log('Building cost:', building.cost);
 
       // Отправляем запрос на строительство
-      await apiRequest('POST', `/api/cities/${selectedCity.id}/build`, {
+      await apiRequest('POST', `/api/cities/${city.id}/build`, {
         buildingId
       });
 
@@ -75,7 +75,7 @@ export const CityPanel: React.FC<CityPanelProps> = ({
       console.log('Received updated cities after building:', updatedCities);
 
       // Находим обновленный город в полученных данных
-      const updatedCity = updatedCities.find(city => city.id === selectedCity.id);
+      const updatedCity = updatedCities.find(city => city.id === city.id);
 
       if (updatedCity) {
         console.log('Updated city data:', updatedCity);
@@ -98,23 +98,23 @@ export const CityPanel: React.FC<CityPanelProps> = ({
 
   const handleCapture = async (method: 'military' | 'influence' = 'military') => {
     try {
-      console.log(`Attempting to capture city ${selectedCity.id} using method: ${method}`);
+      console.log(`Attempting to capture city ${city.id} using method: ${method}`);
 
       if (!hasCapital) {
         // Для первой столицы необходимо передать isCapital: true
-        await apiRequest('PATCH', `/api/cities/${selectedCity.id}/capture`, {
+        await apiRequest('PATCH', `/api/cities/${city.id}/capture`, {
           isCapital: true
         });
         console.log('Capital city captured successfully');
-      } else if (method === 'military' && gameState.military >= selectedCity.maxPopulation / 4) {
+      } else if (method === 'military' && gameState.military >= city.maxPopulation / 4) {
         console.log('Military strength:', gameState.military);
-        console.log('Required strength:', selectedCity.maxPopulation / 4);
-        await apiRequest('PATCH', `/api/cities/${selectedCity.id}/capture`, {
+        console.log('Required strength:', city.maxPopulation / 4);
+        await apiRequest('PATCH', `/api/cities/${city.id}/capture`, {
           isCapital: false
         });
         console.log('City captured successfully');
-      } else if (method === 'influence' && gameState.resources.influence >= Math.ceil(selectedCity.maxPopulation / 500)) {
-        await apiRequest('PATCH', `/api/cities/${selectedCity.id}/capture`, {
+      } else if (method === 'influence' && gameState.resources.influence >= Math.ceil(city.maxPopulation / 500)) {
+        await apiRequest('PATCH', `/api/cities/${city.id}/capture`, {
           isCapital: false,
           method: 'influence'
         });
@@ -139,7 +139,7 @@ export const CityPanel: React.FC<CityPanelProps> = ({
   const handleTransferMilitary = async (targetCityId: number) => {
     try {
       // По умолчанию отправляем половину имеющихся войск
-      const amount = Math.ceil((selectedCity.military || 0) / 2);
+      const amount = Math.ceil((city.military || 0) / 2);
 
       if (!amount) {
         toast({
@@ -157,7 +157,7 @@ export const CityPanel: React.FC<CityPanelProps> = ({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          fromCityId: selectedCity.id,
+          fromCityId: city.id,
           toCityId: targetCityId,
           amount
         }),
@@ -172,18 +172,18 @@ export const CityPanel: React.FC<CityPanelProps> = ({
 
       toast({
         title: "Войска отправлены",
-        description: `${amount} военных отправлены из ${selectedCity.name}`,
+        description: `${amount} военных отправлены из ${city.name}`,
       });
 
       // Обновляем состояние текущего города
       useGameStore.getState().setSelectedCity({
-        ...selectedCity,
-        military: (selectedCity.military || 0) - amount
+        ...city,
+        military: (city.military || 0) - amount
       });
 
       // Обновляем список городов
       const updatedCities = cities.map(city => {
-        if (city.id === selectedCity.id) {
+        if (city.id === city.id) {
           return {
             ...city,
             military: (city.military || 0) - amount
@@ -211,14 +211,14 @@ export const CityPanel: React.FC<CityPanelProps> = ({
       <Card className="fixed bottom-4 left-4 w-96 max-h-[80vh] overflow-hidden z-[1000]">
         <div className="p-4 space-y-4">
           <div className="flex justify-between items-center">
-            <h2 className="text-xl font-bold">{selectedCity.name}</h2>
+            <h2 className="text-xl font-bold">{city.name}</h2>
             <span className={`px-2 py-1 rounded-full text-sm ${
-              selectedCity.owner === 'player' ? 'bg-blue-100 text-blue-800' :
-              selectedCity.owner === 'neutral' ? 'bg-gray-100 text-gray-800' :
+              city.owner === 'player' ? 'bg-blue-100 text-blue-800' :
+              city.owner === 'neutral' ? 'bg-gray-100 text-gray-800' :
               'bg-red-100 text-red-800'
             }`}>
-              {selectedCity.owner === 'player' ? 'Ваш город' :
-               selectedCity.owner === 'neutral' ? 'Нейтральный' : 'Вражеский город'}
+              {city.owner === 'player' ? 'Ваш город' :
+               city.owner === 'neutral' ? 'Нейтральный' : 'Вражеский город'}
             </span>
           </div>
 
@@ -228,8 +228,8 @@ export const CityPanel: React.FC<CityPanelProps> = ({
                 <span className="font-medium">Удовлетворенность:</span>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span className={`${selectedCity.satisfaction < 30 ? 'text-red-500' : 'text-green-500'}`}>
-                      {Math.round(selectedCity.satisfaction)}%
+                    <span className={`${city.satisfaction < 30 ? 'text-red-500' : 'text-green-500'}`}>
+                      {Math.round(city.satisfaction)}%
                     </span>
                   </TooltipTrigger>
                   <TooltipContent className="w-72 p-3">
@@ -353,10 +353,10 @@ export const CityPanel: React.FC<CityPanelProps> = ({
                   <h3 className="font-medium mb-2">Возможные постройки</h3>
                   <div className="text-sm">
                     <ul className="list-disc pl-5 space-y-1">
-                      {selectedCity.availableBuildings.map((buildingId: string, index) => {
-                        const limit = selectedCity.buildingLimits?.[buildingId] || 0;
+                      {city.availableBuildings.map((buildingId: string, index) => {
+                        const limit = city.buildingLimits?.[buildingId] || 0;
                         const building = BUILDINGS.find(b => b.id === buildingId);
-                        const currentCount = selectedCity.buildings.filter(b => b === buildingId).length;
+                        const currentCount = city.buildings.filter(b => b === buildingId).length;
                         return (
                           <li key={`${buildingId}-${index}`}>
                             {building?.name || buildingId.replace('_', ' ')} - построено {currentCount}/{limit} шт.
@@ -378,8 +378,8 @@ export const CityPanel: React.FC<CityPanelProps> = ({
                   <div className="space-y-2">
                     {BUILDINGS.filter(building => 
                       // Фильтруем только доступные для этой области здания
-                      (selectedCity as any).availableBuildings && 
-                      (selectedCity as any).availableBuildings.includes(building.id)
+                      city.availableBuildings && 
+                      city.availableBuildings.includes(building.id)
                     ).map(building => {
                       // Проверяем, можно ли построить здание с текущими ресурсами
                       const canAfford = Object.entries(building.cost).every(
@@ -387,8 +387,8 @@ export const CityPanel: React.FC<CityPanelProps> = ({
                       );
 
                       // Проверяем лимит построек данного типа
-                      const currentCount = selectedCity.buildings.filter((b: string) => b === building.id).length;
-                      const maxCount = selectedCity.buildingLimits?.[building.id] || building.maxCount;
+                      const currentCount = city.buildings.filter((b: string) => b === building.id).length;
+                      const maxCount = city.buildingLimits?.[building.id] || building.maxCount;
                       const atLimit = currentCount >= maxCount;
 
                       return (
@@ -462,11 +462,11 @@ export const CityPanel: React.FC<CityPanelProps> = ({
             </div>
           ) : null}
 
-          {selectedCity.buildings.length > 0 && (
+          {city.buildings.length > 0 && (
             <div className="space-y-2">
               <h3 className="font-medium">Постройки</h3>
               <div className="space-y-1">
-                {selectedCity.buildings.map((buildingId, index) => {
+                {city.buildings.map((buildingId, index) => {
                   const building = BUILDINGS.find(b => b.id === buildingId);
                   if (!building) return null;
                   return (
@@ -604,4 +604,8 @@ function canAffordBuilding(gameState: any, building: any): boolean {
   return Object.entries(building.cost).every(
     ([resource, amount]) => gameState.resources[resource as keyof typeof gameState.resources] >= amount
   );
+}
+
+function countBuildingInstances(city: any, buildingId: string): number {
+  return city.buildings.filter(b => b === buildingId).length;
 }
