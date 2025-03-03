@@ -20,18 +20,6 @@ export interface Region {
   /** Максимальное население области */
   maxPopulation: number;
 
-  /** 
-   * Базовые ресурсы области (не путать с текущими ресурсами игрока)
-   * Эти ресурсы указывают на потенциал области
-   */
-  resources: {
-    food?: number;
-    gold?: number;
-    wood?: number;
-    oil?: number;
-    metal?: number;
-  };
-
   /** Координаты границ области в формате многоугольника [[lat, lng], ...] */
   boundaries?: number[][];
 
