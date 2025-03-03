@@ -59,7 +59,7 @@ export const BUILDINGS = [
   {
     id: "barracks",
     name: "Казармы",
-    description: "Обучает военных. Производит +1 военного в секунду, потребляет 1 человека.",
+    description: "Обучает военных.",
     cost: { wood: 20, gold: 15, food: 10 },
     military: { production: 1, populationUse: 1 },
     maxCount: 5,
@@ -68,7 +68,7 @@ export const BUILDINGS = [
   {
     id: "metal_factory",
     name: "Металлургический завод",
-    description: "Производит металл. Потребляет 1 нефть.",
+    description: "Производит металл из руды.",
     cost: { wood: 30, gold: 20, oil: 5 },
     resourceProduction: { type: "metal", amount: 2 },
     resourceConsumption: { type: "oil", amount: 1 },
@@ -81,9 +81,9 @@ export const BUILDINGS = [
     description: "Перерабатывает металл в сталь для тяжелой промышленности.",
     cost: { gold: 150, wood: 100, metal: 50 },
     resourceProduction: { type: "steel", amount: 1 },
-    resourceConsumption: { metal: 2 },
+    resourceConsumption: { type: "metal", amount: 2 },
     maxCount: 3,
-    icon: "🔩"
+    icon: "⚙️"
   },
   {
     id: "weapons_factory",
@@ -91,7 +91,7 @@ export const BUILDINGS = [
     description: "Производит оружие для армии.",
     cost: { gold: 200, wood: 50, steel: 100 },
     resourceProduction: { type: "weapons", amount: 1 },
-    resourceConsumption: { steel: 2 },
+    resourceConsumption: { type: "steel", amount: 2 },
     maxCount: 2,
     icon: "🔫"
   },
