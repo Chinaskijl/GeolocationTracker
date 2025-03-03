@@ -239,16 +239,36 @@ export function CityPanel() {
             </Card>
 
             {/* Отображаем возможные постройки для нейтральной области */}
-            {(selectedCity as any).availableBuildings && (selectedCity as any).availableBuildings.length > 0 && (
+            {selectedCity.buildings && selectedCity.buildings.length > 0 && (
+              <Card className="p-4">
+                <h3 className="font-medium mb-2">Построенные здания</h3>
+                <div className="text-sm">
+                  <ul className="list-disc pl-5 space-y-1">
+                    {selectedCity.buildings.map((buildingId, index) => {
+                      const building = BUILDINGS.find(b => b.id === buildingId);
+                      return building ? (
+                        <li key={index}>
+                          {building.name || buildingId.replace('_', ' ')}
+                        </li>
+                      ) : null;
+                    })}
+                  </ul>
+                </div>
+              </Card>
+            )}
+
+            {selectedCity.availableBuildings && selectedCity.availableBuildings.length > 0 && (
               <Card className="p-4">
                 <h3 className="font-medium mb-2">Возможные постройки</h3>
                 <div className="text-sm">
                   <ul className="list-disc pl-5 space-y-1">
                     {selectedCity.availableBuildings.map((buildingId: string) => {
                       const limit = selectedCity.buildingLimits?.[buildingId] || 0;
+                      const building = BUILDINGS.find(b => b.id === buildingId);
+                      const currentCount = selectedCity.buildings.filter(b => b === buildingId).length;
                       return (
                         <li key={buildingId}>
-                          {buildingId.replace('_', ' ')} - макс. {limit} шт.
+                          {building?.name || buildingId.replace('_', ' ')} - построено {currentCount}/{limit} шт.
                         </li>
                       );
                     })}
