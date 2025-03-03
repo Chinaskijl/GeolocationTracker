@@ -1,5 +1,5 @@
 import { useGameStore } from '@/lib/store';
-import { Card } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { BUILDINGS } from '@/lib/game';
 import { apiRequest } from '@/lib/queryClient';
@@ -7,7 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { useQueryClient } from '@tanstack/react-query';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/components/ui/use-toast';
-
+import { useMemo } from 'react';
 
 export function CityPanel() {
   const { selectedCity, gameState, cities } = useGameStore();
@@ -444,6 +444,98 @@ function getResourceIcon(resource: string): string {
     case 'influence': return '👑'; // Added influence icon
     default: return '📦';
   }
+}
+
+function BuildingList({ buildings, onSelect }: { buildings: string[], onSelect: (building: string) => void }) {
+  return (
+    <div className="grid grid-cols-2 gap-2">
+      {buildings.map((buildingId, index) => {
+        const building = BUILDINGS.find(b => b.id === buildingId);
+        if (!building) return null;
+
+        return (
+          <div 
+            key={`${buildingId}-${index}`}
+            onClick={() => onSelect(buildingId)}
+            className="p-2 border rounded hover:bg-gray-100 cursor-pointer"
+          >
+            <div className="text-sm font-medium">{building.name}</div>
+
+            {/* Отображение производства ресурсов */}
+            {building.resourceProduction && building.resourceProduction.type && (
+              <span className="text-xs text-green-600 block">
+                {getResourceIcon(building.resourceProduction.type)} +{building.resourceProduction.amount}/сек
+              </span>
+            )}
+
+            {/* Отображение потребления ресурсов */}
+            {building.resourceConsumption && building.resourceConsumption.type && (
+              <span className="text-xs text-red-600 mt-1">
+                {getResourceIcon(building.resourceConsumption.type)} -{building.resourceConsumption.amount}/сек
+              </span>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function ConstructionPanel({ 
+  city, 
+  onConstruct, 
+  gameState 
+}: { 
+  city: any, 
+  onConstruct: (buildingId: string) => void,
+  gameState: any 
+}) {
+  const constructableBuildings = useMemo(() => {
+    return city.availableBuildings.filter(buildingId => {
+      const building = BUILDINGS.find(b => b.id === buildingId);
+      if (!building) return false;
+
+      // Проверка лимитов зданий
+      const currentCount = city.buildings.filter(b => b === buildingId).length;
+      const limit = city.buildingLimits?.[buildingId] || 0;
+      if (currentCount >= limit) return false;
+
+      // Проверка наличия ресурсов
+      if (building.cost) {
+        for (const [resourceType, amount] of Object.entries(building.cost)) {
+          if ((gameState.resources as any)[resourceType] < amount) {
+            return false;
+          }
+        }
+      }
+
+      return true;
+    });
+  }, [city, gameState]);
+
+  const canConstruct = constructableBuildings.length > 0;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Строительство</CardTitle>
+        <CardDescription>Доступные постройки в городе</CardDescription>
+      </CardHeader>
+
+      <CardContent>
+        {canConstruct ? (
+          <BuildingList 
+            buildings={constructableBuildings} 
+            onSelect={onConstruct} 
+          />
+        ) : (
+          <div className="text-center py-4 text-muted-foreground">
+            Нет доступных построек. Проверьте наличие ресурсов или лимиты зданий.
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
 }
 
 function canAffordBuilding(gameState: any, building: any): boolean {
