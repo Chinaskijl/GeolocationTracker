@@ -111,7 +111,12 @@ export const BUILDINGS = [
     resourceProduction: { type: "influence", amount: 0.5 },
     population: { growth: 0.5 },
     maxCount: 2,
-    icon: "🎭"ет 2 металла.",
+    icon: "🎭"
+  },
+  {
+    id: "steel_mill",
+    name: "Сталелитейный завод",
+    description: "Производит сталь. Потребляет 2 металла.",
     cost: { wood: 40, gold: 30, metal: 15 },
     resourceProduction: { type: "steel", amount: 1 },
     resourceConsumption: { type: "metal", amount: 2 },
