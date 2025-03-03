@@ -98,9 +98,10 @@ export const BUILDINGS = [
   {
     id: "barracks",
     name: "Казармы",
-    description: "Обучает военных.",
+    description: "Обучает военных для армии.",
     cost: { wood: 20, gold: 15, food: 10 },
     military: { production: 1, populationUse: 1 },
+    resourceConsumption: { type: "weapons", amount: 1 },
     maxCount: 5,
     icon: "🛡️"
   },
