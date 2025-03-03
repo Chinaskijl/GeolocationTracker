@@ -154,6 +154,8 @@ export default function Game() {
     };
   }, [queryClient]);
 
+  const { selectedCity } = useGameStore();
+  
   return (
     <div className="relative">
       <Map />
