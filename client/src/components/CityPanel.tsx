@@ -262,13 +262,13 @@ export const CityPanel: React.FC<CityPanelProps> = ({
           </div>
 
           <div className="space-y-2">
-            <div className="flex justify-between">
-              <span>Военные</span>
-              <span>{selectedCity.military || 0}</span>
+            <div className="flex justify-between items-center pb-2">
+              <span className="font-medium">Военные</span>
+              <span>{city.military || 0}</span>
             </div>
           </div>
 
-          {selectedCity.owner === 'player' && playerCities.length > 0 && (
+          {city.owner === 'player' && playerCities.length > 0 && (
             <div className="space-y-2">
               <h3 className="font-medium">Перемещение войск</h3>
               <div className="grid grid-cols-1 gap-2">
@@ -288,7 +288,7 @@ export const CityPanel: React.FC<CityPanelProps> = ({
           )}
 
 
-          {!selectedCity.owner || selectedCity.owner === 'neutral' ? (
+          {!city.owner || city.owner === 'neutral' ? (
             <div className="space-y-4">
               <Card className="p-4">
                 <h3 className="font-medium mb-2">Захват территории</h3>
@@ -368,7 +368,7 @@ export const CityPanel: React.FC<CityPanelProps> = ({
                 </Card>
               )}
             </div>
-          ) : selectedCity.owner === 'player' ? (
+          ) : city.owner === 'player' ? (
             <div className="space-y-4">
               <div className="space-y-2">
                 <h3 className="font-medium">Строительство</h3>
