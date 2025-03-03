@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/tooltip";
 
 const CityPanel: React.FC<CityPanelProps> = ({ 
-  selectedCity, 
+  selectedCity: cityProp, 
   closePanel, 
   onBuild,
   cityStats,
@@ -36,17 +36,19 @@ const CityPanel: React.FC<CityPanelProps> = ({
     }
   };
 
-  const { selectedCity, gameState, cities } = useGameStore();
+  const { gameState, cities } = useGameStore();
+  // Use the city from props or from store
+  const city = cityProp || useGameStore().selectedCity;
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  if (!selectedCity) return null;
+  if (!city) return null;
 
-  const hasCapital = cities.some(city => city.owner === 'player');
+  const hasCapital = cities.some(c => c.owner === 'player');
 
   const handleBuild = async (buildingId: string) => {
     try {
-      console.log(`Attempting to build ${buildingId} in city ${selectedCity.id}`);
+      console.log(`Attempting to build ${buildingId} in city ${city.id}`);
       const building = BUILDINGS.find(b => b.id === buildingId);
       if (!building) {
         console.error('Building not found:', buildingId);
