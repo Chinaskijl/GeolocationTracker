@@ -272,15 +272,15 @@ export const CityPanel: React.FC<CityPanelProps> = ({
             <div className="space-y-2">
               <h3 className="font-medium">Перемещение войск</h3>
               <div className="grid grid-cols-1 gap-2">
-                {playerCities.map(city => (
+                {playerCities.map(targetCity => (
                   <Button
-                    key={city.id}
+                    key={targetCity.id}
                     variant="outline"
-                    onClick={() => handleTransferMilitary(city.id)}
-                    disabled={!selectedCity.military}
+                    onClick={() => handleTransferMilitary(targetCity.id)}
+                    disabled={!city.military}
                     className="w-full"
                   >
-                    Отправить в {city.name}
+                    Отправить в {targetCity.name}
                   </Button>
                 ))}
               </div>
@@ -301,11 +301,11 @@ export const CityPanel: React.FC<CityPanelProps> = ({
                   <Button 
                     onClick={handleCapture}
                     className="w-full"
-                    disabled={hasCapital && gameState.military < Math.ceil(selectedCity.maxPopulation / 4)}
+                    disabled={hasCapital && gameState.military < Math.ceil(city.maxPopulation / 4)}
                   >
                     {hasCapital ? "Военный захват" : "Выбрать столицей"}
                   </Button>
-                  {hasCapital && <p className="text-xs text-center">Будет использовано {Math.ceil(selectedCity.maxPopulation / 4)} военных</p>}
+                  {hasCapital && <p className="text-xs text-center">Будет использовано {Math.ceil(city.maxPopulation / 4)} военных</p>}
 
                   <Button 
                     onClick={() => handleCapture('influence')}
