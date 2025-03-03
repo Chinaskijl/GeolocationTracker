@@ -15,7 +15,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-const CityPanel: React.FC<CityPanelProps> = ({ 
+export const CityPanel: React.FC<CityPanelProps> = ({ 
   selectedCity: cityProp, 
   closePanel, 
   onBuild,
