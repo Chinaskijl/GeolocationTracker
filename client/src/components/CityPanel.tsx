@@ -204,7 +204,7 @@ export const CityPanel: React.FC<CityPanelProps> = ({
     }
   };
 
-  const playerCities = cities.filter(city => city.owner === 'player' && city.id !== selectedCity.id);
+  const playerCities = cities.filter(c => c.owner === 'player' && c.id !== city.id);
 
   return (
     <TooltipProvider>
@@ -246,8 +246,8 @@ export const CityPanel: React.FC<CityPanelProps> = ({
                         city.buildings.filter(b => b === 'temple').length * 10}%</span> : 
                         <span className="text-gray-500">0%</span>}
                       </li>
-                      <li>- Протесты: {selectedCity.protestTimer ? 
-                        <span className="text-red-500">Активны ({Math.ceil(selectedCity.protestTimer / 60)} мин)</span> : 
+                      <li>- Протесты: {city.protestTimer ? 
+                        <span className="text-red-500">Активны ({Math.ceil(city.protestTimer / 60)} мин)</span> : 
                         <span className="text-green-500">Нет</span>}
                       </li>
                     </ul>
@@ -255,10 +255,10 @@ export const CityPanel: React.FC<CityPanelProps> = ({
                 </Tooltip>
               </div>
               <div>
-                <span className="font-medium">Население:</span> {Math.floor(selectedCity.population)}/{selectedCity.maxPopulation}
+                <span className="font-medium">Население:</span> {Math.floor(city.population)}/{city.maxPopulation}
               </div>
             </div>
-            <Progress value={(selectedCity.population / selectedCity.maxPopulation) * 100} />
+            <Progress value={(city.population / city.maxPopulation) * 100} />
           </div>
 
           <div className="space-y-2">
