@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useMap } from 'react-leaflet';
 import { useGameStore } from '@/lib/store';
 import { MapPinIcon, Crown, Swords, Users, Wheat, Coins, Trees, Droplet } from 'lucide-react';
@@ -16,7 +16,21 @@ export function CityMarker({ city }: { city: Region }) {
   const { setSelectedCity, gameState, cities } = useGameStore();
   const [showLabel, setShowLabel] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(map.getZoom());
   const queryClient = useQueryClient();
+
+  // Обновляем зум при изменении масштаба карты
+  useEffect(() => {
+    const updateZoom = () => {
+      setZoomLevel(map.getZoom());
+    };
+
+    map.on('zoom', updateZoom);
+
+    return () => {
+      map.off('zoom', updateZoom);
+    };
+  }, [map]);
 
   let color = 'gray';
   if (city.owner === 'player') {
@@ -36,45 +50,63 @@ export function CityMarker({ city }: { city: Region }) {
       });
 
       if (response.success) {
-        // Assuming useToast is available
-        // toast({...});  //Removed for brevity, as it's not directly relevant to the core change.
         await queryClient.invalidateQueries({ queryKey: ['/api/cities'] });
         await queryClient.invalidateQueries({ queryKey: ['/api/game-state'] });
       }
     } catch (error) {
-      console.error('Ошибка при захвате города:', error);
-      // toast({...}); //Removed for brevity
+      console.error('Failed to capture city:', error);
     }
   };
 
+  // Размер маркера зависит от уровня масштабирования
+  const getMarkerSize = () => {
+    if (zoomLevel < 8) return 40;
+    if (zoomLevel > 12) return 20;
+    return 30 - ((zoomLevel - 8) * 2); // Плавное изменение от 30 до 20
+  };
 
-  const buildingCounts: Record<string, number> = {};
-  (city.buildings || []).forEach((buildingId: string) => {
-    buildingCounts[buildingId] = (buildingCounts[buildingId] || 0) + 1;
-  });
+  const markerSize = getMarkerSize();
+  const halfSize = markerSize / 2;
 
   return (
     <div
-      className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer z-10"
-      style={{ left: `${city.x}px`, top: `${city.y}px` }}
-      onMouseEnter={() => { setShowLabel(true); setShowTooltip(true); }}
-      onMouseLeave={() => { setShowLabel(false); setShowTooltip(false); }}
-      onClick={() => {
+      className={`city-marker city-marker-${color}`}
+      style={{
+        width: `${markerSize}px`,
+        height: `${markerSize}px`,
+        position: 'absolute',
+        left: map.latLngToLayerPoint([city.latitude, city.longitude]).x - halfSize,
+        top: map.latLngToLayerPoint([city.latitude, city.longitude]).y - halfSize,
+        zIndex: showTooltip ? 1000 : city.owner === 'player' ? 800 : city.owner === 'ai' ? 700 : 500,
+        fontSize: `${Math.max(10, Math.min(14, zoomLevel))}px`,
+      }}
+      onClick={(e) => {
+        e.stopPropagation();
         selectCity(city);
         setSelectedCity(city);
       }}
+      onMouseEnter={() => {
+        setShowLabel(true);
+        setShowTooltip(true);
+      }}
+      onMouseLeave={() => {
+        setShowLabel(false);
+        setShowTooltip(false);
+      }}
     >
-      <div className={`w-4 h-4 rounded-full bg-${color}-500 border-2 border-white`}></div>
-
-      {showLabel && (
-        <div className="absolute whitespace-nowrap bg-gray-800 text-white px-2 py-1 rounded-md text-xs -mt-8 left-1/2 transform -translate-x-1/2">
-          {city.name}
-        </div>
-      )}
-
       {showTooltip && (
-        <Card className="absolute z-20 p-2 min-w-[200px] shadow-lg -mt-6 ml-3">
-          <div className="text-sm font-semibold">{city.name}</div>
+        <Card 
+          className={`absolute z-20 shadow-lg city-tooltip-card ${zoomLevel < 8 ? 'scale-150' : zoomLevel > 12 ? 'scale-75' : ''}`}
+          style={{
+            transform: `scale(${Math.max(0.6, Math.min(1.5, zoomLevel / 10))})`,
+            transformOrigin: 'top left',
+            maxWidth: '180px',
+            padding: '0.5rem',
+            marginTop: '-1.5rem',
+            marginLeft: '0.75rem'
+          }}
+        >
+          <div className="text-sm font-semibold truncate">{city.name}</div>
 
           {city.owner === 'neutral' ? (
             <>
@@ -82,7 +114,7 @@ export function CityMarker({ city }: { city: Region }) {
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full mt-2"
+                className="w-full mt-2 text-xs py-1"
                 onClick={handleCapture}
               >
                 {!hasCapital ? "Выбрать столицей" : "Захватить"}
@@ -93,25 +125,28 @@ export function CityMarker({ city }: { city: Region }) {
               <div className="text-xs mt-1">
                 Владелец: {city.owner === 'player' ? 'Вы' : 'Противник'}
               </div>
-              <div className="mt-2 space-y-1">
+              <div className="mt-1 space-y-0.5">
                 <div className="text-xs">Население: {city.population}</div>
                 <div className="text-xs">Военные: {city.military || 0}</div>
-                <h4 className="font-semibold mt-2">Постройки:</h4>
-                <div className="grid grid-cols-1 gap-1 mt-1">
-                  {city.buildings.length > 0 ? (
-                    city.buildings.map((buildingId, index) => {
-                      const building = BUILDINGS.find(b => b.id === buildingId);
-                      return building ? (
-                        <div key={index} className="flex items-center">
-                          <span className="mr-1">{building.icon || '🏢'}</span>
-                          <span>{building.name}</span>
-                        </div>
-                      ) : null;
-                    })
-                  ) : (
-                    <div>Нет построек</div>
-                  )}
-                </div>
+                {city.buildings.length > 0 && (
+                  <>
+                    <h4 className="text-xs font-semibold mt-1">Постройки:</h4>
+                    <div className="grid grid-cols-1 gap-0.5">
+                      {city.buildings.slice(0, 3).map((buildingId, index) => {
+                        const building = BUILDINGS.find(b => b.id === buildingId);
+                        return building ? (
+                          <div key={index} className="flex items-center text-xs">
+                            <span className="mr-1">{building.icon || '🏢'}</span>
+                            <span className="truncate">{building.name}</span>
+                          </div>
+                        ) : null;
+                      })}
+                      {city.buildings.length > 3 && (
+                        <div className="text-xs text-gray-500">+{city.buildings.length - 3} ещё</div>
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
             </>
           )}

@@ -28,3 +28,16 @@
   border: 2px solid #b91c1c;
 }
 
+.city-tooltip-card {
+  transition: transform 0.2s ease;
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+}
+
+@media (max-width: 640px) {
+  .city-tooltip-card {
+    max-width: 150px;
+    font-size: 0.75rem;
+  }
+}
+
