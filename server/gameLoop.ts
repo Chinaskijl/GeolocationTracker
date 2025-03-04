@@ -207,7 +207,7 @@ export class GameLoop {
           if (city.population > 0) {
             // При налоговой ставке 0 город потребляет золото
             if (taxRate === 0) {
-              const goldConsumption = Math.min(newResources.gold, city.population * 0.05 * deltaTime);
+              const goldConsumption = Math.min(newResources.gold, city.population * 0.5 * deltaTime);
               newResources.gold -= goldConsumption;
               console.log(`City ${city.name} consumes gold due to zero taxes: -${goldConsumption.toFixed(2)}`);
             } else {
@@ -371,10 +371,18 @@ export class GameLoop {
       // Добавляем налоговые поступления
       for (const city of cities) {
         if (city.owner === 'player') {
-          const taxRate = city.taxRate !== undefined ? city.taxRate : 5;
-          const taxCoefficient = taxRate / 5;
-          const goldProduction = city.population * 1 * taxCoefficient;
-          resourcesIncome.gold += goldProduction;
+          const taxRate = city.taxRate !== undefined ? Array.isArray(city.taxRate) ? city.taxRate[0] : city.taxRate : 5;
+          
+          if (taxRate === 0) {
+            // При ставке 0 золото потребляется
+            const goldConsumption = city.population * 0.5;
+            resourcesIncome.gold -= goldConsumption;
+          } else {
+            // При положительной ставке золото производится
+            const taxCoefficient = taxRate / 5;
+            const goldProduction = city.population * 1 * taxCoefficient;
+            resourcesIncome.gold += goldProduction;
+          }
         }
       }
 

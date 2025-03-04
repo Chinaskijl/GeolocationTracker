@@ -15,16 +15,28 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 // Placeholder Slider component - replace with actual implementation
-const Slider = ({ defaultValue, min, max, step, onValueCommit }) => (
-  <input
-    type="range"
-    min={min}
-    max={max}
-    step={step}
-    defaultValue={defaultValue[0]}
-    onChange={(e) => onValueCommit([parseInt(e.target.value, 10)])}
-  />
-);
+const Slider = ({ defaultValue, min, max, step, onValueCommit }) => {
+  const [value, setValue] = React.useState(defaultValue[0]);
+  
+  return (
+    <div className="flex items-center gap-2">
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        className="flex-1"
+        onChange={(e) => {
+          const newValue = parseInt(e.target.value, 10);
+          setValue(newValue);
+          onValueCommit([newValue]);
+        }}
+      />
+      <span className="text-sm font-medium w-10">{value}%</span>
+    </div>
+  );
+};
 
 
 export const CityPanel: React.FC<CityPanelProps> = ({
