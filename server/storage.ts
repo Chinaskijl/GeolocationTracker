@@ -154,7 +154,7 @@ class Storage {
         owner: "neutral",
         buildings: [],
         buildingLimits: generateFixedBuildingLimits(generateAvailableBuildings()),
-        satisfaction: 50 // Added satisfaction property
+        satisfaction: 0 // Устанавливаем начальную удовлетворенность в 0
       },
       {
         id: 2,
@@ -295,6 +295,7 @@ class Storage {
   }
 
   async updateCity(id: number, updates: Partial<Region>): Promise<Region | null> {
+    console.log(`DEBUG: Updating city ${id} with:`, JSON.stringify(updates));
     return this.updateRegion(id, updates);
   }
 

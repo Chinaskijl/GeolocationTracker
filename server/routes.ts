@@ -39,13 +39,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       console.log(`Building ${buildingId} in city ${id}`);
-      
+
       // Преобразуем id в число правильно
       const cityId = parseInt(id, 10);
       if (isNaN(cityId)) {
         return res.status(400).json({ message: 'Некорректный ID города' });
       }
-      
+
       const cities = await storage.getCities();
       const city = cities.find(c => c.id === cityId);
       if (!city) {
@@ -61,7 +61,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!building) {
         return res.status(400).json({ message: 'Здание не найдено' });
       }
-      
+
       console.log('Found building definition:', building);
 
       // Проверяем, доступно ли это здание для строительства
@@ -80,15 +80,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!gameState || !gameState.resources) {
         return res.status(500).json({ message: 'Ошибка получения состояния игры' });
       }
-      
+
       console.log('Current game state:', gameState);
       console.log('Building cost:', building.cost);
-      
+
       // Убедимся, что building.cost существует и является объектом
       if (!building.cost || typeof building.cost !== 'object') {
         return res.status(400).json({ message: 'Некорректные данные о стоимости здания' });
       }
-      
+
       for (const [resource, amount] of Object.entries(building.cost)) {
         if (gameState.resources[resource] === undefined || gameState.resources[resource] < amount) {
           return res.status(400).json({ message: `Недостаточно ресурса ${resource}` });
@@ -100,7 +100,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const [resource, amount] of Object.entries(building.cost)) {
         newResources[resource] -= amount;
       }
-      
+
       try {
         // Сначала добавляем здание в город
         const updatedCity = await storage.updateCity(cityId, {
@@ -110,15 +110,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!updatedCity) {
           return res.status(500).json({ message: 'Не удалось обновить город' });
         }
-        
+
         // Затем обновляем состояние игры
         await storage.setGameState({ ...gameState, resources: newResources });
 
         console.log('Building successful:', updatedCity);
-        
+
         // Отправляем обновленное состояние игры всем клиентам
         gameLoop.broadcastGameState();
-        
+
         // Отправляем ответ клиенту
         res.json({ 
           success: true, 
@@ -646,6 +646,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error building:', error);
       res.status(500).json({ error: 'An error occurred during building' });
+    }
+  });
+
+  // Захват нейтральной территории
+  app.post('/api/capture-region', async (req, res) => {
+    try {
+      const { regionId, militaryAmount } = req.body;
+
+      // Проверяем наличие всех необходимых данных
+      if (!regionId || militaryAmount === undefined) {
+        return res.status(400).json({ success: false, message: 'Не указаны все необходимые параметры' });
+      }
+
+      // Получаем данные о регионе
+      const regions = await storage.getRegions();
+      const region = regions.find(r => r.id === regionId);
+
+      if (!region) {
+        return res.status(404).json({ success: false, message: 'Регион не найден' });
+      }
+
+      // Проверяем, что регион нейтральный
+      if (region.owner !== 'neutral') {
+        return res.status(400).json({ success: false, message: 'Можно захватить только нейтральную территорию' });
+      }
+
+      // Получаем текущее состояние игры
+      const gameState = await storage.getGameState();
+
+      // Проверяем, что у игрока достаточно военных
+      if (gameState.military < militaryAmount) {
+        return res.status(400).json({ success: false, message: 'Недостаточно военных для захвата' });
+      }
+
+      // Захватываем территорию и сохраняем текущую удовлетворенность
+      const updatedRegion = await storage.updateRegion(regionId, { 
+        owner: 'player',
+        military: militaryAmount
+        // Не меняем satisfaction, оставляем текущее значение
+      });
+
+      res.json({ success: true, region: updatedRegion });
+    } catch (error) {
+      console.error('Error capturing region:', error);
+      res.status(500).json({ success: false, message: 'Ошибка захвата региона' });
     }
   });
 
