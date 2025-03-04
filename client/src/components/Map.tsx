@@ -105,15 +105,17 @@ export function Map() {
           <div>👥 Население: ${city.population} / ${city.maxPopulation}</div>
           <div>⚔️ Военные: ${city.military || 0}</div>
           
+          <div class="flex flex-wrap gap-1 mt-1">
           <!-- Построенные здания -->
           ${Object.entries(buildingsDisplay)
             .map(([buildingId, count]) => {
               const building = BUILDINGS.find(b => b.id === buildingId);
               const icon = building?.icon || '🏢';
-              const name = building?.name || buildingId.replace('_', ' ');
               const maxCount = city.buildingLimits?.[buildingId] || 0;
               
-              return `<div class="text-green-600">${name}: ${icon} ${count}/${maxCount}</div>`;
+              return `<div class="bg-green-100 text-green-800 px-1.5 py-0.5 rounded-md flex items-center" title="${building?.name || buildingId.replace('_', ' ')}">
+                ${icon} <span class="ml-1 text-xs">${count}/${maxCount}</span>
+              </div>`;
             })
             .join("")}
           
@@ -123,11 +125,13 @@ export function Map() {
             .map(([buildingId, counts]) => {
               const building = BUILDINGS.find(b => b.id === buildingId);
               const icon = building?.icon || '🏢';
-              const name = building?.name || buildingId.replace('_', ' ');
               
-              return `<div class="text-gray-500">${name}: ${icon} 0/${counts.max}</div>`;
+              return `<div class="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-md flex items-center" title="${building?.name || buildingId.replace('_', ' ')}">
+                ${icon} <span class="ml-1 text-xs">0/${counts.max}</span>
+              </div>`;
             })
             .join("")}
+          </div>
         </div>
       `;
 
