@@ -12,6 +12,7 @@ import { apiRequest } from '@/lib/api';
 
 export function CityMarker({ city }: { city: Region }) {
   const map = useMap();
+  const selectCity = useGameStore(state => state.selectCity);
   const { setSelectedCity, gameState, cities } = useGameStore();
   const [showLabel, setShowLabel] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
@@ -81,7 +82,7 @@ export function CityMarker({ city }: { city: Region }) {
       }}
       onClick={(e) => {
         e.stopPropagation();
-        // Используем только одну функцию для установки выбранного города
+        selectCity(city);
         setSelectedCity(city);
       }}
       onMouseEnter={() => {

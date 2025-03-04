@@ -7,7 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { useQueryClient } from '@tanstack/react-query';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/components/ui/use-toast';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { 
   Tooltip,
   TooltipContent,
@@ -23,29 +23,24 @@ export const CityPanel: React.FC<CityPanelProps> = ({
   onBuyResource,
   canBuyResource
 }) => {
-  // Проверяем, что город действительно выбран
-  if (!cityProp) {
-    return null;
-  }
   // Update the building descriptions for theater and park
   const getBuildingDescription = (buildingId: string) => {
     switch(buildingId) {
       case 'theater':
         return "Повышает удовлетворённость населения на 10%";
       case 'park':
-        return "Повышает удовлетворенность населения на 5%";
+        return "Повышает удовлетворённость населения на 5%";
       default:
         const building = BUILDINGS.find(b => b.id === buildingId);
         return building?.description || "";
     }
   };
 
-  const { gameState, cities, setSelectedCity, setCities } = useGameStore();
+  const { gameState, cities, selectedCity: cityFromStore } = useGameStore();
   // Use the city from props or from store
-  const city = cityProp || gameState.selectedCity;
+  const city = cityProp || cityFromStore;
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const [taxRate, setTaxRate] = useState(city?.taxRate || 0);
 
   if (!city) return null;
 
@@ -164,7 +159,7 @@ export const CityPanel: React.FC<CityPanelProps> = ({
       });
 
       // Обновляем состояние текущего города
-      setSelectedCity({
+      useGameStore.getState().setSelectedCity({
         ...city,
         military: (city.military || 0) - amount
       });
@@ -172,7 +167,7 @@ export const CityPanel: React.FC<CityPanelProps> = ({
       // Обновляем список городов
       const updatedCities = cities.map(c => c.id === city.id ? {...c, military: (c.military || 0) - amount} : c);
 
-      setCities(updatedCities);
+      useGameStore.getState().setCities(updatedCities);
 
     } catch (error) {
       console.error('Failed to transfer military:', error);
@@ -184,57 +179,11 @@ export const CityPanel: React.FC<CityPanelProps> = ({
     }
   };
 
-  // Функция для обновления налогового рейта
-  const updateTaxRate = async (newRate: number) => {
-    try {
-      setTaxRate(newRate);
-
-      if (!city) return;
-
-      // Отправляем запрос на сервер для обновления налогового рейта
-      const response = await fetch(`/api/cities/${city.id}/tax`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ taxRate: newRate }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Не удалось обновить налоговый рейт');
-      }
-
-      // Обновляем данные города в локальном хранилище
-      const updatedCities = cities.map(c => 
-        c.id === city.id ? { ...c, taxRate: newRate } : c
-      );
-
-      setCities(updatedCities);
-
-      toast({
-        title: 'Налоговый рейт обновлен',
-        description: `Текущая ставка: ${newRate}`,
-      });
-
-      // Обновляем данные
-      await queryClient.invalidateQueries({ queryKey: ['/api/cities'] });
-      await queryClient.invalidateQueries({ queryKey: ['game-state'] });
-
-    } catch (error) {
-      console.error('Ошибка при обновлении налогового рейта:', error);
-      toast({
-        title: 'Ошибка',
-        description: 'Не удалось обновить налоговый рейт',
-        variant: 'destructive',
-      });
-    }
-  };
-
   const playerCities = cities.filter(c => c.owner === 'player' && c.id !== city.id);
 
   return (
     <TooltipProvider>
-      <Card className="fixed bottom-4 left-4 w-96 max-h-[80vh] overflow-hidden z-[9999]">
+      <Card className="fixed bottom-4 left-4 w-96 max-h-[80vh] overflow-hidden z-[1000]">
         <div className="p-4 space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-bold">{city.name}</h2>
@@ -514,60 +463,6 @@ export const CityPanel: React.FC<CityPanelProps> = ({
               </div>
             </div>
           )}
-
-          {/* Показываем информацию о городе */}
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold">{city?.name}</h2>
-
-            <div className="grid grid-cols-2 gap-2">
-              <div className="flex items-center">
-                <span>👥 Население:</span>
-                <span className="ml-2 font-medium">{city?.population} / {city?.maxPopulation}</span>
-              </div>
-
-              <div className="flex items-center">
-                <span>🛡️ Военные:</span>
-                <span className="ml-2 font-medium">{city?.military || 0}</span>
-              </div>
-            </div>
-
-            {/* Блок налогов */}
-            {city?.owner === 'player' && (
-              <div className="mt-4 p-4 border rounded-md bg-card">
-                <h3 className="text-lg font-semibold mb-2">Налоговая ставка</h3>
-                <div className="flex items-center mb-2">
-                  <span className="text-sm font-medium mr-2">
-                    {taxRate === 0 ? "Без налогов (↑ удовлетворенность, ↓ золото)" : 
-                     taxRate < 3 ? "Низкие налоги" :
-                     taxRate < 7 ? "Средние налоги" :
-                     taxRate < 10 ? "Высокие налоги" : "Максимальные налоги (↓ удовлетворенность, ↑ золото)"}
-                  </span>
-                  <span className="ml-auto font-bold">{taxRate}</span>
-                </div>
-
-                <div className="flex items-center">
-                  <span className="text-sm">0</span>
-                  <input
-                    type="range"
-                    min="0"
-                    max="10"
-                    step="1"
-                    value={taxRate}
-                    onChange={(e) => updateTaxRate(parseInt(e.target.value))}
-                    className="flex-1 mx-2"
-                  />
-                  <span className="text-sm">10</span>
-                </div>
-
-                <div className="flex justify-between mt-3 text-xs">
-                  <div className="text-green-500">+{Math.round((10 - taxRate) * 0.5)} к удовлетворенности</div>
-                  <div className="text-yellow-500">
-                    {taxRate === 0 ? "-1 золото/10 жителей" : `+${taxRate} золото/10 жителей`}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
         </div>
       </Card>
     </TooltipProvider>
@@ -585,67 +480,36 @@ function getResourceIcon(resource: string): string {
   }
 }
 
-function BuildingList({ buildings, city }: { buildings: string[], city: any }) {
+function BuildingList({ buildings, onSelect }: { buildings: string[], onSelect: (building: string) => void }) {
   return (
-    <div className="grid grid-cols-3 gap-2">
-      {buildings.map(buildingId => {
+    <div className="grid grid-cols-2 gap-2">
+      {buildings.map((buildingId, index) => {
         const building = BUILDINGS.find(b => b.id === buildingId);
-        // Проверка на наличие достаточного количества работников
-        const hasEnoughWorkers = !building?.workers || (city?.availableWorkers >= building.workers);
-        const tooltipContent = () => {
-          let content = `${building?.name || 'Здание'}`;
+        if (!building) return null;
 
-          if (building?.workers) {
-            content += `\nТребуется рабочих: ${building.workers}`;
-            if (!hasEnoughWorkers) {
-              content += " (недостаточно!)";
-            }
-          }
+        return (
+          <div 
+            key={`${buildingId}-${index}`}
+            onClick={() => onSelect(buildingId)}
+            className="p-2 border rounded hover:bg-gray-100 cursor-pointer"
+          >
+            <div className="text-sm font-medium">{building.name}</div>
 
-          if (building?.resourceProduction) {
-            content += `\nПроизводит: ${building.resourceProduction.amount} ${building.resourceProduction.type}/с`;
-          }
+            {/* Отображение производства ресурсов */}
+            {building.resourceProduction && building.resourceProduction.type && (
+              <span className="text-xs text-green-600 block">
+                {getResourceIcon(building.resourceProduction.type)} +{building.resourceProduction.amount}/сек
+              </span>
+            )}
 
-          if (building?.resourceConsumption) {
-            if (building.resourceConsumption.type && building.resourceConsumption.amount) {
-              content += `\nПотребляет: ${building.resourceConsumption.amount} ${building.resourceConsumption.type}/с`;
-            } else {
-              for (const [resType, resAmount] of Object.entries(building.resourceConsumption)) {
-                if (resType !== 'type' && resType !== 'amount') {
-                  content += `\nПотребляет: ${resAmount} ${resType}/с`;
-                }
-              }
-            }
-          }
-
-          return content;
-        };
-
-        return building ? (
-          <TooltipProvider key={buildingId}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div 
-                  className={`p-2 border rounded flex flex-col items-center relative ${!hasEnoughWorkers ? 'bg-red-100' : ''}`}
-                >
-                  {building.workers && (
-                    <div className="absolute top-0 right-0 text-xs bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center">
-                      {building.workers}
-                    </div>
-                  )}
-                  <div className="text-xl">{building.icon || '🏢'}</div>
-                  <div className="text-xs text-center mt-1">{building.name}</div>
-                  {!hasEnoughWorkers && (
-                    <div className="text-xs text-red-500 mt-1">⚠️ нет рабочих</div>
-                  )}
-                </div>
-              </TooltipTrigger>
-              <TooltipContent className="max-w-xs whitespace-pre-line">
-                {tooltipContent()}
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        ) : null;
+            {/* Отображение потребления ресурсов */}
+            {building.resourceConsumption && building.resourceConsumption.type && (
+              <span className="text-xs text-red-600 mt-1">
+                {getResourceIcon(building.resourceConsumption.type)} -{building.resourceConsumption.amount}/сек
+              </span>
+            )}
+          </div>
+        );
       })}
     </div>
   );
@@ -665,23 +529,18 @@ function ConstructionPanel({
       const building = BUILDINGS.find(b => b.id === buildingId);
       if (!building) return false;
 
-      // Count current buildings of this type
-      const currentBuildingCount = city.buildings.filter(id => id === buildingId).length;
+      // Проверка лимитов зданий
+      const currentCount = city.buildings.filter(b => b === buildingId).length;
+      const limit = city.buildingLimits?.[buildingId] || 0;
+      if (currentCount >= limit) return false;
 
-      // Check building limits
-      const buildingLimit = city.buildingLimits?.[buildingId] || building.maxCount;
-      if (currentBuildingCount >= buildingLimit) return false;
-
-      // Check resources
-      for (const [resource, amount] of Object.entries(building.cost)) {
-        if (gameState.resources[resource] < amount) return false;
-      }
-
-      // Check population if workers are required
-      if (building.workers && city.availableWorkers < building.workers) {
-        // Можно строить здание даже если не хватает рабочих,
-        // но оно не будет функционировать, пока не появятся рабочие
-        // Просто пропускаем эту проверку
+      // Проверка наличия ресурсов
+      if (building.cost) {
+        for (const [resourceType, amount] of Object.entries(building.cost)) {
+          if ((gameState.resources as any)[resourceType] < amount) {
+            return false;
+          }
+        }
       }
 
       return true;
@@ -701,7 +560,7 @@ function ConstructionPanel({
         {canConstruct ? (
           <BuildingList 
             buildings={constructableBuildings} 
-            city={city}
+            onSelect={onConstruct} 
           />
         ) : (
           <div className="text-center py-4 text-muted-foreground">

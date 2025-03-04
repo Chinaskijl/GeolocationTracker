@@ -34,24 +34,6 @@
   overflow-y: auto;
 }
 
-
-/* Глобальные стили для панели города */
-.fixed {
-  position: fixed !important;
-}
-
-.z-\[9999\] {
-  z-index: 9999 !important;
-}
-
-/* Добавление стиля для всех элементов карты Leaflet */
-.leaflet-pane,
-.leaflet-control,
-.leaflet-top,
-.leaflet-bottom {
-  z-index: 400 !important;
-}
-
 @media (max-width: 640px) {
   .city-tooltip-card {
     max-width: 150px;

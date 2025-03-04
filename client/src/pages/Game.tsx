@@ -80,7 +80,7 @@ const MarketPanel = ({ open, onClose }) => {
 
 
 export default function Game() {
-  const { setCities, setGameState, selectedCity, setSelectedCity } = useGameStore();
+  const { setCities, setGameState } = useGameStore();
   const queryClient = useQueryClient();
   const [isMarketOpen, setIsMarketOpen] = useState(false);
 
@@ -154,18 +154,13 @@ export default function Game() {
     };
   }, [queryClient]);
 
-  // selectedCity is already destructured earlier in the file
-  // const { selectedCity } = useGameStore();
-
+  const { selectedCity } = useGameStore();
+  
   return (
     <div className="relative">
       <Map />
       <ResourcePanel />
-      {selectedCity && (
-        <div className="absolute left-4 top-4 z-50">
-          <CityPanel selectedCity={selectedCity} closePanel={() => setSelectedCity(null)} />
-        </div>
-      )}
+      {selectedCity && <CityPanel />}
       <MarketButton onOpenMarket={() => setIsMarketOpen(true)} />
       <MarketPanel open={isMarketOpen} onClose={() => setIsMarketOpen(false)} />
     </div>
