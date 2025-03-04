@@ -1,0 +1,51 @@
+[vite] connecting...
+DOMException {}
+
+Initializing map
+Game state updated: 
+Object {resources: {…}, population: 0, military: 0}
+Cities updated: 
+(5) [{…}, {…}, {…}, {…}, {…}]
+WebSocket connected
+Received game state update: 
+Object {resources: {…}, population: 0, military: 0}
+Attempting to capture city 1 using method: [object Object]
+Capital city captured successfully
+Received cities update: 
+(5) [{…}, {…}, {…}, {…}, {…}]
+Received game state update: 
+Object {resources: {…}, population: 0, military: 0}
+Received cities update: 
+(5) [{…}, {…}, {…}, {…}, {…}]
+Received game state update: 
+Object {resources: {…}, population: 0, military: 0}
+Received cities update: 
+(5) [{…}, {…}, {…}, {…}, {…}]
+Received game state update: 
+Object {resources: {…}, population: 0, military: 0}
+Received cities update: 
+(5) [{…}, {…}, {…}, {…}, {…}]
+Attempting to build logging_camp in city 1
+Current resources: 
+Object {gold: 500, wood: 500, food: 500, oil: 500, metal: 0, …}
+Building cost: 
+Object {gold: 15}
+Received game state update: 
+Object {resources: {…}, population: 0, military: 0}
+Received cities update: 
+(5) [{…}, {…}, {…}, {…}, {…}]
+Request error: 
+Error {}
+message: "500: {"message":"Внутренняя ошибка сервера"}"
+stack: "Error: 500: {"message":"Внутренняя ошибка сервера"}↵ at throwIfResNotOk (https://93f7311a-9e7e-462c-98dc-8dceebc41732-00-14pbbxfyhy4os.sisko.replit.dev:5000/src/lib/queryClient.ts:5:11)↵ at async apiRequest (https://93f7311a-9e7e-462c-98dc-8dceebc41732-00-14pbbxfyhy4os.sisko.replit.dev:5000/src/lib/queryClient.ts:15:3)↵ at async handleBuild (https://93f7311a-9e7e-462c-98dc-8dceebc41732-00-14pbbxfyhy4os.sisko.replit.dev:5000/src/components/CityPanel.tsx:93:26)"
+get stack: ƒ ()
+set stack: ƒ ()
+[[Prototype]]: Object
+
+Failed to build: 
+Error {}
+
+at t.value (https://93f7311a-9e7e-462c-98dc-8dceebc41732-00-14pbbxfyhy4os.sisko.replit.dev:5000/__replco/static/devtools/eruda/3.2.3/eruda.js:2:17465)
+at new t (https://93f7311a-9e7e-462c-98dc-8dceebc41732-00-14pbbxfyhy4os.sisko.replit.dev:5000/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12630)
+at t.value (https://93f7311a-9e7e-462c-98dc-8dceebc41732-00-14pbbxfyhy4os.sisko.replit.dev:5000/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32766)
+at https://93f7311a-9e7e-462c-98dc-8dceebc41732-00-14pbbxfyhy4os.sisko.replit.dev:5000/__replco/static/devtools/eruda/3.2.3/eruda.js:2:34400
