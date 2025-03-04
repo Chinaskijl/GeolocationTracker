@@ -82,26 +82,51 @@ export function Map() {
       const cityInfo = document.createElement("div");
       cityInfo.className =
         "bg-white/90 p-2 rounded shadow-lg border border-gray-200 cursor-pointer";
+        
+      // Подготовка данных для отображения
+      const buildingsDisplay = city.buildings.reduce((acc, buildingId) => {
+        acc[buildingId] = (acc[buildingId] || 0) + 1;
+        return acc;
+      }, {});
+      
+      // Получаем доступные но не построенные здания
+      const availableBuildingsCount = {};
+      if (city.availableBuildings) {
+        city.availableBuildings.forEach(buildingId => {
+          const maxCount = city.buildingLimits?.[buildingId] || 0;
+          const currentCount = city.buildings.filter(b => b === buildingId).length;
+          availableBuildingsCount[buildingId] = { current: currentCount, max: maxCount };
+        });
+      }
+      
       cityInfo.innerHTML = `
         <div class="font-bold text-lg">${city.name}</div>
         <div class="text-sm">
           <div>👥 Население: ${city.population} / ${city.maxPopulation}</div>
           <div>⚔️ Военные: ${city.military || 0}</div>
-          ${Object.entries(city.buildings)
-            .map(
-              ([building, level]) =>
-                `<div class="text-green-500">${getResourceIcon(
-                  building,
-                )}: ${level}</div>`,
-            )
+          
+          <!-- Построенные здания -->
+          ${Object.entries(buildingsDisplay)
+            .map(([buildingId, count]) => {
+              const building = BUILDINGS.find(b => b.id === buildingId);
+              const icon = building?.icon || '🏢';
+              const name = building?.name || buildingId.replace('_', ' ');
+              const maxCount = city.buildingLimits?.[buildingId] || 0;
+              
+              return `<div class="text-green-600">${name}: ${icon} ${count}/${maxCount}</div>`;
+            })
             .join("")}
-          ${Object.entries(city.availableBuildings)
-            .map(
-              ([building, maxLevel]) =>
-                `<div class="text-gray-400">${getResourceIcon(
-                  building,
-                )}: ${maxLevel}</div>`,
-            )
+          
+          <!-- Доступные для строительства здания -->
+          ${Object.entries(availableBuildingsCount)
+            .filter(([buildingId, counts]) => !buildingsDisplay[buildingId])
+            .map(([buildingId, counts]) => {
+              const building = BUILDINGS.find(b => b.id === buildingId);
+              const icon = building?.icon || '🏢';
+              const name = building?.name || buildingId.replace('_', ' ');
+              
+              return `<div class="text-gray-500">${name}: ${icon} 0/${counts.max}</div>`;
+            })
             .join("")}
         </div>
       `;
