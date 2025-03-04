@@ -363,14 +363,11 @@ export const CityPanel: React.FC<CityPanelProps> = ({
                   <h3 className="font-medium mb-2">Построенные здания</h3>
                   <div className="text-sm">
                     <ul className="list-disc pl-5 space-y-1">
-                      {city.buildings.map((buildingId: string, index) => {
-                        const building = BUILDINGS.find(b => b.id === buildingId);
-                        return (
-                          <li key={`${buildingId}-${index}`}>
-                            <span className="text-green-600">{building?.icon}</span> {building?.name || buildingId.replace('_', ' ')}
-                          </li>
-                        );
-                      })}
+                      {city.buildings.map((buildingId, index) => (
+                        <li key={`${buildingId}-${index}`}>
+                          {BUILDINGS.find(b => b.id === buildingId)?.name || buildingId.replace('_', ' ')}
+                        </li>
+                      ))}
                     </ul>
                   </div>
                 </Card>
@@ -387,7 +384,7 @@ export const CityPanel: React.FC<CityPanelProps> = ({
                         const currentCount = city.buildings.filter(b => b === buildingId).length;
                         return (
                           <li key={`${buildingId}-${index}`}>
-                            {building?.icon} {building?.name || buildingId.replace('_', ' ')} - построено {currentCount}/{limit} шт.
+                            {building?.name || buildingId.replace('_', ' ')} - построено {currentCount}/{limit} шт.
                           </li>
                         );
                       })}
@@ -431,12 +428,7 @@ export const CityPanel: React.FC<CityPanelProps> = ({
                           }}
                         >
                           <div className="flex flex-col items-start">
-                            <div className="flex space-x-2 items-center">
-                              <span className="inline-block bg-gray-200 rounded p-1 text-xl">
-                                {building.icon}
-                              </span>
-                              <span>{building.name}</span>
-                            </div>
+                            <span className="font-medium">{building.name}</span>
                             {/* Отображение описания */}
                             <p className="text-xs text-gray-600 mt-1">{getBuildingDescription(building.id)}</p>
 
@@ -507,12 +499,7 @@ export const CityPanel: React.FC<CityPanelProps> = ({
                   if (!building) return null;
                   return (
                     <div key={`${buildingId}-${index}`} className="flex justify-between items-center">
-                      <div className="flex space-x-2 items-center">
-                        <span className="inline-block bg-green-200 rounded p-1 text-xl">
-                          {building.icon}
-                        </span>
-                        <span>{building.name}</span>
-                      </div>
+                      <span>{building.name}</span>
                       <div className="flex items-center gap-2 text-sm">
                         {building.resourceProduction && (
                           <span>
@@ -617,12 +604,7 @@ function BuildingList({ buildings, onSelect }: { buildings: string[], onSelect: 
             onClick={() => onSelect(buildingId)}
             className="p-2 border rounded hover:bg-gray-100 cursor-pointer"
           >
-            <div className="flex space-x-2 items-center">
-              <span className="inline-block bg-gray-200 rounded p-1 text-xl">
-                {building.icon}
-              </span>
-              <span className="text-sm font-medium">{building.name}</span>
-            </div>
+            <div className="text-sm font-medium">{building.name}</div>
 
             {/* Отображение производства ресурсов */}
             {building.resourceProduction && building.resourceProduction.type && (
