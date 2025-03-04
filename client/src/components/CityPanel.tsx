@@ -41,14 +41,14 @@ export const CityPanel: React.FC<CityPanelProps> = ({
       case 'theater':
         return "Повышает удовлетворённость населения на 10%";
       case 'park':
-        return "Повышает удовлетворённость населения на 5%";
+        return "Повышает удовлетворенность населения на 5%";
       default:
         const building = BUILDINGS.find(b => b.id === buildingId);
         return building?.description || "";
     }
   };
 
-  const { gameState, cities, selectedCity: cityFromStore } = useGameStore();
+  const { gameState, cities, selectedCity: cityFromStore, setGameState } = useGameStore();
   // Use the city from props or from store
   const city = cityProp || cityFromStore;
   const queryClient = useQueryClient();
@@ -413,19 +413,15 @@ export const CityPanel: React.FC<CityPanelProps> = ({
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <h3 className="font-medium">Налоговая ставка</h3>
-                  <span className="text-sm">{city.taxRate || 5}%</span>
+                  <span className="text-sm">{city.taxRate !== undefined ? city.taxRate : 5}%</span>
                 </div>
                 <div className="p-1">
                   <Slider
-                    defaultValue={[city.taxRate || 5]}
+                    defaultValue={[city.taxRate !== undefined ? city.taxRate : 5]}
                     min={0}
                     max={10}
                     step={1}
-                    onValueCommit={(values) => {
-                      if (onUpdateTaxRate) {
-                        onUpdateTaxRate(values[0]);
-                      }
-                    }}
+                    onValueCommit={handleTaxRateChange}
                   />
                 </div>
                 <p className="text-xs text-gray-500">
@@ -435,7 +431,7 @@ export const CityPanel: React.FC<CityPanelProps> = ({
               </div>
 
               {/* Налоговая ставка */}
-              
+
               <div className="space-y-2">
                 <h3 className="font-medium">Строительство</h3>
                 <p className="text-sm">Постройте здания для производства ресурсов и расширения города.</p>
@@ -538,16 +534,16 @@ export const CityPanel: React.FC<CityPanelProps> = ({
                 {city.buildings.map((buildingId, index) => {
                   const building = BUILDINGS.find(b => b.id === buildingId);
                   if (!building) return null;
-                  
+
                   // Количество требуемых рабочих для этого здания
                   const requiredWorkers = building.workers || 0;
-                  
+
                   // Подсказка с информацией о рабочих
                   const workerTooltip = `${requiredWorkers > 0 ? 
                     `Рабочих мест: ${Math.min(requiredWorkers, city.population || 0)}/${requiredWorkers} занято` : 
                     'Не требует рабочих'} 
                     (Всего в городе: ${city.population || 0} чел.)`;
-                  
+
                   return (
                     <div 
                       key={`${buildingId}-${index}`} 

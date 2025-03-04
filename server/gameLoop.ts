@@ -356,9 +356,35 @@ export class GameLoop {
       const cities = await storage.getCities();
       const armyTransfers = await storage.getArmyTransfers();
 
+      // Расчет прироста ресурсов
+      const resourcesIncome = {
+        gold: 0,
+        food: 0,
+        wood: 0,
+        oil: 0,
+        metal: 0,
+        steel: 0,
+        weapons: 0,
+        influence: 0
+      };
+
+      // Добавляем налоговые поступления
+      for (const city of cities) {
+        if (city.owner === 'player') {
+          const taxRate = city.taxRate !== undefined ? city.taxRate : 5;
+          const taxCoefficient = taxRate / 5;
+          const goldProduction = city.population * 1 * taxCoefficient;
+          resourcesIncome.gold += goldProduction;
+        }
+      }
+
+      // Вычитаем потребление еды
+      resourcesIncome.food -= gameState.population * POPULATION_FOOD_CONSUMPTION;
+
       this.broadcast({ 
         type: 'GAME_UPDATE',
-        gameState: gameState
+        gameState: gameState,
+        resourcesIncome: resourcesIncome
       });
 
       this.broadcast({
