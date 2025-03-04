@@ -38,7 +38,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const { buildingId } = req.body;
 
     try {
-      const city = await storage.getCity(parseInt(id));
+      console.log(`Building ${buildingId} in city ${id}`);
+      
+      // Преобразуем id в число правильно
+      const cityId = parseInt(id, 10);
+      if (isNaN(cityId)) {
+        return res.status(400).json({ message: 'Некорректный ID города' });
+      }
+      
+      const city = await storage.getCity(cityId);
       if (!city) {
         return res.status(404).json({ message: 'Город не найден' });
       }
@@ -52,6 +60,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!building) {
         return res.status(400).json({ message: 'Здание не найдено' });
       }
+      
+      console.log('Found building definition:', building);
 
       // Проверяем, доступно ли это здание для строительства
       if (city.availableBuildings && !city.availableBuildings.includes(buildingId)) {
@@ -60,12 +70,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Проверяем лимит зданий
       const buildingCount = city.buildings.filter(b => b === buildingId).length;
-      if (buildingCount >= (city.buildingLimits[buildingId] || 0)) {
+      if (buildingCount >= (city.buildingLimits?.[buildingId] || 0)) {
         return res.status(400).json({ message: `Достигнут лимит для ${building.name}` });
       }
 
       // Проверяем ресурсы игрока
       const gameState = await storage.getGameState();
+      
+      console.log('Current game state:', gameState);
+      console.log('Building cost:', building.cost);
       
       // Убедимся, что building.cost существует и является объектом
       if (!building.cost || typeof building.cost !== 'object') {
@@ -73,7 +86,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       for (const [resource, amount] of Object.entries(building.cost)) {
-        if (!gameState.resources[resource] || gameState.resources[resource] < amount) {
+        if (gameState.resources[resource] === undefined || gameState.resources[resource] < amount) {
           return res.status(400).json({ message: `Недостаточно ресурса ${resource}` });
         }
       }
@@ -83,19 +96,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const [resource, amount] of Object.entries(building.cost)) {
         newResources[resource] -= amount;
       }
-      await storage.setGameState({ ...gameState, resources: newResources });
-
-      // Добавляем здание в город
-      const updatedCity = await storage.updateCity(city.id, {
+      
+      // Сначала добавляем здание в город
+      const updatedCity = await storage.updateCity(cityId, {
         buildings: [...city.buildings, buildingId]
       });
 
       if (!updatedCity) {
-        // Если не удалось обновить город, возвращаем средства
-        await storage.setGameState(gameState);
         return res.status(500).json({ message: 'Не удалось обновить город' });
       }
+      
+      // Затем обновляем состояние игры
+      await storage.setGameState({ ...gameState, resources: newResources });
 
+      console.log('Building successful:', updatedCity);
       res.json({ success: true, city: updatedCity });
     } catch (error) {
       console.error('Error building structure:', error);
