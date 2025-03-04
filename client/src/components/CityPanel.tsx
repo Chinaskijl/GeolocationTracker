@@ -553,6 +553,7 @@ export const CityPanel: React.FC<CityPanelProps> = ({
 
           {/* Вкладки панели */}
           <div className="flex border-b">
+          </div>
         </div>
       </Card>
     </TooltipProvider>
