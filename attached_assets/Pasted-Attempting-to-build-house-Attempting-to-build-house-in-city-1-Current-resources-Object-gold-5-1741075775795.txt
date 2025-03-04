@@ -1,0 +1,84 @@
+Attempting to build house
+Attempting to build house in city 1
+Current resources: 
+Object {gold: 500, wood: 500, food: 500, oil: 500, metal: 0, …}
+Building cost: 
+Object {wood: 10, gold: 5}
+Cities updated: 
+(5) [{…}, {…}, {…}, {…}, {…}]
+Attempting to build house
+Attempting to build house in city 1
+Current resources: 
+Object {gold: 500, wood: 500, food: 500, oil: 500, metal: 0, …}
+Building cost: 
+Object {wood: 10, gold: 5}
+Received cities update: 
+(5) [{…}, {…}, {…}, {…}, {…}]
+Attempting to build house
+Attempting to build house in city 1
+Current resources: 
+Object {gold: 500, wood: 500, food: 500, oil: 500, metal: 0, …}
+Building cost: 
+Object {wood: 10, gold: 5}
+Received game state update: 
+Object {resources: {…}, population: 0, military: 0}
+Game statete updated: 
+Object {resources: {…}, population: 0, military: 0}
+Received cities update: 
+(5) [{…}, {…}, {…}, {…}, {…}]
+Received game state update: 
+Object {resources: {…}, population: 0, military: 0}
+Received cities update: 
+(5) [{…}, {…}, {…}, {…}, {…}]
+Received game state update: 
+Object {resources: {…}, population: 0, military: 0}
+Build successful: 
+Object {success: true, city: {…}, gameState: {…}}
+Received cities update: 
+(5) [{…}, {…}, {…}, {…}, {…}]
+Received game state update: 
+Object {resources: {…}, population: 0, military: 0}
+Received cities update: 
+(5) [{…}, {…}, {…}, {…}, {…}]
+Build successful: 
+Object {success: true, city: {…}, gameState: {…}}
+Error updating tax rate: 
+TypeError {}
+
+toast.error is not a function
+Error updating tax rate: 
+TypeError {}
+
+toast.error is not a function
+Attempting to build house
+Attempting to build house in city 1
+Current resources: 
+Object {gold: 485, wood: 470, food: 500, oil: 500, metal: 0, …}
+Building cost: 
+Object {wood: 10, gold: 5}
+Error updating tax rate: 
+TypeError {}
+message: "toast.success is not a function"
+stack: "TypeError: toast.success is not a function↵ at handleTaxRateChange (https://aa79be74-181f-47d6-85f6-653206b4131d-00-89ocwdyfi483.pike.replit.dev:5000/src/components/CityPanel.tsx:242:13)"
+get stack: ƒ ()
+set stack: ƒ ()
+[[Prototype]]: Object
+
+toast.error is not a function
+at handleTaxRateChange (https://aa79be74-181f-47d6-85f6-653206b4131d-00-89ocwdyfi483.pike.replit.dev:5000/src/components/CityPanel.tsx:245:13)
+Error updating tax rate: 
+TypeError {}
+message: "toast.success is not a function"
+stack: "TypeError: toast.success is not a function↵ at handleTaxRateChange (https://aa79be74-181f-47d6-85f6-653206b4131d-00-89ocwdyfi483.pike.replit.dev:5000/src/components/CityPanel.tsx:242:13)"
+get stack: ƒ ()
+set stack: ƒ ()
+[[Prototype]]: Object
+constructor: ƒ TypeError()
+message: "toast.success is not a function"
+name: "TypeError"
+[[Prototype]]: Object
+constructor: ƒ TypeError()
+message: "toast.success is not a function"
+name: "TypeError"
+toString: ƒ toString()
+[[Prototype]]: Object
