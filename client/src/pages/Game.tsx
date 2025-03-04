@@ -154,7 +154,8 @@ export default function Game() {
     };
   }, [queryClient]);
 
-  const { selectedCity } = useGameStore();
+  // selectedCity is already destructured earlier in the file
+  // const { selectedCity } = useGameStore();
 
   return (
     <div className="relative">
