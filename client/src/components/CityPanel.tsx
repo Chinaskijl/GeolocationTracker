@@ -59,45 +59,71 @@ export const CityPanel: React.FC<CityPanelProps> = ({
   const hasCapital = cities.some(c => c.owner === 'player');
 
   const handleBuild = async (buildingId: string) => {
+    if (!city || !gameState) return;
+
     try {
-      console.log(`Attempting to build ${buildingId} in city ${city.id}`);
       const building = BUILDINGS.find(b => b.id === buildingId);
       if (!building) {
-        console.error('Building not found:', buildingId);
+        toast({
+          title: 'Ошибка',
+          description: 'Здание не найдено',
+          variant: 'destructive'
+        });
         return;
       }
 
+      // Проверка наличия ресурсов на клиенте перед отправкой запроса
+      if (building.cost) {
+        for (const [resource, amount] of Object.entries(building.cost)) {
+          if (gameState.resources[resource as keyof typeof gameState.resources] < amount) {
+            toast({
+              title: 'Недостаточно ресурсов',
+              description: `Требуется больше ресурса ${resource}`,
+              variant: 'destructive'
+            });
+            return;
+          }
+        }
+      }
+
+      console.log('Attempting to build ' + buildingId + ' in city ' + city.id);
       console.log('Current resources:', gameState.resources);
       console.log('Building cost:', building.cost);
 
-      try {
-        // Отправляем запрос на строительство
-        const response = await apiRequest('POST', `/api/cities/${city.id}/build`, {
-          buildingId
-        });
+      // Отправляем запрос на строительство
+      const response = await apiRequest('POST', `/api/cities/${city.id}/build`, {
+        buildingId
+      });
 
-        console.log('Building successful, response:', response);
-        await queryClient.invalidateQueries({ queryKey: ['/api/cities'] });
-        await queryClient.invalidateQueries({ queryKey: ['game-state'] }); //Invalidate game state
+      console.log('Building successful, response:', response);
+      await queryClient.invalidateQueries({ queryKey: ['/api/cities'] });
+      await queryClient.invalidateQueries({ queryKey: ['game-state'] }); //Invalidate game state
 
-        toast({
-          title: "Здание построено",
-          description: `${building.name} успешно построено в городе ${city.name}`,
-          variant: "default"
-        });
-      } catch (error) {
-        console.error('Request error:', error);
-        throw error; // Let the outer catch block handle this
-      }
-      
-      // No need to explicitly fetch updated data; invalidateQueries should trigger refetch
-
-    } catch (error) {
-      console.error('Failed to build:', error);
       toast({
-        title: "Ошибка строительства",
-        description: error instanceof Error ? error.message : "Не удалось построить здание",
-        variant: "destructive"
+        title: "Здание построено",
+        description: `${building.name} успешно построено в городе ${city.name}`,
+        variant: "default"
+      });
+    } catch (error: any) {
+      console.log('Failed to build:', error);
+
+      // Попытка извлечь подробное сообщение об ошибке
+      let errorMessage = 'Не удалось построить здание';
+      try {
+        if (error && error.message) {
+          const match = error.message.match(/\{\"message\":\"([^\"]+)\"\}/);
+          if (match && match[1]) {
+            errorMessage = match[1];
+          }
+        }
+      } catch (e) {
+        console.error('Error parsing error message:', e);
+      }
+
+      toast({
+        title: 'Ошибка',
+        description: errorMessage,
+        variant: 'destructive'
       });
     }
   };
