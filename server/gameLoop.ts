@@ -228,6 +228,7 @@ export class GameLoop {
           
           if (newSatisfaction <= 0 && !isProtesting) {
             // Если удовлетворенность упала до нуля - начинаем протесты с малым таймером (60 секунд)
+            // НЕ сбрасываем удовлетворенность, оставляем её на 0%
             newProtestTimer = 60;
             console.log(`⚠️ CRITICAL! Satisfaction hit 0% in ${city.name}! 60 seconds until loss of control.`);
           } else if (newSatisfaction < 30 && !isProtesting) {
@@ -248,7 +249,7 @@ export class GameLoop {
               console.log(`🚨 Time's up! ${city.name} is now neutral due to unresolved protests!`);
               await storage.updateCity(city.id, {
                 owner: 'neutral',
-                satisfaction: 50, // Сбрасываем удовлетворенность для нейтральной территории
+                satisfaction: 50, // Устанавливаем удовлетворенность для нейтральной территории
                 protestTimer: null
               });
               continue; // Пропускаем дальнейшую обработку города
