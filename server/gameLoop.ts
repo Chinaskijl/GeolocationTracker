@@ -42,7 +42,7 @@ export class GameLoop {
       let totalInfluenceProduction = 0;
 
       const newResources = { ...gameState.resources };
-      
+
       // Инициализируем influence, если его нет
       if (!newResources.influence) {
         newResources.influence = 0;
@@ -60,13 +60,13 @@ export class GameLoop {
           let cityTotalWorkers = 0; // Общее количество требуемых работников
           let citySatisfactionBonus = 0; // Бонус к удовлетворенности от зданий
           let cityInfluenceProduction = 0; // Производство влияния городом
-          
+
           // Флаг протеста (производство замедляется)
           const isProtesting = city.protestTimer !== null && city.protestTimer !== undefined && city.protestTimer > 0;
-          
+
           // Множитель производства (замедление при протестах)
           const productionMultiplier = isProtesting ? 0.5 : 1.0;
-          
+
           // Проверяем наличие еды для роста населения
           const noFood = gameState.resources.food <= 0;
 
@@ -81,19 +81,19 @@ export class GameLoop {
             if (building.workers) {
               cityTotalWorkers += building.workers;
             }
-            
+
             // Добавляем бонус к удовлетворенности, если есть
             if (building.satisfactionBonus) {
               citySatisfactionBonus += building.satisfactionBonus;
             }
-            
+
             // Производство ресурсов
             if (building.resourceProduction) {
               const { type, amount } = building.resourceProduction;
-              
+
               // Проверяем потребление ресурсов и наличие работников
               let canProduce = true;
-              
+
               // Проверка на достаточное количество работников
               if (building.workers && cityAvailableWorkers < building.workers) {
                 canProduce = false;
@@ -107,7 +107,7 @@ export class GameLoop {
                   // Простое потребление одного типа ресурсов
                   const consumptionType = building.resourceConsumption.type;
                   const consumptionAmount = building.resourceConsumption.amount * deltaTime;
-                  
+
                   if (newResources[consumptionType] < consumptionAmount) {
                     canProduce = false;
                     console.log(`Not enough ${consumptionType} for production in ${building.id}`);
@@ -127,7 +127,7 @@ export class GameLoop {
                       }
                     }
                   }
-                  
+
                   if (canProduce) {
                     // Вычитаем потребленные ресурсы
                     for (const [resType, resAmount] of Object.entries(building.resourceConsumption)) {
@@ -140,18 +140,18 @@ export class GameLoop {
                   }
                 }
               }
-              
+
               // Производим ресурсы только если есть необходимые ресурсы и работники
               if (canProduce) {
                 // Применяем множитель производства (замедление при протестах)
                 const production = amount * deltaTime * productionMultiplier;
                 newResources[type] += production;
-                
+
                 // Учитываем производство влияния отдельно
                 if (type === 'influence') {
                   cityInfluenceProduction += production;
                 }
-                
+
                 console.log(`Resource production: +${production} ${type}${isProtesting ? ' (reduced due to protests)' : ''}`);
               }
             }
@@ -183,26 +183,26 @@ export class GameLoop {
 
           // Рассчитываем новый уровень удовлетворенности
           let newSatisfaction = city.satisfaction || 50; // По умолчанию 50% если не задано
-          
+
           // Базовое падение удовлетворенности из-за нехватки работников
           if (cityTotalWorkers > 0) {
             const workerSatisfactionImpact = (cityAvailableWorkers < 0) ? 
               -5 : // Сильное падение если вообще не хватает работников
               Math.min(0, -5 * (1 - cityAvailableWorkers / cityTotalWorkers)); // Постепенное падение
-            
+
             newSatisfaction += workerSatisfactionImpact * deltaTime;
           }
-          
+
           // Добавляем бонус от культурных зданий
           newSatisfaction += citySatisfactionBonus * deltaTime * 0.1; // Умножаем на маленький коэффициент
-          
+
           // Влияние налоговой ставки на удовлетворенность
           const taxRate = city.taxRate !== undefined ? city.taxRate : 5; // По умолчанию 5
-          
+
           // Ниже 5 - повышение удовлетворенности, выше 5 - понижение
           const taxSatisfactionImpact = (5 - taxRate) * 0.5; // Коэффициент влияния налогов
           newSatisfaction += taxSatisfactionImpact * deltaTime;
-          
+
           // Расчет дохода от налогов
           if (city.population > 0) {
             // При налоговой ставке 0 город потребляет золото
@@ -219,13 +219,13 @@ export class GameLoop {
               console.log(`Tax income from ${city.name}: +${goldProduction.toFixed(2)} gold (tax rate: ${taxRate}, coefficient: ${taxCoefficient.toFixed(2)})`);
             }
           }
-          
+
           // Ограничиваем удовлетворенность в диапазоне 0-100%
           newSatisfaction = Math.max(0, Math.min(100, newSatisfaction));
-          
+
           // Проверяем на начало протестов (если удовлетворенность < 30% и протесты еще не начались)
           let newProtestTimer = city.protestTimer;
-          
+
           if (newSatisfaction <= 0 && !isProtesting) {
             // Если удовлетворенность упала до нуля - начинаем протесты с малым таймером (60 секунд)
             newProtestTimer = 60;
@@ -239,7 +239,7 @@ export class GameLoop {
           } else if (isProtesting) {
             // Если протесты уже идут, уменьшаем таймер
             newProtestTimer -= deltaTime;
-            
+
             // Если удовлетворенность поднялась выше 30%, останавливаем протесты
             if (newSatisfaction >= 30) {
               newProtestTimer = null;
@@ -248,17 +248,24 @@ export class GameLoop {
             // Если время вышло, город становится нейтральным
             else if (newProtestTimer <= 0) {
               console.log(`🚨 Time's up! ${city.name} is now neutral due to unresolved protests!`);
+
+              // Для отладки выводим значение перед обновлением
+              console.log(`DEBUG: Time's up! Before update: satisfaction=${newSatisfaction}`);
+
+              // Меняем статус города на нейтральный, но не меняем удовлетворенность
               await storage.updateCity(city.id, {
                 owner: 'neutral',
-                satisfaction: 50, // Устанавливаем удовлетворенность только когда область переходит в нейтральный статус
+                satisfaction: 0, // Устанавливаем 0, а не 50% и не newSatisfaction
                 protestTimer: null
               });
+
+              console.log(`DEBUG: City set to neutral, satisfaction set to 0%`);
               continue; // Пропускаем дальнейшую обработку города
             } else {
               console.log(`⏳ Protests ongoing in ${city.name}. ${Math.floor(newProtestTimer)} seconds remaining to resolve.`);
             }
           }
-          
+
           // Базовое производство влияния в зависимости от удовлетворенности
           if (city.owner === 'player') {
             if (newSatisfaction > 90) {
@@ -267,9 +274,9 @@ export class GameLoop {
               cityInfluenceProduction += 1 * deltaTime;
             }
           }
-          
+
           totalInfluenceProduction += cityInfluenceProduction;
-          
+
           // Обновление населения города, учитывая наличие еды
           let newPopulation;
           if (gameState.resources.food <= 0) {
@@ -311,7 +318,7 @@ export class GameLoop {
 
       // Добавляем влияние к ресурсам
       newResources.influence = (newResources.influence || 0) + totalInfluenceProduction;
-      
+
       // Обновление состояния игры
       const newGameState = {
         ...gameState,
@@ -375,7 +382,7 @@ export class GameLoop {
         if (city.owner === 'player') {
           // Извлекаем значение налоговой ставки, убеждаясь, что используем правильное числовое значение
           let taxRate = 5; // Значение по умолчанию
-          
+
           if (city.taxRate !== undefined) {
             if (Array.isArray(city.taxRate)) {
               taxRate = city.taxRate[0];
@@ -383,7 +390,7 @@ export class GameLoop {
               taxRate = city.taxRate;
             }
           }
-          
+
           if (taxRate === 0) {
             // При ставке 0 золото потребляется
             const goldConsumption = city.population * 0.5;

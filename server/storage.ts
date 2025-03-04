@@ -153,7 +153,8 @@ class Storage {
         availableBuildings: generateAvailableBuildings(),
         owner: "neutral",
         buildings: [],
-        buildingLimits: generateFixedBuildingLimits(generateAvailableBuildings())
+        buildingLimits: generateFixedBuildingLimits(generateAvailableBuildings()),
+        satisfaction: 50 // Added satisfaction property
       },
       {
         id: 2,
@@ -167,7 +168,8 @@ class Storage {
         availableBuildings: generateAvailableBuildings(),
         owner: "neutral",
         buildings: [],
-        buildingLimits: generateFixedBuildingLimits(generateAvailableBuildings())
+        buildingLimits: generateFixedBuildingLimits(generateAvailableBuildings()),
+        satisfaction: 50 // Added satisfaction property
       },
       {
         id: 3,
@@ -181,7 +183,8 @@ class Storage {
         availableBuildings: generateAvailableBuildings(),
         owner: "neutral",
         buildings: [],
-        buildingLimits: generateFixedBuildingLimits(generateAvailableBuildings())
+        buildingLimits: generateFixedBuildingLimits(generateAvailableBuildings()),
+        satisfaction: 50 // Added satisfaction property
       },
       {
         id: 4,
@@ -195,7 +198,8 @@ class Storage {
         availableBuildings: generateAvailableBuildings(),
         owner: "neutral",
         buildings: [],
-        buildingLimits: generateFixedBuildingLimits(generateAvailableBuildings())
+        buildingLimits: generateFixedBuildingLimits(generateAvailableBuildings()),
+        satisfaction: 50 // Added satisfaction property
       },
       {
         id: 5,
@@ -209,7 +213,8 @@ class Storage {
         availableBuildings: generateAvailableBuildings(),
         owner: "neutral",
         buildings: [],
-        buildingLimits: generateFixedBuildingLimits(generateAvailableBuildings())
+        buildingLimits: generateFixedBuildingLimits(generateAvailableBuildings()),
+        satisfaction: 50 // Added satisfaction property
       }
     ];
 
@@ -231,6 +236,16 @@ class Storage {
       }
 
       const currentRegion = this.cities[index];
+
+      // Добавляем отладочную информацию
+      if (updates.satisfaction !== undefined) {
+        console.log(`DEBUG: Updating region ${id} satisfaction from ${currentRegion.satisfaction} to ${updates.satisfaction}`);
+      }
+
+      if (updates.owner !== undefined) {
+        console.log(`DEBUG: Updating region ${id} owner from ${currentRegion.owner} to ${updates.owner}`);
+      }
+
 
       // Если обновляем здания, проверяем лимиты
       if (updates.buildings) {
