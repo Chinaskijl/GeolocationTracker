@@ -89,13 +89,18 @@ export function Map() {
           <div>⚔️ Военные: ${city.military || 0}</div>
           ${Object.entries(city.buildings)
             .map(
-              ([building, level]) => `<div>${building}: ${level} уровень</div>`,
+              ([building, level]) =>
+                `<div class="text-green-500">${getResourceIcon(
+                  building,
+                )}: ${level}</div>`,
             )
             .join("")}
           ${Object.entries(city.availableBuildings)
             .map(
               ([building, maxLevel]) =>
-                `<div class="text-gray-400">${building}: ${maxLevel} уровень (доступен)</div>`,
+                `<div class="text-gray-400">${getResourceIcon(
+                  building,
+                )}: ${maxLevel}</div>`,
             )
             .join("")}
         </div>
