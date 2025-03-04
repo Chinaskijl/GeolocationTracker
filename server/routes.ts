@@ -53,16 +53,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Здание не найдено' });
       }
 
+      // Проверяем, доступно ли это здание для строительства
+      if (city.availableBuildings && !city.availableBuildings.includes(buildingId)) {
+        return res.status(400).json({ message: `Здание ${buildingId} недоступно в этом городе` });
+      }
+
       // Проверяем лимит зданий
       const buildingCount = city.buildings.filter(b => b === buildingId).length;
-      if (buildingCount >= city.buildingLimits[buildingId]) {
+      if (buildingCount >= (city.buildingLimits[buildingId] || 0)) {
         return res.status(400).json({ message: `Достигнут лимит для ${building.name}` });
       }
 
       // Проверяем ресурсы игрока
       const gameState = await storage.getGameState();
+      
+      // Убедимся, что building.cost существует и является объектом
+      if (!building.cost || typeof building.cost !== 'object') {
+        return res.status(400).json({ message: 'Некорректные данные о стоимости здания' });
+      }
+      
       for (const [resource, amount] of Object.entries(building.cost)) {
-        if (gameState.resources[resource] < amount) {
+        if (!gameState.resources[resource] || gameState.resources[resource] < amount) {
           return res.status(400).json({ message: `Недостаточно ресурса ${resource}` });
         }
       }
@@ -75,13 +86,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.setGameState({ ...gameState, resources: newResources });
 
       // Добавляем здание в город
-      await storage.updateCity(city.id, {
+      const updatedCity = await storage.updateCity(city.id, {
         buildings: [...city.buildings, buildingId]
       });
 
-      res.json({ success: true });
+      if (!updatedCity) {
+        // Если не удалось обновить город, возвращаем средства
+        await storage.setGameState(gameState);
+        return res.status(500).json({ message: 'Не удалось обновить город' });
+      }
+
+      res.json({ success: true, city: updatedCity });
     } catch (error) {
-      console.error(error);
+      console.error('Error building structure:', error);
       res.status(500).json({ message: 'Внутренняя ошибка сервера' });
     }
   });

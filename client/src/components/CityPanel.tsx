@@ -70,15 +70,26 @@ export const CityPanel: React.FC<CityPanelProps> = ({
       console.log('Current resources:', gameState.resources);
       console.log('Building cost:', building.cost);
 
-      // Отправляем запрос на строительство
-      await apiRequest('POST', `/api/cities/${city.id}/build`, {
-        buildingId
-      });
+      try {
+        // Отправляем запрос на строительство
+        const response = await apiRequest('POST', `/api/cities/${city.id}/build`, {
+          buildingId
+        });
 
-      console.log('Building successful, invalidating queries');
-      await queryClient.invalidateQueries({ queryKey: ['/api/cities'] });
-      await queryClient.invalidateQueries({ queryKey: ['game-state'] }); //Invalidate game state
+        console.log('Building successful, response:', response);
+        await queryClient.invalidateQueries({ queryKey: ['/api/cities'] });
+        await queryClient.invalidateQueries({ queryKey: ['game-state'] }); //Invalidate game state
 
+        toast({
+          title: "Здание построено",
+          description: `${building.name} успешно построено в городе ${city.name}`,
+          variant: "default"
+        });
+      } catch (error) {
+        console.error('Request error:', error);
+        throw error; // Let the outer catch block handle this
+      }
+      
       // No need to explicitly fetch updated data; invalidateQueries should trigger refetch
 
     } catch (error) {
