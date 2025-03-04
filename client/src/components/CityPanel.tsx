@@ -363,11 +363,22 @@ export const CityPanel: React.FC<CityPanelProps> = ({
                   <h3 className="font-medium mb-2">Построенные здания</h3>
                   <div className="text-sm">
                     <ul className="list-disc pl-5 space-y-1">
-                      {city.buildings.map((buildingId, index) => (
-                        <li key={`${buildingId}-${index}`}>
-                          {BUILDINGS.find(b => b.id === buildingId)?.name || buildingId.replace('_', ' ')}
-                        </li>
-                      ))}
+                      {/* Группируем здания по типу и считаем количество */}
+                      {Object.entries(
+                        city.buildings.reduce((acc, buildingId) => {
+                          acc[buildingId] = (acc[buildingId] || 0) + 1;
+                          return acc;
+                        }, {} as Record<string, number>)
+                      ).map(([buildingId, count]) => {
+                        const building = BUILDINGS.find(b => b.id === buildingId);
+                        const maxCount = city.buildingLimits?.[buildingId] || building?.maxCount || 0;
+
+                        return (
+                          <li key={`${buildingId}-built`} className="text-green-600">
+                            {building?.name || buildingId.replace("_", " ")}: {building?.icon || '🏢'} {count}/{maxCount}
+                          </li>
+                        );
+                      })}
                     </ul>
                   </div>
                 </Card>
@@ -378,13 +389,17 @@ export const CityPanel: React.FC<CityPanelProps> = ({
                   <h3 className="font-medium mb-2">Возможные постройки</h3>
                   <div className="text-sm">
                     <ul className="list-disc pl-5 space-y-1">
-                      {city.availableBuildings.map((buildingId: string, index) => {
+                      {city.availableBuildings.map((buildingId, index) => {
                         const limit = city.buildingLimits?.[buildingId] || 0;
                         const building = BUILDINGS.find(b => b.id === buildingId);
                         const currentCount = city.buildings.filter(b => b === buildingId).length;
+
                         return (
-                          <li key={`${buildingId}-${index}`}>
-                            {building?.name || buildingId.replace('_', ' ')} - построено {currentCount}/{limit} шт.
+                          <li key={`${buildingId}-${index}`} className="text-gray-500">
+                            {building?.name || buildingId.replace("_", " ")}: {building?.icon || '🏢'} {' '}
+                            <span className={currentCount > 0 ? "text-green-600" : ""}>
+                              построено {currentCount}/{limit} шт.
+                            </span>
                           </li>
                         );
                       })}
