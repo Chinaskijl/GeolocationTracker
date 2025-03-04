@@ -28,9 +28,15 @@ export function ResourcePanel() {
     let weaponsProd = 0;
     let foodCons = 0;
     let influenceProd = 0;
+    let taxIncome = 0;
 
     // We'll track building production separately from income in resourcesIncome
     // resourcesIncome comes from server and includes tax income and other special sources
+    
+    // Добавляем налоговый доход от сервера, если он есть
+    if (resourcesIncome && resourcesIncome.gold) {
+      taxIncome = resourcesIncome.gold;
+    }
 
     cities.forEach(city => {
       if (city.owner === 'player') {
@@ -71,7 +77,7 @@ export function ResourcePanel() {
     });
 
     setResourceProduction({
-      gold: goldProd,
+      gold: goldProd + (resourcesIncome?.gold || 0),
       wood: woodProd,
       food: foodProd,
       oil: oilProd,
@@ -82,7 +88,7 @@ export function ResourcePanel() {
     });
 
     setFoodConsumption(foodCons);
-  }, [cities, gameState]);
+  }, [cities, gameState, resourcesIncome]);
 
   const resources = [
     { icon: <span className="w-5 h-5 flex items-center justify-center">💰</span>, value: Math.floor(gameState.resources.gold), name: 'Gold', production: resourceProduction.gold, key: 'gold' },
@@ -118,9 +124,16 @@ export function ResourcePanel() {
     if (resourceType === 'gold' && resourcesIncome?.gold) {
       tooltipItems.push(
         <div key="taxes" className="whitespace-nowrap">
-          Taxes: <span className={getProductionColor(resourcesIncome.gold)}>
-            {formatProduction(resourcesIncome.gold)}/s
+          Налоги: <span className={getProductionColor(resourcesIncome.gold)}>
+            {formatProduction(resourcesIncome.gold)}/с
           </span>
+          {cities.filter(c => c.owner === 'player').map(city => (
+            <div key={`tax-${city.id}`} className="text-xs ml-4">
+              {city.name}: {city.taxRate === 0 ? 
+                <span className="text-red-500">-{(city.population * 0.5).toFixed(1)}/с</span> : 
+                <span className="text-green-500">+{(city.population * (city.taxRate / 5)).toFixed(1)}/с</span>}
+            </div>
+          ))}
         </div>
       );
     }
@@ -129,9 +142,17 @@ export function ResourcePanel() {
     if (resourceType === 'influence' && resourcesIncome?.influence) {
       tooltipItems.push(
         <div key="influence-base" className="whitespace-nowrap">
-          Base production: <span className={getProductionColor(resourcesIncome.influence)}>
-            {formatProduction(resourcesIncome.influence)}/s
+          Базовое производство: <span className={getProductionColor(resourcesIncome.influence)}>
+            {formatProduction(resourcesIncome.influence)}/с
           </span>
+          {cities.filter(c => c.owner === 'player').map(city => (
+            <div key={`influence-${city.id}`} className="text-xs ml-4">
+              {city.name}: {city.satisfaction > 90 ? 
+                <span className="text-green-500">+3.0/с</span> : 
+                city.satisfaction > 70 ? <span className="text-green-500">+1.0/с</span> : 
+                <span className="text-gray-500">+0.0/с</span>}
+            </div>
+          ))}
         </div>
       );
     }
@@ -144,7 +165,7 @@ export function ResourcePanel() {
           if (building && building.resourceProduction && building.resourceProduction.type === resourceType) {
             tooltipItems.push(
               <div key={`${city.id}-${buildingId}-${Math.random()}`} className="whitespace-nowrap">
-                {building.name}: <span className="text-green-500">+{building.resourceProduction.amount}/s</span>
+                {building.name} <span className="text-xs">({city.name})</span>: <span className="text-green-500">+{building.resourceProduction.amount}/с</span>
               </div>
             );
           }
