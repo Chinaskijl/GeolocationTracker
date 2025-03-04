@@ -8,16 +8,28 @@ import { useQueryClient } from '@tanstack/react-query';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/components/ui/use-toast';
 import { useMemo } from 'react';
-import { 
+import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+// Placeholder Slider component - replace with actual implementation
+const Slider = ({ defaultValue, min, max, step, onValueCommit }) => (
+  <input
+    type="range"
+    min={min}
+    max={max}
+    step={step}
+    defaultValue={defaultValue[0]}
+    onChange={(e) => onValueCommit([parseInt(e.target.value, 10)])}
+  />
+);
 
-export const CityPanel: React.FC<CityPanelProps> = ({ 
-  selectedCity: cityProp, 
-  closePanel, 
+
+export const CityPanel: React.FC<CityPanelProps> = ({
+  selectedCity: cityProp,
+  closePanel,
   onBuild,
   cityStats,
   onBuyResource,
@@ -25,7 +37,7 @@ export const CityPanel: React.FC<CityPanelProps> = ({
 }) => {
   // Update the building descriptions for theater and park
   const getBuildingDescription = (buildingId: string) => {
-    switch(buildingId) {
+    switch (buildingId) {
       case 'theater':
         return "Повышает удовлетворённость населения на 10%";
       case 'park':
@@ -165,7 +177,7 @@ export const CityPanel: React.FC<CityPanelProps> = ({
       });
 
       // Обновляем список городов
-      const updatedCities = cities.map(c => c.id === city.id ? {...c, military: (c.military || 0) - amount} : c);
+      const updatedCities = cities.map(c => c.id === city.id ? { ...c, military: (c.military || 0) - amount } : c);
 
       useGameStore.getState().setCities(updatedCities);
 
@@ -181,6 +193,30 @@ export const CityPanel: React.FC<CityPanelProps> = ({
 
   const playerCities = cities.filter(c => c.owner === 'player' && c.id !== city.id);
 
+  // Обновление налоговой ставки города
+  const updateTaxRate = async (taxRate: number) => {
+    try {
+      const response = await fetch(`/api/cities/${city.id}/tax`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ taxRate }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Не удалось изменить налоговую ставку');
+      }
+
+      toast.success(`Налоговая ставка изменена на ${taxRate}`);
+      // Обновление будет через веб-сокет
+    } catch (error) {
+      console.error('Error updating tax rate:', error);
+      toast.error((error as Error).message);
+    }
+  };
+
   return (
     <TooltipProvider>
       <Card className="fixed bottom-4 left-4 w-96 max-h-[80vh] overflow-hidden z-[1000]">
@@ -189,11 +225,11 @@ export const CityPanel: React.FC<CityPanelProps> = ({
             <h2 className="text-xl font-bold">{city.name}</h2>
             <span className={`px-2 py-1 rounded-full text-sm ${
               city.owner === 'player' ? 'bg-blue-100 text-blue-800' :
-              city.owner === 'neutral' ? 'bg-gray-100 text-gray-800' :
-              'bg-red-100 text-red-800'
+                city.owner === 'neutral' ? 'bg-gray-100 text-gray-800' :
+                  'bg-red-100 text-red-800'
             }`}>
               {city.owner === 'player' ? 'Ваш город' :
-               city.owner === 'neutral' ? 'Нейтральный' : 'Вражеский город'}
+                city.owner === 'neutral' ? 'Нейтральный' : 'Вражеский город'}
             </span>
           </div>
 
@@ -211,18 +247,18 @@ export const CityPanel: React.FC<CityPanelProps> = ({
                     <h4 className="font-bold mb-1">Факторы влияющие на удовлетворенность:</h4>
                     <ul className="text-sm space-y-1">
                       <li>- Базовое значение: 50%</li>
-                      <li>- Количество рабочих мест: {city.satisfaction < 50 ? 
-                        <span className="text-red-500">Недостаточно рабочих мест</span> : 
+                      <li>- Количество рабочих мест: {city.satisfaction < 50 ?
+                        <span className="text-red-500">Недостаточно рабочих мест</span> :
                         <span className="text-green-500">Достаточно</span>}
                       </li>
-                      <li>- Бонусы от зданий: {city.buildings.some(b => b === 'theater' || b === 'park' || b === 'temple') ? 
-                        <span className="text-green-500">+{city.buildings.filter(b => b === 'theater').length * 5 + 
-                        city.buildings.filter(b => b === 'park').length * 3 + 
-                        city.buildings.filter(b => b === 'temple').length * 10}%</span> : 
+                      <li>- Бонусы от зданий: {city.buildings.some(b => b === 'theater' || b === 'park' || b === 'temple') ?
+                        <span className="text-green-500">+{city.buildings.filter(b => b === 'theater').length * 5 +
+                        city.buildings.filter(b => b === 'park').length * 3 +
+                        city.buildings.filter(b => b === 'temple').length * 10}%</span> :
                         <span className="text-gray-500">0%</span>}
                       </li>
-                      <li>- Протесты: {city.protestTimer ? 
-                        <span className="text-red-500">Активны ({Math.ceil(city.protestTimer / 60)} мин)</span> : 
+                      <li>- Протесты: {city.protestTimer ?
+                        <span className="text-red-500">Активны ({Math.ceil(city.protestTimer / 60)} мин)</span> :
                         <span className="text-green-500">Нет</span>}
                       </li>
                     </ul>
@@ -268,12 +304,12 @@ export const CityPanel: React.FC<CityPanelProps> = ({
               <Card className="p-4">
                 <h3 className="font-medium mb-2">Захват территории</h3>
                 <p className="text-sm mb-4">
-                  {!cities.some(city => city.owner === 'player') 
-                    ? "Выберите эту область в качестве своей столицы" 
+                  {!cities.some(city => city.owner === 'player')
+                    ? "Выберите эту область в качестве своей столицы"
                     : "Вы можете захватить эту территорию, но вам понадобятся военные или влияние."}
                 </p>
                 <div className="space-y-2">
-                  <Button 
+                  <Button
                     onClick={handleCapture}
                     className="w-full"
                     disabled={hasCapital && gameState.military < Math.ceil(city.maxPopulation / 4)}
@@ -282,7 +318,7 @@ export const CityPanel: React.FC<CityPanelProps> = ({
                   </Button>
                   {hasCapital && <p className="text-xs text-center">Будет использовано {Math.ceil(city.maxPopulation / 4)} военных</p>}
 
-                  <Button 
+                  <Button
                     onClick={() => handleCapture('influence')}
                     className="w-full mt-2"
                     variant="outline"
@@ -295,14 +331,14 @@ export const CityPanel: React.FC<CityPanelProps> = ({
               </Card>
 
               <div className="space-y-2 mb-4">
-                  <h4 className="text-sm font-medium">Стоимость захвата</h4>
-                  <p className="text-xs">
-                    Для военного захвата города требуется {Math.ceil(city.maxPopulation / 4)} военных единиц.
-                  </p>
-                  <p className="text-xs">
-                    Для мирного присоединения через влияние требуется {Math.ceil(city.maxPopulation / 500)} влияния.
-                  </p>
-                </div>
+                <h4 className="text-sm font-medium">Стоимость захвата</h4>
+                <p className="text-xs">
+                  Для военного захвата города требуется {Math.ceil(city.maxPopulation / 4)} военных единиц.
+                </p>
+                <p className="text-xs">
+                  Для мирного присоединения через влияние требуется {Math.ceil(city.maxPopulation / 500)} влияния.
+                </p>
+              </div>
 
               {/* Отображаем возможные постройки для нейтральной области */}
               {city.buildings && city.buildings.length > 0 && (
@@ -348,9 +384,9 @@ export const CityPanel: React.FC<CityPanelProps> = ({
 
                 <ScrollArea className="h-[300px] pr-3">
                   <div className="space-y-2">
-                    {BUILDINGS.filter(building => 
+                    {BUILDINGS.filter(building =>
                       // Фильтруем только доступные для этой области здания
-                      city.availableBuildings && 
+                      city.availableBuildings &&
                       city.availableBuildings.includes(building.id)
                     ).map((building, index) => {
                       // Проверяем, можно ли построить здание с текущими ресурсами
@@ -463,6 +499,60 @@ export const CityPanel: React.FC<CityPanelProps> = ({
               </div>
             </div>
           )}
+
+          {/* Налоговая секция */}
+          <div className="mt-4 p-3 bg-gray-50 rounded-md">
+            <h3 className="font-medium mb-3">Налоговая ставка: {city.taxRate || 5}</h3>
+            <div className="space-y-4">
+              <Slider
+                defaultValue={[city.taxRate || 5]}
+                min={0}
+                max={10}
+                step={1}
+                onValueCommit={(value) => updateTaxRate(value[0])}
+              />
+              <div className="flex justify-between text-sm text-gray-500">
+                <div className="flex flex-col items-center">
+                  <span>0</span>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="text-green-500">😃</span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Нет налогов: население счастливо (+удовлетворенность)</p>
+                      <p>Но город потребляет золото (-золото)</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                <div className="flex flex-col items-center">
+                  <span>5</span>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="text-yellow-500">😐</span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Стандартная ставка: баланс между доходом и удовлетворенностью</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                <div className="flex flex-col items-center">
+                  <span>10</span>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="text-red-500">😠</span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Максимальные налоги: население недовольно (-удовлетворенность)</p>
+                      <p>Но приносит много золота (10x золота)</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Вкладки панели */}
+          <div className="flex border-b">
         </div>
       </Card>
     </TooltipProvider>
@@ -488,7 +578,7 @@ function BuildingList({ buildings, onSelect }: { buildings: string[], onSelect: 
         if (!building) return null;
 
         return (
-          <div 
+          <div
             key={`${buildingId}-${index}`}
             onClick={() => onSelect(buildingId)}
             className="p-2 border rounded hover:bg-gray-100 cursor-pointer"
@@ -515,14 +605,14 @@ function BuildingList({ buildings, onSelect }: { buildings: string[], onSelect: 
   );
 }
 
-function ConstructionPanel({ 
-  city, 
-  onConstruct, 
-  gameState 
-}: { 
-  city: any, 
+function ConstructionPanel({
+  city,
+  onConstruct,
+  gameState
+}: {
+  city: any,
   onConstruct: (buildingId: string) => void,
-  gameState: any 
+  gameState: any
 }) {
   const constructableBuildings = useMemo(() => {
     return city.availableBuildings.filter(buildingId => {
@@ -558,9 +648,9 @@ function ConstructionPanel({
 
       <CardContent>
         {canConstruct ? (
-          <BuildingList 
-            buildings={constructableBuildings} 
-            onSelect={onConstruct} 
+          <BuildingList
+            buildings={constructableBuildings}
+            onSelect={onConstruct}
           />
         ) : (
           <div className="text-center py-4 text-muted-foreground">

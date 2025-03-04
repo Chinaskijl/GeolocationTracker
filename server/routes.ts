@@ -32,92 +32,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Запуск игрового цикла
   gameLoop.start();
 
-  app.post("/api/cities/:id/build", async (req, res) => {
+  // Построить здание в городе
+  app.post('/api/cities/:id/build', async (req, res) => {
+    const { id } = req.params;
+    const { buildingId } = req.body;
+
     try {
-      const { id } = req.params;
-      const { buildingId } = req.body;
-
-      const city = await storage.getCities().then(cities => 
-        cities.find(c => c.id === Number(id))
-      );
-
+      const city = await storage.getCity(parseInt(id));
       if (!city) {
-        return res.status(404).json({ message: 'City not found' });
+        return res.status(404).json({ message: 'Город не найден' });
       }
 
-      // Проверяем, доступно ли это здание для постройки в данной области
-      if (city.availableBuildings && !city.availableBuildings.includes(buildingId)) {
-        return res.status(400).json({ 
-          message: `Building ${buildingId} cannot be built in this region` 
-        });
+      if (city.owner !== 'player') {
+        return res.status(403).json({ message: 'Вы не можете строить в этом городе' });
       }
 
+      // Проверяем, можно ли строить это здание
       const building = BUILDINGS.find(b => b.id === buildingId);
       if (!building) {
-        return res.status(404).json({ message: 'Building not found' });
+        return res.status(400).json({ message: 'Здание не найдено' });
       }
 
-      // Проверка лимита зданий для данной области
-      const existingBuildingCount = city.buildings.filter(b => b === buildingId).length;
-
-      // Получаем лимит для этого здания в этом городе
-      const cityBuildingLimit = city.buildingLimits && city.buildingLimits[buildingId];
-
-      // Используем либо лимит города, либо глобальный лимит здания, либо 999 если ничего не задано
-      const effectiveLimit = cityBuildingLimit !== undefined 
-        ? cityBuildingLimit 
-        : (building.maxCount || 999);
-
-      console.log(`Building ${buildingId} in ${city.name}: ${existingBuildingCount}/${effectiveLimit}`);
-
-      if (existingBuildingCount >= effectiveLimit) {
-        return res.status(400).json({ 
-          message: `Building limit reached (${existingBuildingCount}/${effectiveLimit})` 
-        });
+      // Проверяем лимит зданий
+      const buildingCount = city.buildings.filter(b => b === buildingId).length;
+      if (buildingCount >= city.buildingLimits[buildingId]) {
+        return res.status(400).json({ message: `Достигнут лимит для ${building.name}` });
       }
 
-      // Получение текущего состояния игры
+      // Проверяем ресурсы игрока
       const gameState = await storage.getGameState();
-
-      // Проверка ресурсов
-      const canAfford = Object.entries(building.cost).every(
-        ([resource, amount]) => 
-          gameState.resources[resource as keyof typeof gameState.resources] >= amount
-      );
-
-      if (!canAfford) {
-        return res.status(400).json({ message: 'Insufficient resources' });
+      for (const [resource, amount] of Object.entries(building.cost)) {
+        if (gameState.resources[resource] < amount) {
+          return res.status(400).json({ message: `Недостаточно ресурса ${resource}` });
+        }
       }
 
-      // Списание ресурсов
+      // Вычитаем ресурсы
       const newResources = { ...gameState.resources };
-      Object.entries(building.cost).forEach(([resource, amount]) => {
-        newResources[resource as keyof typeof newResources] -= amount;
-      });
+      for (const [resource, amount] of Object.entries(building.cost)) {
+        newResources[resource] -= amount;
+      }
+      await storage.setGameState({ ...gameState, resources: newResources });
 
-      // Обновление состояния игры
-      await storage.setGameState({
-        ...gameState,
-        resources: newResources
-      });
-
-      // Обновление города
-      const updatedCity = await storage.updateCity(Number(id), {
+      // Добавляем здание в город
+      await storage.updateCity(city.id, {
         buildings: [...city.buildings, buildingId]
       });
 
-      if (!updatedCity) {
-        // Если не удалось обновить город (например, из-за превышения лимитов)
-        return res.status(400).json({ message: 'Failed to update city. Building limits may have been exceeded.' });
+      res.json({ success: true });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: 'Внутренняя ошибка сервера' });
+    }
+  });
+
+  // Изменить налоговую ставку города
+  app.post('/api/cities/:id/tax', async (req, res) => {
+    const { id } = req.params;
+    const { taxRate } = req.body;
+
+    try {
+      const city = await storage.getCity(parseInt(id));
+      if (!city) {
+        return res.status(404).json({ message: 'Город не найден' });
       }
 
-      // Немедленная отправка обновленных данных через WebSocket
-      gameLoop.broadcastGameState();
+      if (city.owner !== 'player') {
+        return res.status(403).json({ message: 'Вы не контролируете этот город' });
+      }
 
-      res.json(updatedCity);
+      // Проверяем корректность налоговой ставки
+      if (taxRate < 0 || taxRate > 10) {
+        return res.status(400).json({ message: 'Налоговая ставка должна быть от 0 до 10' });
+      }
+
+      // Обновляем налоговую ставку города
+      await storage.updateCity(city.id, { taxRate });
+
+      res.json({ success: true });
     } catch (error) {
-      console.error('Error building:', error);
-      res.status(500).json({ message: 'Failed to build' });
+      console.error(error);
+      res.status(500).json({ message: 'Внутренняя ошибка сервера' });
     }
   });
 

@@ -196,6 +196,28 @@ export class GameLoop {
           // Добавляем бонус от культурных зданий
           newSatisfaction += citySatisfactionBonus * deltaTime * 0.1; // Умножаем на маленький коэффициент
           
+          // Влияние налоговой ставки на удовлетворенность
+          const taxRate = city.taxRate !== undefined ? city.taxRate : 5; // По умолчанию 5
+          
+          // Ниже 5 - повышение удовлетворенности, выше 5 - понижение
+          const taxSatisfactionImpact = (5 - taxRate) * 0.5; // Коэффициент влияния налогов
+          newSatisfaction += taxSatisfactionImpact * deltaTime;
+          
+          // Расчет дохода от налогов
+          if (city.population > 0) {
+            // При налоговой ставке 0 город потребляет золото
+            if (taxRate === 0) {
+              const goldConsumption = Math.min(newResources.gold, city.population * 0.05 * deltaTime);
+              newResources.gold -= goldConsumption;
+              console.log(`City ${city.name} consumes gold due to zero taxes: -${goldConsumption.toFixed(2)}`);
+            } else {
+              // Иначе производит золото в зависимости от ставки
+              const goldProduction = city.population * 0.01 * taxRate * deltaTime;
+              newResources.gold += goldProduction;
+              console.log(`Tax income from ${city.name}: +${goldProduction.toFixed(2)} gold (tax rate: ${taxRate})`);
+            }
+          }
+          
           // Проверяем, если удовлетворенность упала до 0 или ниже - область становится нейтральной
           if (newSatisfaction <= 0) {
             console.log(`🚨 ${city.name} has lost all satisfaction and is now neutral!`);
