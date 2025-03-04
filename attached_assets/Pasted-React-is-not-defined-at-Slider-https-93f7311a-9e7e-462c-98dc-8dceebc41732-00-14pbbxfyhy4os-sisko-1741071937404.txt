@@ -1,0 +1,44 @@
+React is not defined
+at Slider (https://93f7311a-9e7e-462c-98dc-8dceebc41732-00-14pbbxfyhy4os.sisko.replit.dev:5000/src/components/CityPanel.tsx:36:29)
+at renderWithHooks (https://93f7311a-9e7e-462c-98dc-8dceebc41732-00-14pbbxfyhy4os.sisko.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-WERSD76P.js?v=a8327bd2:11548:26)
+at mountIndeterminateComponent (https://93f7311a-9e7e-462c-98dc-8dceebc41732-00-14pbbxfyhy4os.sisko.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-WERSD76P.js?v=a8327bd2:14926:21)
+at beginWork (https://93f7311a-9e7e-462c-98dc-8dceebc41732-00-14pbbxfyhy4os.sisko.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-WERSD76P.js?v=a8327bd2:15914:22)
+at HTMLUnknownElement.callCallback2 (https://93f7311a-9e7e-462c-98dc-8dceebc41732-00-14pbbxfyhy4os.sisko.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-WERSD76P.js?v=a8327bd2:3674:22)
+at Object.invokeGuardedCallbackDev (https://93f7311a-9e7e-462c-98dc-8dceebc41732-00-14pbbxfyhy4os.sisko.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-WERSD76P.js?v=a8327bd2:3699:24)
+at invokeGuardedCallback (https://93f7311a-9e7e-462c-98dc-8dceebc41732-00-14pbbxfyhy4os.sisko.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-WERSD76P.js?v=a8327bd2:3733:39)
+at beginWork$1 (https://93f7311a-9e7e-462c-98dc-8dceebc41732-00-14pbbxfyhy4os.sisko.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-WERSD76P.js?v=a8327bd2:19765:15)
+at performUnitOfWork (https://93f7311a-9e7e-462c-98dc-8dceebc41732-00-14pbbxfyhy4os.sisko.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-WERSD76P.js?v=a8327bd2:19198:20)
+at workLoopSync (https://93f7311a-9e7e-462c-98dc-8dceebc41732-00-14pbbxfyhy4os.sisko.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-WERSD76P.js?v=a8327bd2:19137:13)
+The above error occurred in the <Slider> component:
+
+    at Slider (https://93f7311a-9e7e-462c-98dc-8dceebc41732-00-14pbbxfyhy4os.sisko.replit.dev:5000/src/components/CityPanel.tsx:34:19)
+    at div
+    at div
+    at div
+    at div
+    at div
+    at _c (https://93f7311a-9e7e-462c-98dc-8dceebc41732-00-14pbbxfyhy4os.sisko.replit.dev:5000/src/components/ui/card.tsx:20:11)
+    at Provider (https://93f7311a-9e7e-462c-98dc-8dceebc41732-00-14pbbxfyhy4os.sisko.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-IWQTLUGP.js?v=a8327bd2:27:15)
+    at TooltipProvider (https://93f7311a-9e7e-462c-98dc-8dceebc41732-00-14pbbxfyhy4os.sisko.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=a8327bd2:2561:5)
+    at CityPanel (https://93f7311a-9e7e-462c-98dc-8dceebc41732-00-14pbbxfyhy4os.sisko.replit.dev:5000/src/components/CityPanel.tsx:81:17)
+    at div
+    at Game (https://93f7311a-9e7e-462c-98dc-8dceebc41732-00-14pbbxfyhy4os.sisko.replit.dev:5000/src/pages/Game.tsx:165:39)
+    at Route (https://93f7311a-9e7e-462c-98dc-8dceebc41732-00-14pbbxfyhy4os.sisko.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=a8327bd2:323:16)
+    at Switch (https://93f7311a-9e7e-462c-98dc-8dceebc41732-00-14pbbxfyhy4os.sisko.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=a8327bd2:379:17)
+    at Router
+    at QueryClientProvider (https://93f7311a-9e7e-462c-98dc-8dceebc41732-00-14pbbxfyhy4os.sisko.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=a8327bd2:2805:3)
+    at App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+React is not defined
+at Slider (https://93f7311a-9e7e-462c-98dc-8dceebc41732-00-14pbbxfyhy4os.sisko.replit.dev:5000/src/components/CityPanel.tsx:36:29)
+at renderWithHooks (https://93f7311a-9e7e-462c-98dc-8dceebc41732-00-14pbbxfyhy4os.sisko.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-WERSD76P.js?v=a8327bd2:11548:26)
+at mountIndeterminateComponent (https://93f7311a-9e7e-462c-98dc-8dceebc41732-00-14pbbxfyhy4os.sisko.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-WERSD76P.js?v=a8327bd2:14926:21)
+at beginWork (https://93f7311a-9e7e-462c-98dc-8dceebc41732-00-14pbbxfyhy4os.sisko.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-WERSD76P.js?v=a8327bd2:15914:22)
+at beginWork$1 (https://93f7311a-9e7e-462c-98dc-8dceebc41732-00-14pbbxfyhy4os.sisko.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-WERSD76P.js?v=a8327bd2:19753:22)
+at performUnitOfWork (https://93f7311a-9e7e-462c-98dc-8dceebc41732-00-14pbbxfyhy4os.sisko.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-WERSD76P.js?v=a8327bd2:19198:20)
+at workLoopSync (https://93f7311a-9e7e-462c-98dc-8dceebc41732-00-14pbbxfyhy4os.sisko.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-WERSD76P.js?v=a8327bd2:19137:13)
+at renderRootSync (https://93f7311a-9e7e-462c-98dc-8dceebc41732-00-14pbbxfyhy4os.sisko.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-WERSD76P.js?v=a8327bd2:19116:15)
+at recoverFromConcurrentError (https://93f7311a-9e7e-462c-98dc-8dceebc41732-00-14pbbxfyhy4os.sisko.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-WERSD76P.js?v=a8327bd2:18736:28)
+at performSyncWorkOnRoot (https://93f7311a-9e7e-462c-98dc-8dceebc41732-00-14pbbxfyhy4os.sisko.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-WERSD76P.js?v=a8327bd2:18879:28)
