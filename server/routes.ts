@@ -110,7 +110,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.setGameState({ ...gameState, resources: newResources });
 
       console.log('Building successful:', updatedCity);
-      res.json({ success: true, city: updatedCity });
+      
+      // Отправляем обновленное состояние игры всем клиентам
+      gameLoop.broadcastGameState();
+      
+      // Отправляем ответ клиенту
+      res.json({ 
+        success: true, 
+        city: updatedCity,
+        gameState: { ...gameState, resources: newResources }
+      });
     } catch (error) {
       console.error('Error building structure:', error);
       res.status(500).json({ message: 'Внутренняя ошибка сервера' });

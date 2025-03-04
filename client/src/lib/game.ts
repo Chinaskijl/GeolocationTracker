@@ -1,4 +1,28 @@
-import type { Building } from '@shared/schema';
+export type Building = {
+  id: string;
+  name: string;
+  description: string;
+  cost: Record<string, number>;
+  population?: {
+    housing?: number;
+    growth?: number;
+  };
+  resourceProduction?: {
+    type: string;
+    amount: number;
+  };
+  resourceConsumption?: {
+    type: string;
+    amount: number;
+  };
+  military?: {
+    production: number;
+  };
+  satisfactionBonus?: number;
+  workers?: number;
+  maxCount?: number;
+  icon?: string;
+};
 
 export const BUILDINGS = [
   {

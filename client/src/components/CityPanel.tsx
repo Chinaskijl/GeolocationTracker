@@ -58,72 +58,52 @@ export const CityPanel: React.FC<CityPanelProps> = ({
 
   const hasCapital = cities.some(c => c.owner === 'player');
 
+  // Строительство нового здания
   const handleBuild = async (buildingId: string) => {
-    if (!city || !gameState) return;
+    if (!city) return;
+
+    console.log(`Attempting to build ${buildingId} in city ${city.id}`);
+    console.log(`Current resources:`, gameState.resources);
+
+    // Выводим стоимость здания для отладки
+    const building = BUILDINGS.find(b => b.id === buildingId);
+    if (building) {
+      console.log(`Building cost:`, building.cost);
+    }
 
     try {
-      const building = BUILDINGS.find(b => b.id === buildingId);
-      if (!building) {
+      const response = await fetch(`/api/cities/${city.id}/build`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ buildingId }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        console.log(`Failed to build:`, result);
         toast({
-          title: 'Ошибка',
-          description: 'Здание не найдено',
-          variant: 'destructive'
+          title: 'Ошибка строительства',
+          description: result.message || 'Не удалось построить здание',
+          variant: 'destructive',
         });
         return;
       }
 
-      // Проверка наличия ресурсов на клиенте перед отправкой запроса
-      if (building.cost) {
-        for (const [resource, amount] of Object.entries(building.cost)) {
-          if (gameState.resources[resource as keyof typeof gameState.resources] < amount) {
-            toast({
-              title: 'Недостаточно ресурсов',
-              description: `Требуется больше ресурса ${resource}`,
-              variant: 'destructive'
-            });
-            return;
-          }
-        }
-      }
-
-      console.log('Attempting to build ' + buildingId + ' in city ' + city.id);
-      console.log('Current resources:', gameState.resources);
-      console.log('Building cost:', building.cost);
-
-      // Отправляем запрос на строительство
-      const response = await apiRequest('POST', `/api/cities/${city.id}/build`, {
-        buildingId
+      console.log(`Build successful:`, result);
+      toast({
+        title: 'Успешно!',
+        description: 'Здание построено',
       });
 
-      console.log('Building successful, response:', response);
-      await queryClient.invalidateQueries({ queryKey: ['/api/cities'] });
-      await queryClient.invalidateQueries({ queryKey: ['game-state'] }); //Invalidate game state
-
+    } catch (error) {
+      console.error('Error building structure:', error);
       toast({
-        title: "Здание построено",
-        description: `${building.name} успешно построено в городе ${city.name}`,
-        variant: "default"
-      });
-    } catch (error: any) {
-      console.log('Failed to build:', error);
-
-      // Попытка извлечь подробное сообщение об ошибке
-      let errorMessage = 'Не удалось построить здание';
-      try {
-        if (error && error.message) {
-          const match = error.message.match(/\{\"message\":\"([^\"]+)\"\}/);
-          if (match && match[1]) {
-            errorMessage = match[1];
-          }
-        }
-      } catch (e) {
-        console.error('Error parsing error message:', e);
-      }
-
-      toast({
-        title: 'Ошибка',
-        description: errorMessage,
-        variant: 'destructive'
+        title: 'Ошибка строительства',
+        description: 'Не удалось построить здание',
+        variant: 'destructive',
       });
     }
   };
@@ -442,7 +422,10 @@ export const CityPanel: React.FC<CityPanelProps> = ({
                           variant={canAfford && !atLimit ? "outline" : "ghost"}
                           disabled={!canAfford || atLimit}
                           className={`w-full flex justify-between items-start p-3 h-auto ${(!canAfford || atLimit) ? 'opacity-50' : ''}`}
-                          onClick={() => handleBuild(building.id)}
+                          onClick={() => {
+                            console.log(`Attempting to build ${building.id}`);
+                            handleBuild(building.id);
+                          }}
                         >
                           <div className="flex flex-col items-start">
                             <span className="font-medium">{building.name}</span>
