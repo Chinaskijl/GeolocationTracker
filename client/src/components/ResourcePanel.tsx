@@ -147,14 +147,9 @@ export function ResourcePanel() {
       icon: <Globe className="w-5 h-5" />, 
       value: Math.floor(gameState.resources.influence || 0), 
       name: 'Influence',
-      production: resourceProduction.influenceroduction.weapons
-    },
-    { // Added influence resource
-      icon: <Globe className="h-4 w-4 mr-1 text-purple-500" />,
-      value: Math.floor(gameState.resources.influence),
-      name: 'Influence',
       production: resourceProduction.influence
-    }
+    },
+    // Удалено дублирование блока ресурса влияния
   ];
 
   return (
