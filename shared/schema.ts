@@ -24,7 +24,9 @@ export const cities = pgTable("cities", {
   buildings: jsonb("buildings").$type<string[]>().default([]).notNull(),
   military: integer("military").default(0).notNull(),
   satisfaction: real("satisfaction").default(50).notNull(),
-  protestTimer: real("protest_timer").default(null)
+  protestTimer: real("protest_timer").default(null),
+  taxRate: integer("tax_rate").default(5).notNull(),
+  availableWorkers: integer("available_workers").default(0).notNull()
 });
 
 export const insertCitySchema = createInsertSchema(cities);

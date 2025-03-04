@@ -60,6 +60,10 @@ export class GameLoop {
           let cityTotalWorkers = 0; // Общее количество требуемых работников
           let citySatisfactionBonus = 0; // Бонус к удовлетворенности от зданий
           let cityInfluenceProduction = 0; // Производство влияния городом
+          let cityGoldFromTaxes = 0; // Золото от налогов
+          
+          // Налоговый рейт (по умолчанию 5 если не установлен)
+          const taxRate = city.taxRate !== undefined ? city.taxRate : 5;
           
           // Флаг протеста (производство замедляется)
           const isProtesting = city.protestTimer !== null && city.protestTimer !== undefined && city.protestTimer > 0;
@@ -207,6 +211,32 @@ export class GameLoop {
             continue; // Пропускаем дальнейшую обработку города
           }
           
+          // Обработка эффектов от налогов
+          if (taxRate > 0) {
+            // Производство золота от налогов (1 золото за каждые 10 жителей * налоговая ставка)
+            cityGoldFromTaxes = Math.floor(city.population / 10) * taxRate * deltaTime;
+            
+            // Добавляем золото
+            newResources.gold += cityGoldFromTaxes;
+            
+            // Высокие налоги снижают удовлетворенность
+            if (taxRate > 5) {
+              // Чем выше налоги, тем сильнее падает удовлетворенность
+              const taxSatisfactionPenalty = (taxRate - 5) * 0.2;  
+              newSatisfaction -= taxSatisfactionPenalty * deltaTime;
+              console.log(`High taxes (${taxRate}) decrease satisfaction by ${taxSatisfactionPenalty * deltaTime} in ${city.name}`);
+            }
+          } else {
+            // При налоговой ставке 0 повышается удовлетворенность, но тратится золото
+            const goldCost = Math.floor(city.population / 10) * deltaTime;
+            newResources.gold = Math.max(0, newResources.gold - goldCost);
+            
+            // Прирост удовлетворенности от отсутствия налогов
+            const taxSatisfactionBonus = 0.5;  // +0.5% в секунду
+            newSatisfaction += taxSatisfactionBonus * deltaTime;
+            console.log(`No taxes increases satisfaction by ${taxSatisfactionBonus * deltaTime} in ${city.name}, costs ${goldCost} gold`);
+          }
+          
           // Ограничиваем удовлетворенность в диапазоне 0-100%
           newSatisfaction = Math.max(0, Math.min(100, newSatisfaction));
           
@@ -268,13 +298,23 @@ export class GameLoop {
           totalMilitaryGrowth += cityMilitaryGrowth;
           totalPopulationUsed += cityPopulationUsed;
 
+          // Рассчитываем доступных рабочих
+          const newAvailableWorkers = Math.max(0, Math.floor(newPopulation) - cityTotalWorkers);
+          
+          console.log(`City ${city.name} has ${newAvailableWorkers} available workers (total population: ${Math.floor(newPopulation)}, workers needed: ${cityTotalWorkers})`);
+          
           // Обновление города
           await storage.updateCity(city.id, {
             population: Math.floor(newPopulation),
             military: Math.floor((city.military || 0) + cityMilitaryGrowth),
             satisfaction: newSatisfaction,
-            protestTimer: newProtestTimer
+            protestTimer: newProtestTimer,
+            availableWorkers: newAvailableWorkers
           });
+          
+          if (cityGoldFromTaxes > 0) {
+            console.log(`City ${city.name} generated ${cityGoldFromTaxes} gold from taxes (rate: ${taxRate})`);
+          }
         }
       }
 
