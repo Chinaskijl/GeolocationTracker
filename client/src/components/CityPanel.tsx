@@ -210,8 +210,7 @@ export const CityPanel: React.FC<CityPanelProps> = ({
 
   const playerCities = cities.filter(c => c.owner === 'player' && c.id !== city.id);
 
-  // Обновление налоговой ставки города
-  const updateTaxRate = async (taxRate: number) => {
+  const handleTaxRateChange = async (taxRate: number) => {
     try {
       const response = await fetch(`/api/cities/${city.id}/tax`, {
         method: 'POST',
@@ -374,7 +373,7 @@ export const CityPanel: React.FC<CityPanelProps> = ({
                         const maxCount = city.buildingLimits?.[buildingId] || building?.maxCount || 0;
 
                         return (
-                          <li key={`${buildingId}-built`} className="text-green-600">
+                          <li key={`${buildingId}-built`} className="text-green-600" title={`Занято ${city.usedWorkers || 0} из ${city.totalWorkers || 0} рабочих, свободно ${(city.totalWorkers || 0) - (city.usedWorkers || 0)} рабочих`}>
                             {building?.name || buildingId.replace("_", " ")}: {building?.icon || '🏢'} {count}/{maxCount}
                           </li>
                         );
@@ -410,6 +409,37 @@ export const CityPanel: React.FC<CityPanelProps> = ({
             </div>
           ) : city.owner === 'player' ? (
             <div className="space-y-4">
+              {/* Налоговая ставка */}
+              <Card className="p-4 mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-medium">Налоговая ставка: {city.taxRate || 5}%</h3>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="cursor-help text-gray-500">ℹ️</div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Влияет на удовлетворенность населения</p>
+                        <p>Более низкая ставка = более счастливые жители</p>
+                        <p>Более высокая ставка = больше золота (но риск протестов)</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs">1%</span>
+                  <Slider
+                    defaultValue={[city.taxRate || 5]}
+                    min={1}
+                    max={10}
+                    step={1}
+                    onValueCommit={(value) => handleTaxRateChange(value[0])}
+                  />
+                  <span className="text-xs">10%</span>
+                </div>
+              </Card>
+
               <div className="space-y-2">
                 <h3 className="font-medium">Строительство</h3>
                 <p className="text-sm">Постройте здания для производства ресурсов и расширения города.</p>
@@ -535,56 +565,6 @@ export const CityPanel: React.FC<CityPanelProps> = ({
             </div>
           )}
 
-          {/* Налоговая секция */}
-          <div className="mt-4 p-3 bg-gray-50 rounded-md">
-            <h3 className="font-medium mb-3">Налоговая ставка: {city.taxRate || 5}</h3>
-            <div className="space-y-4">
-              <Slider
-                defaultValue={[city.taxRate || 5]}
-                min={0}
-                max={10}
-                step={1}
-                onValueCommit={(value) => updateTaxRate(value[0])}
-              />
-              <div className="flex justify-between text-sm text-gray-500">
-                <div className="flex flex-col items-center">
-                  <span>0</span>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className="text-green-500">😃</span>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Нет налогов: население счастливо (+удовлетворенность)</p>
-                      <p>Но город потребляет золото (-золото)</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-                <div className="flex flex-col items-center">
-                  <span>5</span>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className="text-yellow-500">😐</span>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Стандартная ставка: баланс между доходом и удовлетворенностью</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-                <div className="flex flex-col items-center">
-                  <span>10</span>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className="text-red-500">😠</span>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Максимальные налоги: население недовольно (-удовлетворенность)</p>
-                      <p>Но приносит много золота (10x золота)</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-              </div>
-            </div>
-          </div>
 
           {/* Вкладки панели */}
           <div className="flex border-b">
@@ -606,7 +586,7 @@ function getResourceIcon(resource: string): string {
   }
 }
 
-function BuildingList({ buildings, onSelect }: { buildings: string[], onSelect: (building: string) => void }) {
+function BuildingList({ buildings, onSelect, city }: { buildings: string[], onSelect: (building: string) => void, city: any }) {
   return (
     <div className="grid grid-cols-2 gap-2">
       {buildings.map((buildingId, index) => {
@@ -618,6 +598,7 @@ function BuildingList({ buildings, onSelect }: { buildings: string[], onSelect: 
             key={`${buildingId}-${index}`}
             onClick={() => onSelect(buildingId)}
             className="p-2 border rounded hover:bg-gray-100 cursor-pointer"
+            title={`Занято ${city.usedWorkers || 0} из ${city.totalWorkers || 0} рабочих, свободно ${(city.totalWorkers || 0) - (city.usedWorkers || 0)} рабочих`}
           >
             <div className="text-sm font-medium">{building.name}</div>
 
@@ -687,6 +668,7 @@ function ConstructionPanel({
           <BuildingList
             buildings={constructableBuildings}
             onSelect={onConstruct}
+            city={city}
           />
         ) : (
           <div className="text-center py-4 text-muted-foreground">
