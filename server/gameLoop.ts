@@ -301,12 +301,12 @@ export class GameLoop {
       }
 
       // Потребление еды
-      totalFoodConsumption = gameState.population * POPULATION_FOOD_CONSUMPTION * deltaTime;
-      console.log(`Total food consumption: -${totalFoodConsumption}`);
+      totalFoodConsumption = Math.max(0, gameState.population * POPULATION_FOOD_CONSUMPTION * deltaTime);
+      console.log(`Total food consumption: -${totalFoodConsumption.toFixed(2)}`);
 
       // Проверяем нехватку еды и уменьшаем население при необходимости
       let populationChange = totalPopulationGrowth - totalPopulationUsed;
-      if (newResources.food <= totalFoodConsumption) {
+      if (gameState.population > 0 && newResources.food <= totalFoodConsumption) {
         // Недостаточно еды, уменьшаем население значительно сильнее
         populationChange -= deltaTime * 5; // -5 населения в секунду
         console.log(`Not enough food! Population decreasing rapidly: -${deltaTime * 5}`);
@@ -320,10 +320,10 @@ export class GameLoop {
         ...gameState,
         resources: {
           ...newResources,
-          food: Math.max(0, newResources.food - totalFoodConsumption)
+          food: totalFoodConsumption > 0 ? Math.max(0, newResources.food - totalFoodConsumption) : newResources.food
         },
         population: Math.floor(Math.max(0, gameState.population + populationChange)),
-        military: Math.floor(gameState.military + totalMilitaryGrowth)
+        military: Math.floor(Math.max(0, gameState.military + totalMilitaryGrowth))
       };
 
       console.log('Updated game state:', newGameState);

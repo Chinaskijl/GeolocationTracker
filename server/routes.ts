@@ -76,6 +76,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Проверяем ресурсы игрока
       const gameState = await storage.getGameState();
+      if (!gameState || !gameState.resources) {
+        return res.status(500).json({ message: 'Ошибка получения состояния игры' });
+      }
       
       console.log('Current game state:', gameState);
       console.log('Building cost:', building.cost);
@@ -97,32 +100,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         newResources[resource] -= amount;
       }
       
-      // Сначала добавляем здание в город
-      const updatedCity = await storage.updateCity(cityId, {
-        buildings: [...city.buildings, buildingId]
-      });
+      try {
+        // Сначала добавляем здание в город
+        const updatedCity = await storage.updateCity(cityId, {
+          buildings: [...city.buildings, buildingId]
+        });
 
-      if (!updatedCity) {
-        return res.status(500).json({ message: 'Не удалось обновить город' });
+        if (!updatedCity) {
+          return res.status(500).json({ message: 'Не удалось обновить город' });
+        }
+        
+        // Затем обновляем состояние игры
+        await storage.setGameState({ ...gameState, resources: newResources });
+
+        console.log('Building successful:', updatedCity);
+        
+        // Отправляем обновленное состояние игры всем клиентам
+        gameLoop.broadcastGameState();
+        
+        // Отправляем ответ клиенту
+        res.json({ 
+          success: true, 
+          city: updatedCity,
+          gameState: { ...gameState, resources: newResources }
+        });
+      } catch (updateError) {
+        console.error('Error updating city or game state:', updateError);
+        return res.status(500).json({ message: 'Ошибка при обновлении данных', details: updateError.message });
       }
-      
-      // Затем обновляем состояние игры
-      await storage.setGameState({ ...gameState, resources: newResources });
-
-      console.log('Building successful:', updatedCity);
-      
-      // Отправляем обновленное состояние игры всем клиентам
-      gameLoop.broadcastGameState();
-      
-      // Отправляем ответ клиенту
-      res.json({ 
-        success: true, 
-        city: updatedCity,
-        gameState: { ...gameState, resources: newResources }
-      });
     } catch (error) {
       console.error('Error building structure:', error);
-      res.status(500).json({ message: 'Внутренняя ошибка сервера' });
+      res.status(500).json({ message: 'Внутренняя ошибка сервера', details: error.message });
     }
   });
 
