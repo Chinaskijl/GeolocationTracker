@@ -409,37 +409,33 @@ export const CityPanel: React.FC<CityPanelProps> = ({
             </div>
           ) : city.owner === 'player' ? (
             <div className="space-y-4">
-              {/* Налоговая ставка */}
-              <Card className="p-4 mb-4">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-medium">Налоговая ставка: {city.taxRate || 5}%</h3>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="cursor-help text-gray-500">ℹ️</div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Влияет на удовлетворенность населения</p>
-                        <p>Более низкая ставка = более счастливые жители</p>
-                        <p>Более высокая ставка = больше золота (но риск протестов)</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+              {/* Ползунок с налогами */}
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <h3 className="font-medium">Налоговая ставка</h3>
+                  <span className="text-sm">{city.taxRate || 5}%</span>
                 </div>
-
-                <div className="flex items-center space-x-2">
-                  <span className="text-xs">1%</span>
+                <div className="p-1">
                   <Slider
                     defaultValue={[city.taxRate || 5]}
-                    min={1}
+                    min={0}
                     max={10}
                     step={1}
-                    onValueCommit={(value) => handleTaxRateChange(value[0])}
+                    onValueCommit={(values) => {
+                      if (onUpdateTaxRate) {
+                        onUpdateTaxRate(values[0]);
+                      }
+                    }}
                   />
-                  <span className="text-xs">10%</span>
                 </div>
-              </Card>
+                <p className="text-xs text-gray-500">
+                  Более высокие налоги снижают удовлетворенность населения,
+                  но увеличивают доход от города.
+                </p>
+              </div>
 
+              {/* Налоговая ставка */}
+              
               <div className="space-y-2">
                 <h3 className="font-medium">Строительство</h3>
                 <p className="text-sm">Постройте здания для производства ресурсов и расширения города.</p>
