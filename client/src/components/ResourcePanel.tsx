@@ -32,7 +32,7 @@ export function ResourcePanel() {
 
     // We'll track building production separately from income in resourcesIncome
     // resourcesIncome comes from server and includes tax income and other special sources
-    
+
     // Добавляем налоговый доход от сервера, если он есть
     if (resourcesIncome && resourcesIncome.gold) {
       taxIncome = resourcesIncome.gold;
@@ -119,7 +119,7 @@ export function ResourcePanel() {
   // Function to create tooltip content showing production sources
   const createTooltipContent = (resourceType) => {
     const tooltipItems = [];
-    
+
     // Add tax income for gold
     if (resourceType === 'gold' && resourcesIncome?.gold) {
       tooltipItems.push(
@@ -137,7 +137,7 @@ export function ResourcePanel() {
         </div>
       );
     }
-    
+
     // Add influence production sources
     if (resourceType === 'influence' && resourcesIncome?.influence) {
       tooltipItems.push(
@@ -147,32 +147,60 @@ export function ResourcePanel() {
           </span>
           {cities.filter(c => c.owner === 'player').map(city => (
             <div key={`influence-${city.id}`} className="text-xs ml-4">
-              {city.name}: {city.satisfaction > 90 ? 
-                <span className="text-green-500">+3.0/с</span> : 
-                city.satisfaction > 70 ? <span className="text-green-500">+1.0/с</span> : 
-                <span className="text-gray-500">+0.0/с</span>}
+              {city.name}: <span className="text-green-500">+{(city.population * 0.1).toFixed(1)}/с</span>
             </div>
           ))}
         </div>
       );
     }
-    
-    // Add building production items
+
+    // Group buildings by type and city, and calculate total production
+    const buildingProduction = {};
+
     cities.forEach(city => {
       if (city.owner === 'player') {
+        // Count buildings by type in each city
+        const cityBuildingCounts = {};
+
         city.buildings.forEach(buildingId => {
           const building = BUILDINGS.find(b => b.id === buildingId);
           if (building && building.resourceProduction && building.resourceProduction.type === resourceType) {
-            tooltipItems.push(
-              <div key={`${city.id}-${buildingId}-${Math.random()}`} className="whitespace-nowrap">
-                {building.name} <span className="text-xs">({city.name})</span>: <span className="text-green-500">+{building.resourceProduction.amount}/с</span>
-              </div>
-            );
+            // Check if workers are available for the building
+            const hasWorkers = city.population > 0; // Simplified check, you may need more complex logic
+
+            if (!cityBuildingCounts[buildingId]) {
+              cityBuildingCounts[buildingId] = {
+                count: 1,
+                name: building.name,
+                production: hasWorkers ? building.resourceProduction.amount : 0,
+                notWorking: !hasWorkers
+              };
+            } else {
+              cityBuildingCounts[buildingId].count++;
+              if (hasWorkers) {
+                cityBuildingCounts[buildingId].production += building.resourceProduction.amount;
+              } else {
+                cityBuildingCounts[buildingId].notWorking = true;
+              }
+            }
           }
+        });
+
+        // Add entries for each building type in the city
+        Object.entries(cityBuildingCounts).forEach(([buildingId, data]) => {
+          const { count, name, production, notWorking } = data as any;
+          tooltipItems.push(
+            <div key={`${city.name}-${buildingId}`} className="whitespace-nowrap">
+              {name} ({city.name}) {count}: <span className={getProductionColor(production)}>
+                {formatProduction(production)}/с
+              </span>
+              {notWorking && <span className="text-orange-500 text-xs ml-1">(нет рабочих)</span>}
+            </div>
+          );
         });
       }
     });
-    
+
     // Add consumption for food
     if (resourceType === 'food' && gameState.population > 0) {
       tooltipItems.push(
@@ -181,7 +209,7 @@ export function ResourcePanel() {
         </div>
       );
     }
-    
+
     return tooltipItems.length ? (
       <div className="absolute top-full left-0 bg-black/80 text-white p-2 rounded text-xs z-50">
         {tooltipItems}
@@ -197,7 +225,7 @@ export function ResourcePanel() {
           const totalProduction = resource.production + (
             resourcesIncome && resourcesIncome[resource.key] ? resourcesIncome[resource.key] : 0
           ) - (resource.consumption || 0);
-          
+
           return (
             <div key={resource.name} className="flex items-center gap-2 relative group">
               {resource.icon}
@@ -207,7 +235,7 @@ export function ResourcePanel() {
                   ({formatProduction(totalProduction)})
                 </span>
               </span>
-              
+
               {/* Tooltip that appears on hover */}
               <div className="hidden group-hover:block">
                 {createTooltipContent(resource.key)}
