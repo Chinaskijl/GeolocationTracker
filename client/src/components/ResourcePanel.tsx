@@ -29,13 +29,8 @@ export function ResourcePanel() {
     let foodCons = 0;
     let influenceProd = 0;
 
-    if (resourcesIncome?.gold) {
-      goldProd += resourcesIncome.gold;
-    }
-
-    if (resourcesIncome?.influence) {
-      influenceProd += resourcesIncome.influence;
-    }
+    // We'll track building production separately from income in resourcesIncome
+    // resourcesIncome comes from server and includes tax income and other special sources
 
     cities.forEach(city => {
       if (city.owner === 'player') {
@@ -97,6 +92,7 @@ export function ResourcePanel() {
     { icon: <span className="w-5 h-5 flex items-center justify-center">⚙️</span>, value: Math.floor(gameState.resources.metal), name: 'Metal', production: resourceProduction.metal, key: 'metal' },
     { icon: <span className="w-5 h-5 flex items-center justify-center">🔩</span>, value: Math.floor(gameState.resources.steel), name: 'Steel', production: resourceProduction.steel, key: 'steel' },
     { icon: <span className="w-5 h-5 flex items-center justify-center">🔫</span>, value: Math.floor(gameState.resources.weapons), name: 'Weapons', production: resourceProduction.weapons, key: 'weapons' },
+    { icon: <Globe className="w-5 h-5" />, value: Math.floor(gameState.resources.influence || 0), name: 'Influence', production: resourceProduction.influence, key: 'influence' }ons, key: 'weapons' },
     { icon: <Globe className="w-5 h-5" />, value: Math.floor(gameState.resources.influence || 0), name: 'Influence', production: resourceProduction.influence, key: 'influence' }
   ];
 
@@ -115,24 +111,90 @@ export function ResourcePanel() {
   };
 
 
+  // Function to create tooltip content showing production sources
+  const createTooltipContent = (resourceType) => {
+    const tooltipItems = [];
+    
+    // Add tax income for gold
+    if (resourceType === 'gold' && resourcesIncome?.gold) {
+      tooltipItems.push(
+        <div key="taxes" className="whitespace-nowrap">
+          Taxes: <span className={getProductionColor(resourcesIncome.gold)}>
+            {formatProduction(resourcesIncome.gold)}/s
+          </span>
+        </div>
+      );
+    }
+    
+    // Add influence production sources
+    if (resourceType === 'influence' && resourcesIncome?.influence) {
+      tooltipItems.push(
+        <div key="influence-base" className="whitespace-nowrap">
+          Base production: <span className={getProductionColor(resourcesIncome.influence)}>
+            {formatProduction(resourcesIncome.influence)}/s
+          </span>
+        </div>
+      );
+    }
+    
+    // Add building production items
+    cities.forEach(city => {
+      if (city.owner === 'player') {
+        city.buildings.forEach(buildingId => {
+          const building = BUILDINGS.find(b => b.id === buildingId);
+          if (building && building.resourceProduction && building.resourceProduction.type === resourceType) {
+            tooltipItems.push(
+              <div key={`${city.id}-${buildingId}-${Math.random()}`} className="whitespace-nowrap">
+                {building.name}: <span className="text-green-500">+{building.resourceProduction.amount}/s</span>
+              </div>
+            );
+          }
+        });
+      }
+    });
+    
+    // Add consumption for food
+    if (resourceType === 'food' && gameState.population > 0) {
+      tooltipItems.push(
+        <div key="food-consumption" className="whitespace-nowrap">
+          Population: <span className="text-red-500">-{(gameState.population * 0.1).toFixed(1)}/s</span>
+        </div>
+      );
+    }
+    
+    return tooltipItems.length ? (
+      <div className="absolute top-full left-0 bg-black/80 text-white p-2 rounded text-xs z-50">
+        {tooltipItems}
+      </div>
+    ) : null;
+  };
+
   return (
     <Card className="fixed top-4 left-4 p-4 z-[1000]">
       <div className="flex flex-wrap gap-4">
-        {resources.map((resource) => (
-          <div key={resource.name} className="flex items-center gap-2 relative">
-            {resource.icon}
-            <span className="font-medium">
-              {resource.value}
-              <span className={`ml-1 text-xs ${getProductionColor(resource.production - (resource.consumption || 0))}`}>
-                ({formatProduction(resource.production - (resource.consumption || 0))})
+        {resources.map((resource) => {
+          // Calculate actual production including income from resourcesIncome
+          const totalProduction = resource.production + (
+            resourcesIncome && resourcesIncome[resource.key] ? resourcesIncome[resource.key] : 0
+          ) - (resource.consumption || 0);
+          
+          return (
+            <div key={resource.name} className="flex items-center gap-2 relative group">
+              {resource.icon}
+              <span className="font-medium">
+                {resource.value}
+                <span className={`ml-1 text-xs ${getProductionColor(totalProduction)}`}>
+                  ({formatProduction(totalProduction)})
+                </span>
               </span>
-            </span>
-            {/* Added tooltip */}
-            <div className="absolute top-0 left-0 w-full h-full opacity-0 hover:opacity-100">
-              {/* Placeholder for tooltip content */}
+              
+              {/* Tooltip that appears on hover */}
+              <div className="hidden group-hover:block">
+                {createTooltipContent(resource.key)}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
         <div className="border-l pl-4">
           <div className="flex items-center gap-2">
             <span>👥</span>
