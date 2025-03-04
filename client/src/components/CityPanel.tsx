@@ -23,6 +23,10 @@ export const CityPanel: React.FC<CityPanelProps> = ({
   onBuyResource,
   canBuyResource
 }) => {
+  // Проверяем, что город действительно выбран
+  if (!cityProp) {
+    return null;
+  }
   // Update the building descriptions for theater and park
   const getBuildingDescription = (buildingId: string) => {
     switch(buildingId) {

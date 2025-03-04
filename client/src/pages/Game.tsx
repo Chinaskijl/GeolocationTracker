@@ -80,7 +80,7 @@ const MarketPanel = ({ open, onClose }) => {
 
 
 export default function Game() {
-  const { setCities, setGameState } = useGameStore();
+  const { setCities, setGameState, selectedCity, setSelectedCity } = useGameStore();
   const queryClient = useQueryClient();
   const [isMarketOpen, setIsMarketOpen] = useState(false);
 
@@ -155,12 +155,16 @@ export default function Game() {
   }, [queryClient]);
 
   const { selectedCity } = useGameStore();
-  
+
   return (
     <div className="relative">
       <Map />
       <ResourcePanel />
-      {selectedCity && <CityPanel />}
+      {selectedCity && (
+        <div className="absolute left-4 top-4 z-50">
+          <CityPanel selectedCity={selectedCity} closePanel={() => setSelectedCity(null)} />
+        </div>
+      )}
       <MarketButton onOpenMarket={() => setIsMarketOpen(true)} />
       <MarketPanel open={isMarketOpen} onClose={() => setIsMarketOpen(false)} />
     </div>
