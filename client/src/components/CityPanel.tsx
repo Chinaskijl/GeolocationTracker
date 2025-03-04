@@ -231,11 +231,10 @@ export const CityPanel: React.FC<CityPanelProps> = ({
   };
 
   const playerCities = cities.filter(c => c.owner === 'player' && c.id !== city.id);
-  const panelStyle = { zIndex: 1001 }; // Added z-index style
 
   return (
     <TooltipProvider>
-      <Card className="fixed bottom-4 left-4 w-96 max-h-[80vh] overflow-hidden" style={panelStyle}>
+      <Card className="fixed bottom-4 left-4 w-96 max-h-[80vh] overflow-hidden z-[9999]">
         <div className="p-4 space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-bold">{city.name}</h2>
