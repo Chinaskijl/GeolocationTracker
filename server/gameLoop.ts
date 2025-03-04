@@ -212,21 +212,12 @@ export class GameLoop {
               console.log(`City ${city.name} consumes gold due to zero taxes: -${goldConsumption.toFixed(2)}`);
             } else {
               // Иначе производит золото в зависимости от ставки
-              const goldProduction = city.population * 0.01 * taxRate * deltaTime;
+              // Новая формула: 1 человек платит 1 золото в секунду при коэффициенте 1 (taxRate = 5)
+              const taxCoefficient = taxRate / 5; // Ставка 5 = коэффициент 1
+              const goldProduction = city.population * 1 * taxCoefficient * deltaTime;
               newResources.gold += goldProduction;
-              console.log(`Tax income from ${city.name}: +${goldProduction.toFixed(2)} gold (tax rate: ${taxRate})`);
+              console.log(`Tax income from ${city.name}: +${goldProduction.toFixed(2)} gold (tax rate: ${taxRate}, coefficient: ${taxCoefficient.toFixed(2)})`);
             }
-          }
-          
-          // Проверяем, если удовлетворенность упала до 0 или ниже - область становится нейтральной
-          if (newSatisfaction <= 0) {
-            console.log(`🚨 ${city.name} has lost all satisfaction and is now neutral!`);
-            await storage.updateCity(city.id, {
-              owner: 'neutral',
-              satisfaction: 50, // Сбрасываем удовлетворенность для нейтральной территории
-              protestTimer: null
-            });
-            continue; // Пропускаем дальнейшую обработку города
           }
           
           // Ограничиваем удовлетворенность в диапазоне 0-100%
@@ -235,7 +226,11 @@ export class GameLoop {
           // Проверяем на начало протестов (если удовлетворенность < 30% и протесты еще не начались)
           let newProtestTimer = city.protestTimer;
           
-          if (newSatisfaction < 30 && !isProtesting) {
+          if (newSatisfaction <= 0 && !isProtesting) {
+            // Если удовлетворенность упала до нуля - начинаем протесты с малым таймером (60 секунд)
+            newProtestTimer = 60;
+            console.log(`⚠️ CRITICAL! Satisfaction hit 0% in ${city.name}! 60 seconds until loss of control.`);
+          } else if (newSatisfaction < 30 && !isProtesting) {
             // Начинаем протесты с таймером 5 минут (300 секунд)
             newProtestTimer = 300;
             console.log(`⚠️ Protests started in ${city.name}! Satisfaction: ${newSatisfaction.toFixed(1)}%. 5 minutes to resolve.`);
