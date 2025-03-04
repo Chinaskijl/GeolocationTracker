@@ -538,12 +538,26 @@ export const CityPanel: React.FC<CityPanelProps> = ({
                 {city.buildings.map((buildingId, index) => {
                   const building = BUILDINGS.find(b => b.id === buildingId);
                   if (!building) return null;
+                  
+                  // Количество требуемых рабочих для этого здания
+                  const requiredWorkers = building.workers || 0;
+                  
+                  // Подсказка с информацией о рабочих
+                  const workerTooltip = `${requiredWorkers > 0 ? 
+                    `Рабочих мест: ${Math.min(requiredWorkers, city.population || 0)}/${requiredWorkers} занято` : 
+                    'Не требует рабочих'} 
+                    (Всего в городе: ${city.population || 0} чел.)`;
+                  
                   return (
-                    <div key={`${buildingId}-${index}`} className="flex justify-between items-center">
-                      <span>{building.name}</span>
+                    <div 
+                      key={`${buildingId}-${index}`} 
+                      className="flex justify-between items-center p-1 hover:bg-gray-100 rounded"
+                      title={workerTooltip}
+                    >
+                      <span>{building.name} {requiredWorkers > 0 ? `👥 ${Math.min(requiredWorkers, city.population || 0)}/${requiredWorkers}` : ''}</span>
                       <div className="flex items-center gap-2 text-sm">
                         {building.resourceProduction && (
-                          <span>
+                          <span className={requiredWorkers > city.population ? "text-red-500" : ""}>
                             {getResourceIcon(building.resourceProduction.type)} +{building.resourceProduction.amount}
                           </span>
                         )}
