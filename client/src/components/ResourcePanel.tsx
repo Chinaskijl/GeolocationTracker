@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { BUILDINGS } from '@/lib/game';
 
 export function ResourcePanel() {
-  const { gameState, cities } = useGameStore();
+  const { gameState, cities, resourcesIncome } = useGameStore();
   const [resourceProduction, setResourceProduction] = useState({
     gold: 0,
     wood: 0,
@@ -20,7 +20,7 @@ export function ResourcePanel() {
 
   useEffect(() => {
     // Рассчитываем общее производство ресурсов и потребление еды
-    let goldProd = 0;
+    let goldProd = resourcesIncome?.gold || 0; // Get gold from taxes
     let woodProd = 0;
     let foodProd = 0;
     let oilProd = 0;
@@ -28,7 +28,7 @@ export function ResourcePanel() {
     let steelProd = 0;
     let weaponsProd = 0;
     let foodCons = 0;
-    let influenceProd = 0; // Added influence production
+    let influenceProd = resourcesIncome?.influence || 0; // Get influence production
 
     cities.forEach(city => {
       if (city.owner === 'player') {

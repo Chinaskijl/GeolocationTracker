@@ -101,7 +101,7 @@ export default function Game() {
 
   useEffect(() => {
     if (gameState) {
-      console.log('Game state updated:', gameState);
+      console.log('Game statete updated:', gameState);
       setGameState(gameState);
     }
   }, [gameState, setGameState]);

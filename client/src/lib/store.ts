@@ -72,7 +72,8 @@ export const useGameStore = create<GameStore>((set) => ({
     steel: 0,
     weapons: 0,
     influence: 0
-  }
+  },
+  setResourcesIncome: (income) => set({ resourcesIncome: income })
 }));
 
 //Further modifications needed in other parts of the application to fully implement the changes requested by the user.  For example:
