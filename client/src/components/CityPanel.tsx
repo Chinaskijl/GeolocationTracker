@@ -14,6 +14,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import React from "react";
+
 // Placeholder Slider component - replace with actual implementation
 const Slider = ({ defaultValue, min, max, step, onValueCommit }) => {
   const [value, setValue] = React.useState(defaultValue[0]);
