@@ -371,7 +371,16 @@ export class GameLoop {
       // Добавляем налоговые поступления
       for (const city of cities) {
         if (city.owner === 'player') {
-          const taxRate = city.taxRate !== undefined ? Array.isArray(city.taxRate) ? city.taxRate[0] : city.taxRate : 5;
+          // Извлекаем значение налоговой ставки, убеждаясь, что используем правильное числовое значение
+          let taxRate = 5; // Значение по умолчанию
+          
+          if (city.taxRate !== undefined) {
+            if (Array.isArray(city.taxRate)) {
+              taxRate = city.taxRate[0];
+            } else {
+              taxRate = city.taxRate;
+            }
+          }
           
           if (taxRate === 0) {
             // При ставке 0 золото потребляется

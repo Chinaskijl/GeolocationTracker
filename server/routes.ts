@@ -156,8 +156,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Налоговая ставка должна быть от 0 до 10' });
       }
 
-      // Обновляем налоговую ставку города
-      await storage.updateCity(city.id, { taxRate });
+      // Обновляем налоговую ставку города (убедимся, что сохраняем числовое значение)
+      await storage.updateCity(city.id, { taxRate: Number(taxRate) });
 
       res.json({ success: true });
     } catch (error) {

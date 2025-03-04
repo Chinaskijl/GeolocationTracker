@@ -32,7 +32,7 @@ const Slider = ({ defaultValue, min, max, step, onValueCommit }) => {
         onChange={(e) => {
           const newValue = parseInt(e.target.value, 10);
           setValue(newValue);
-          onValueCommit([newValue]);
+          onValueCommit(newValue);
         }}
       />
       <span className="text-sm font-medium w-10">{value}%</span>
