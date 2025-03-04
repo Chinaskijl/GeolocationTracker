@@ -3,7 +3,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet-polylinedecorator";
 import { useGameStore } from "@/lib/store";
-import { TERRITORY_COLORS } from "@/lib/game";
+import { TERRITORY_COLORS, BUILDINGS } from "@/lib/game"; // Added import for BUILDINGS
 
 interface MilitaryMovement {
   fromCity: any;
@@ -78,42 +78,15 @@ export function Map() {
       }).addTo(mapRef.current!);
       polygonsRef.current.push(polygon);
 
-      // Create custom HTML element for city info
-      const cityInfo = document.createElement("div");
-      cityInfo.className =
-        "bg-white/90 p-2 rounded shadow-lg border border-gray-200 cursor-pointer";
-      cityInfo.innerHTML = `
-        <div class="font-bold text-lg">${city.name}</div>
-        <div class="text-sm">
-          <div>👥 Население: ${city.population} / ${city.maxPopulation}</div>
-          <div>⚔️ Военные: ${city.military || 0}</div>
-          ${Object.entries(city.buildings)
-            .map(
-              ([building, level]) => `<div>${building}: ${level} уровень</div>`,
-            )
-            .join("")}
-          ${Object.entries(city.availableBuildings)
-            .map(
-              ([building, maxLevel]) =>
-                `<div class="text-gray-400">${building}: ${maxLevel} уровень (доступен)</div>`,
-            )
-            .join("")}
-        </div>
-      `;
-
       // Add city label as a custom divIcon
-      const cityMarker = L.divIcon({
-        className: "custom-div-icon",
-        html: cityInfo,
-        iconSize: [200, 80],
-        iconAnchor: [100, 40],
-      });
-
       const marker = L.marker([city.latitude, city.longitude], {
-        icon: cityMarker,
-      })
-        .addTo(mapRef.current!)
-        .on("click", () => setSelectedCity(city));
+        //icon: cityMarker, // Removed custom divIcon
+      }).addTo(mapRef.current!)
+        .on("click", () => {
+          setSelectedCity(city);
+          showCityInfo(city); // Show tooltip on click
+        });
+
 
       markersRef.current.push(marker);
     });
@@ -217,6 +190,51 @@ export function Map() {
       animationFrameRef.current = requestAnimationFrame(animate);
     }
   };
+
+  // Added showCityInfo function
+  const showCityInfo = (city: any) => {
+    const cityInfo = document.createElement("div");
+    cityInfo.className = "city-tooltip";
+
+    let buildingsHTML = '';
+    if (city.buildings && city.buildings.length > 0) {
+      const buildingCounts: Record<string, number> = {};
+      city.buildings.forEach((building: string) => {
+        buildingCounts[building] = (buildingCounts[building] || 0) + 1;
+      });
+
+      buildingsHTML = '<p>Постройки:</p><div style="display: flex; flex-wrap: wrap; gap: 5px;">';
+      Object.entries(buildingCounts).forEach(([buildingId, count]) => {
+        const building = BUILDINGS.find(b => b.id === buildingId);
+        if (building) {
+          buildingsHTML += `<span style="color: green;" title="${building.name}">${building.icon} ${count}</span>`;
+        }
+      });
+      buildingsHTML += '</div>';
+
+      if (city.availableBuildings && city.availableBuildings.length > 0) {
+        buildingsHTML += '<p>Доступные постройки:</p><div style="display: flex; flex-wrap: wrap; gap: 5px;">';
+        city.availableBuildings.forEach((buildingId: string) => {
+          const building = BUILDINGS.find(b => b.id === buildingId);
+          if (building) {
+            const currentCount = (buildingCounts[buildingId] || 0);
+            const limit = city.buildingLimits?.[buildingId] || 0;
+            buildingsHTML += `<span style="color: gray;" title="${building.name}">${building.icon} ${currentCount}/${limit}</span>`;
+          }
+        });
+        buildingsHTML += '</div>';
+      }
+    }
+
+    cityInfo.innerHTML = `
+      <h3>${city.name}</h3>
+      <p>Население: ${city.population} / ${city.maxPopulation}</p>
+      <p>Владелец: ${city.owner === 'player' ? 'Вы' : 'Нейтральный'}</p>
+      ${buildingsHTML}
+    `;
+    document.body.appendChild(cityInfo);
+  };
+
 
   return <div id="map" className="w-full h-screen" />;
 }
