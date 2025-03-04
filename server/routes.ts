@@ -46,7 +46,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Некорректный ID города' });
       }
       
-      const city = await storage.getCity(cityId);
+      const cities = await storage.getCities();
+      const city = cities.find(c => c.id === cityId);
       if (!city) {
         return res.status(404).json({ message: 'Город не найден' });
       }
@@ -140,7 +141,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const { taxRate } = req.body;
 
     try {
-      const city = await storage.getCity(parseInt(id));
+      const cities = await storage.getCities();
+      const city = cities.find(c => c.id === parseInt(id));
       if (!city) {
         return res.status(404).json({ message: 'Город не найден' });
       }
