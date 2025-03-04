@@ -485,21 +485,30 @@ export const CityPanel: React.FC<CityPanelProps> = ({
 
                             {/* Отображение производства ресурсов */}
                             {building.resourceProduction && (
-                              <span className="text-xs text-green-600 mt-1">
+                              <span 
+                                className="text-xs text-green-600 mt-1"
+                                title={`Производит ${building.resourceProduction.amount} ${building.resourceProduction.type} в секунду`}
+                              >
                                 {getResourceIcon(building.resourceProduction.type)} +{building.resourceProduction.amount}/сек
                               </span>
                             )}
 
                             {/* Отображение потребления ресурсов */}
                             {building.resourceConsumption && building.resourceConsumption.type && (
-                              <span className="text-xs text-red-600 mt-1">
+                              <span 
+                                className="text-xs text-red-600 mt-1"
+                                title={`Потребляет ${building.resourceConsumption.amount} ${building.resourceConsumption.type} в секунду`}
+                              >
                                 {getResourceIcon(building.resourceConsumption.type)} -{building.resourceConsumption.amount}/сек
                               </span>
                             )}
 
                             {/* Отображение производства населения */}
                             {building.population?.growth > 0 && (
-                              <span className="text-xs text-green-600 mt-1">
+                              <span 
+                                className="text-xs text-green-600 mt-1"
+                                title={`Прирост населения: ${building.population.growth} человек в секунду`}
+                              >
                                 👥 +{building.population.growth}/сек
                               </span>
                             )}
@@ -562,7 +571,11 @@ export const CityPanel: React.FC<CityPanelProps> = ({
                     <div 
                       key={`${buildingId}-${index}`} 
                       className="flex justify-between items-center p-1 hover:bg-gray-100 rounded"
-                      title={workerTooltip}
+                      title={`${workerTooltip}
+${building.resourceProduction ? `\nПроизводит: ${getResourceIcon(building.resourceProduction.type)} ${building.resourceProduction.amount}/сек` : ''}
+${building.resourceConsumption ? `\nПотребляет: ${getResourceIcon(building.resourceConsumption.type)} ${building.resourceConsumption.amount}/сек` : ''}
+${building.population?.growth ? `\nПрирост населения: ${building.population.growth}/сек` : ''}
+${building.military?.production ? `\nПроизводство военных: ${building.military.production}/сек` : ''}`}
                     >
                       <span>{building.name} {requiredWorkers > 0 ? `👥 ${Math.min(requiredWorkers, city.population || 0)}/${requiredWorkers}` : ''}</span>
                       <div className="flex items-center gap-2 text-sm">
