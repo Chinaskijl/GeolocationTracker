@@ -3,6 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Coins, Trees, Wheat, Droplet, Globe } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { BUILDINGS } from '@/lib/game';
+import React from 'react';
 
 export function ResourcePanel() {
   const { gameState, cities, resourcesIncome } = useGameStore();
@@ -257,9 +258,32 @@ export function ResourcePanel() {
           <div key={`satisfaction-${city.id}`} className="border-l pl-4">
             <div className="flex items-center gap-2">
               <span>{city.satisfaction >= 70 ? '😃' : city.satisfaction >= 30 ? '😐' : '😠'}</span>
-              <span className="font-medium">
+              <span className="font-medium group relative">
                 {city.name.split(' ')[0]}: {Math.floor(city.satisfaction || 0)}%
                 {city.protestTimer ? <span className="ml-1 text-xs text-red-500">(⚠️ {Math.floor(city.protestTimer)}s)</span> : ''}
+                
+                {/* Tooltip для удовлетворенности */}
+                <div className="hidden group-hover:block absolute left-0 bottom-full mb-2 w-64 bg-gray-800 text-white p-3 rounded-md shadow-lg z-50">
+                  <h4 className="font-bold mb-2 text-sm">Факторы удовлетворенности:</h4>
+                  <div className="space-y-1 text-xs">
+                    {React.useMemo(() => {
+                      // Импортируем при необходимости
+                      const { analyzeSatisfactionFactors } = require('@/lib/satisfactionHelpers');
+                      const factors = analyzeSatisfactionFactors(city);
+                      
+                      return factors.map((factor, index) => (
+                        <div key={`${city.id}-factor-${index}`} className="flex justify-between">
+                          <span>{factor.name}:</span>
+                          <span className={factor.impact === 'positive' ? 'text-green-400' : 
+                                           factor.impact === 'negative' ? 'text-red-400' : 'text-gray-400'}>
+                            {factor.value > 0 ? '+' : ''}{factor.value.toFixed(1)}/с
+                            <span className="ml-1 text-gray-400 italic">({factor.description})</span>
+                          </span>
+                        </div>
+                      ));
+                    }, [city])}
+                  </div>
+                </div>
               </span>
             </div>
           </div>

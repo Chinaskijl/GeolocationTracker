@@ -275,7 +275,29 @@ export const CityPanel: React.FC<CityPanelProps> = ({
                   </TooltipTrigger>
                   <TooltipContent className="w-72 p-3">
                     <h4 className="font-bold mb-1">Факторы влияющие на удовлетворенность:</h4>
-                    <ul className="text-sm space-y-1">
+                    <div className="space-y-1 text-sm">
+                      {(() => {
+                        const { analyzeSatisfactionFactors } = require('@/lib/satisfactionHelpers');
+                        const factors = analyzeSatisfactionFactors(city);
+                        
+                        return factors.map((factor, index) => (
+                          <div key={`factor-${index}`} className="flex justify-between">
+                            <span>{factor.name}:</span>
+                            <span className={factor.impact === 'positive' ? 'text-green-400' : 
+                                            factor.impact === 'negative' ? 'text-red-400' : 'text-gray-400'}>
+                              {factor.value > 0 ? '+' : ''}{factor.value.toFixed(1)}/с
+                            </span>
+                          </div>
+                        ));
+                      })()}
+                    </div>
+                    <p className="mt-2 text-xs text-gray-400">
+                      {city.protestTimer 
+                        ? `⚠️ Протесты! Осталось ${Math.floor(city.protestTimer)} сек. до потери города.` 
+                        : city.satisfaction < 30 
+                          ? '⚠️ Низкая удовлетворенность! Город скоро начнет протестовать.' 
+                          : '✅ Удовлетворенность в норме.'}
+                    </p>Name="text-sm space-y-1">
                       <li>- Базовое значение: 50%</li>
                       <li>- Количество рабочих мест: {city.satisfaction < 50 ?
                         <span className="text-red-500">Недостаточно рабочих мест</span> :
