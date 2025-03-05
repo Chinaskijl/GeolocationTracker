@@ -286,15 +286,18 @@ export const CityPanel: React.FC<CityPanelProps> = ({
                           </span>
                         </li>
                       ))}
-                    </ul>Name="text-sm space-y-1">
+                    </ul>
+                    <ul className="text-sm space-y-1">
                       <li>- Базовое значение: 50%</li>
                       <li>- Количество рабочих мест: {city.satisfaction < 50 ?
                         <span className="text-red-500">Недостаточно рабочих мест</span> :
                         <span className="text-green-500">Достаточно</span>}
                       </li>
                       <li>- Бонусы от зданий: {city.buildings.some(b => b === 'theater' || b === 'park' || b === 'temple') ?
-                        <span className="text-green-500">+{city.buildings.filter(b => b === 'theater').length * 5 +
-                        city.buildings.filter(b => b === 'park').length * 3 +
+                        <span className="text-green-500">+{city.buildings.filter(b => b === 'theater').length * 10 +
+                        city.buildings.filter(b => b === 'park').length * 5 + 
+                        city.buildings.filter(b => b === 'temple').length * 15}%</span> :
+                        <span className="text-green-500">Нет</span>}ngth * 3 +
                         city.buildings.filter(b => b === 'temple').length * 10}%</span> :
                         <span className="text-gray-500">0%</span>}
                       </li>
