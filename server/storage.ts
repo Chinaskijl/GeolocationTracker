@@ -107,7 +107,7 @@ async function resetGameData() {
     resources: {
       gold: 500,
       wood: 500,
-      food: 500,
+      food: 1000, // Увеличиваем начальное количество еды
       oil: 500,
       metal: 0,
       steel: 0,

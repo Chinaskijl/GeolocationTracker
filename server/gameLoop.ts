@@ -232,7 +232,7 @@ export class GameLoop {
             // Гарантируем, что не будет отрицательной удовлетворенности
             newSatisfaction = 0;
             console.log(`⚠️ CRITICAL! Satisfaction hit 0% in ${city.name}! 60 seconds until loss of control.`);
-            console.log(`DEBUG: Setting protest timer but keeping satisfaction at ${newSatisfaction}%`);
+            console.log(`DEBUG: Setting protest timer and keeping satisfaction at ${newSatisfaction}%`);
           } else if (newSatisfaction < 30 && !isProtesting) {
             // Начинаем протесты с таймером 5 минут (300 секунд)
             newProtestTimer = 300;
