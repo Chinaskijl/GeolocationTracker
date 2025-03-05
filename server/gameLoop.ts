@@ -250,7 +250,17 @@ class GameLoop {
             case 'temple':
               cityResources.influence += 1;
               break;
+              
             // Добавьте другие типы зданий по мере необходимости
+          }
+        }
+      }
+      
+      // Добавляем бонус влияния при высокой удовлетворенности (>70%)
+      if (city.satisfaction && city.satisfaction > 70) {
+        // Бонус растет на 0.05 за каждый процент удовлетворенности выше 70%
+        const satisfactionBonus = (city.satisfaction - 70) * 0.05;
+        cityResources.influence += satisfactionBonus;
           }
         }
       }

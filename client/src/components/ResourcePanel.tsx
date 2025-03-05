@@ -154,7 +154,12 @@ export function ResourcePanel() {
           </span>
           {cities.filter(c => c.owner === 'player').map(city => (
             <div key={`influence-${city.id}`} className="text-xs ml-4">
-              {city.name}: <span className="text-green-500">+{(city.population * 0.1).toFixed(1)}/с</span>
+              {city.name}: <span className="text-green-500">
+                +{(city.population * 0.1).toFixed(1)}/с
+                {city.satisfaction && city.satisfaction > 70 ? 
+                  ` +${((city.satisfaction - 70) * 0.05).toFixed(1)}/с (бонус удовлетворенности)` : 
+                  ''}
+              </span>
             </div>
           ))}
         </div>
