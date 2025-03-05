@@ -283,8 +283,7 @@ class GameLoop {
     // Вычисляем чистое производство
     const netFoodProduction = rawFoodProduction - foodConsumption;
     
-    // Устанавливаем значение в cityResources, но если прирост отрицательный,
-    // обеспечиваем что мы будем вычитать, а не добавлять отрицательное число
+    // Устанавливаем значение в cityResources - всегда применяем чистое производство
     cityResources.food = netFoodProduction;
 
     console.log(`Total food consumption: ${-foodConsumption.toFixed(2)}, Raw production: ${rawFoodProduction.toFixed(2)}, Net production: ${netFoodProduction.toFixed(2)}, Available food: ${gameState.resources.food.toFixed(2)}`);
@@ -299,19 +298,17 @@ class GameLoop {
     // Обрабатываем все ресурсы
     for (const [resource, amount] of Object.entries(cityResources)) {
       if (newResources[resource] !== undefined || resource === 'influence') {
-        // Специальный случай для еды - всегда применяем изменения, независимо от знака
+        // Обрабатываем все ресурсы одинаково, включая еду
+        newResources[resource] = (newResources[resource] || 0) + Number(amount);
+        
+        // Проверяем, что ресурс не стал отрицательным
+        if (newResources[resource] < 0) {
+          newResources[resource] = 0;
+        }
+        
+        // Для логирования
         if (resource === 'food') {
-          // Применяем чистый прирост (может быть отрицательным)
-          newResources[resource] = Math.max(0, (newResources[resource] || 0) + Number(amount));
           console.log(`Изменение еды: ${amount}, новый остаток: ${newResources[resource]}`);
-        } else {
-          // Для других ресурсов 
-          newResources[resource] = (newResources[resource] || 0) + Number(amount);
-          
-          // Проверяем, что ресурс не стал отрицательным
-          if (newResources[resource] < 0) {
-            newResources[resource] = 0;
-          }
         }
         
         // Округляем до 4 знаков после запятой чтобы избежать проблем с плавающей точкой

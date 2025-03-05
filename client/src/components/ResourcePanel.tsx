@@ -37,7 +37,7 @@ export function ResourcePanel() {
     // Добавляем налоговый доход от сервера, если он есть
     if (resourcesIncome && resourcesIncome.gold !== undefined) {
       taxIncome = resourcesIncome.gold;
-      
+
       // Явно добавляем информацию о налогах для отображения в тултипе
       if (Math.abs(taxIncome) > 0.01) {
         goldProd += taxIncome; // Включаем налоги в общую добычу золота
@@ -268,10 +268,10 @@ export function ResourcePanel() {
                 'park': 1,
                 'temple': 1
               };
-              
+
               // Use the actual production value if available
               const actualAmount = actualProductionValues[building.id] || amount;
-              
+
               switch (type) {
                 case 'gold':
                   goldProd += actualAmount;
@@ -325,17 +325,18 @@ export function ResourcePanel() {
     <Card className="fixed top-4 left-4 p-4 z-[1000]">
       <div className="flex flex-wrap gap-4">
         {resources.map((resource) => {
-          // Для еды используем готовое значение netProduction
-          const totalProduction = resource.key === 'food' && resource.netProduction !== undefined
-            ? resource.netProduction
-            : (resource.production + (
-                resourcesIncome && resourcesIncome[resource.key] ? resourcesIncome[resource.key] : 0
-              ) - (resource.consumption || 0));
+          // Для еды применяем специальную логику отображения
+          let totalProduction;
+          if (resource.key === 'food') {
+            // Чистый прирост еды (производство минус потребление)
+            totalProduction = resource.production - resource.consumption;
+          } else {
+            // Для других ресурсов - базовое производство плюс доход из других источников
+            totalProduction = resource.production + (
+              resourcesIncome && resourcesIncome[resource.key] ? resourcesIncome[resource.key] : 0
+            );
+          }
 
-          // Отображаем реальное производство/потребление с учетом знака
-          const displayProduction = typeof resource.production === 'number' ? 
-            resource.production : 0;
-            
           return (
             <div key={resource.name} className="flex items-center gap-2 relative group">
               {resource.icon}
@@ -347,8 +348,16 @@ export function ResourcePanel() {
               </span>
 
               {/* Tooltip that appears on hover */}
-              <div className="hidden group-hover:block">
-                {createTooltipContent(resource.key)}
+              <div className="hidden group-hover:block absolute bg-black bg-opacity-80 text-white p-2 rounded z-50 left-full ml-2 whitespace-nowrap">
+                {resource.key === 'food' ? (
+                  <div>
+                    <p>Производство: +{resource.production.toFixed(1)}</p>
+                    <p>Потребление: -{resource.consumption.toFixed(1)}</p>
+                    <p>Итого: {totalProduction.toFixed(1)}</p>
+                  </div>
+                ) : (
+                  <p>+{resource.production.toFixed(1)} в тик</p>
+                )}
               </div>
             </div>
           );
