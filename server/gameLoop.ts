@@ -182,7 +182,15 @@ export class GameLoop {
           });
 
           // Рассчитываем новый уровень удовлетворенности
-          let newSatisfaction = city.satisfaction || 50; // По умолчанию 50% если не задано
+          let newSatisfaction = city.satisfaction;
+          if (newSatisfaction === undefined || newSatisfaction === null) {
+            console.log(`DEBUG: City ${city.name} had undefined satisfaction, setting to 50%`);
+            newSatisfaction = 50; // По умолчанию 50% если не задано  
+          }
+          // Добавим дополнительную проверку на подозрительное значение
+          if (city.satisfaction === 0 && !isProtesting) {
+            console.log(`DEBUG: WARNING! City ${city.name} has 0% satisfaction but no protest timer`);
+          }
 
           // Базовое падение удовлетворенности из-за нехватки работников
           if (cityTotalWorkers > 0) {
@@ -261,6 +269,9 @@ export class GameLoop {
               });
 
               console.log(`DEBUG: City set to neutral, satisfaction set to 0%`);
+              // Немедленно получаем обновленный город для проверки результата
+              const updatedCity = await storage.getCities().then(cities => cities.find(c => c.id === city.id));
+              console.log(`DEBUG: After update: City owner=${updatedCity.owner}, satisfaction=${updatedCity.satisfaction}%`);
               continue; // Пропускаем дальнейшую обработку города
             } else {
               console.log(`⏳ Protests ongoing in ${city.name}. ${Math.floor(newProtestTimer)} seconds remaining to resolve.`);

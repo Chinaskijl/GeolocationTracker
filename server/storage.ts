@@ -244,10 +244,18 @@ class Storage {
 
       if (updates.owner !== undefined) {
         console.log(`DEBUG: Updating region ${id} owner from ${currentRegion.owner} to ${updates.owner}`);
-        
+
         // При смене владельца НЕ сбрасываем удовлетворенность, если она явно не указана
         if (updates.satisfaction === undefined && updates.owner === 'player' && currentRegion.owner === 'neutral') {
           console.log(`DEBUG: Owner changed to player, keeping current satisfaction at ${currentRegion.satisfaction}%`);
+        }
+      }
+
+      // Запрещаем подозрительные обновления удовлетворенности (с 0% до ~50%)
+      if (currentRegion.satisfaction === 0 && updates.satisfaction !== undefined) {
+        if (updates.satisfaction > 45 && updates.satisfaction < 50) {
+          console.log(`⚠️ BLOCKED suspicious satisfaction update from 0% to ${updates.satisfaction}%`);
+          updates.satisfaction = 0; // Сохраняем 0%
         }
       }
 
