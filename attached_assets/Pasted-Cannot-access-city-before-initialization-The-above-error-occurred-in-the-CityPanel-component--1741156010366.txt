@@ -1,0 +1,25 @@
+Cannot access 'city' before initialization
+The above error occurred in the <CityPanel> component:
+
+    at CityPanel (https://c2d6ae26-7fae-4440-9481-659130687b2b-00-29ukydvm3an3x.sisko.replit.dev:5000/src/components/CityPanel.tsx:83:17)
+    at div
+    at Game (https://c2d6ae26-7fae-4440-9481-659130687b2b-00-29ukydvm3an3x.sisko.replit.dev:5000/src/pages/Game.tsx:165:39)
+    at Route (https://c2d6ae26-7fae-4440-9481-659130687b2b-00-29ukydvm3an3x.sisko.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=34da1522:323:16)
+    at Switch (https://c2d6ae26-7fae-4440-9481-659130687b2b-00-29ukydvm3an3x.sisko.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=34da1522:379:17)
+    at Router
+    at QueryClientProvider (https://c2d6ae26-7fae-4440-9481-659130687b2b-00-29ukydvm3an3x.sisko.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=34da1522:2805:3)
+    at App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+Cannot access 'city' before initialization
+at CityPanel (https://c2d6ae26-7fae-4440-9481-659130687b2b-00-29ukydvm3an3x.sisko.replit.dev:5000/src/components/CityPanel.tsx:99:7)
+at renderWithHooks (https://c2d6ae26-7fae-4440-9481-659130687b2b-00-29ukydvm3an3x.sisko.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-WERSD76P.js?v=34da1522:11548:26)
+at mountIndeterminateComponent (https://c2d6ae26-7fae-4440-9481-659130687b2b-00-29ukydvm3an3x.sisko.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-WERSD76P.js?v=34da1522:14926:21)
+at beginWork (https://c2d6ae26-7fae-4440-9481-659130687b2b-00-29ukydvm3an3x.sisko.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-WERSD76P.js?v=34da1522:15914:22)
+at beginWork$1 (https://c2d6ae26-7fae-4440-9481-659130687b2b-00-29ukydvm3an3x.sisko.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-WERSD76P.js?v=34da1522:19753:22)
+at performUnitOfWork (https://c2d6ae26-7fae-4440-9481-659130687b2b-00-29ukydvm3an3x.sisko.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-WERSD76P.js?v=34da1522:19198:20)
+at workLoopSync (https://c2d6ae26-7fae-4440-9481-659130687b2b-00-29ukydvm3an3x.sisko.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-WERSD76P.js?v=34da1522:19137:13)
+at renderRootSync (https://c2d6ae26-7fae-4440-9481-659130687b2b-00-29ukydvm3an3x.sisko.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-WERSD76P.js?v=34da1522:19116:15)
+at recoverFromConcurrentError (https://c2d6ae26-7fae-4440-9481-659130687b2b-00-29ukydvm3an3x.sisko.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-WERSD76P.js?v=34da1522:18736:28)
+at performSyncWorkOnRoot (https://c2d6ae26-7fae-4440-9481-659130687b2b-00-29ukydvm3an3x.sisko.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-WERSD76P.js?v=34da1522:18879:28)
