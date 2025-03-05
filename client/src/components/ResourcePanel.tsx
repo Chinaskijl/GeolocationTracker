@@ -137,7 +137,8 @@ export function ResourcePanel() {
             <div key={`tax-${city.id}`} className="text-xs ml-4">
               {city.name}: {city.taxRate === 0 ?
                 <span className="text-red-500">-{(city.population * 0.5).toFixed(1)}/с</span> :
-                <span className="text-green-500">+{(city.population * (city.taxRate / 5)).toFixed(1)}/с</span>}
+                <span className="text-green-500">+{((city.population * city.taxRate) / 5).toFixed(1)}/с</span>
+              }span className="text-green-500">+{(city.population * (city.taxRate / 5)).toFixed(1)}/с</span>}
             </div>
           ))}
         </div>

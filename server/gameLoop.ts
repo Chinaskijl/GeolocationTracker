@@ -169,6 +169,9 @@ class GameLoop {
       // Обновляем удовлетворенность города на основе налоговой ставки и других факторов
       let satisfactionChange = 0; // Начинаем с нуля
       
+      // Базовый прирост всегда добавляем
+      satisfactionChange += 0.5;
+      
       // Проверка нехватки рабочих
       const totalBuildingsCount = city.buildings?.length || 0;
       const cityPopulation = city.population || 0;
@@ -178,9 +181,6 @@ class GameLoop {
         // Если не хватает рабочих, это сильно снижает удовлетворенность
         satisfactionChange -= 5.0;
         console.log(`City ${city.name} lacks workers: ${availableWorkers}, applying -5.0 satisfaction penalty`);
-      } else {
-        // Базовый прирост только если хватает рабочих
-        satisfactionChange += 0.5;
       }
       
       // Эффект от налоговой ставки
