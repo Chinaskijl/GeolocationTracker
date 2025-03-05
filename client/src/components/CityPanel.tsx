@@ -53,6 +53,10 @@ export const CityPanel: React.FC<CityPanelProps> = ({
 }) => {
   const [tick, setTick] = React.useState(0);
   
+  const { gameState, cities, selectedCity: cityFromStore, setGameState } = useGameStore();
+  // Use the city from props or from store
+  const city = cityProp || cityFromStore;
+
   // Устанавливаем интервал для регулярного обновления панели
   React.useEffect(() => {
     // Обновляем панель при каждом изменении города или игрового состояния
@@ -81,10 +85,6 @@ export const CityPanel: React.FC<CityPanelProps> = ({
         return building?.description || "";
     }
   };
-
-  const { gameState, cities, selectedCity: cityFromStore, setGameState } = useGameStore();
-  // Use the city from props or from store
-  const city = cityProp || cityFromStore;
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
