@@ -299,22 +299,31 @@ export const CityPanel: React.FC<CityPanelProps> = ({
     }
   };
 
+  // Оптимизируем рендеринг, используя мемоизацию
+  const cityInfo = React.useMemo(() => {
+    if (!city) return null;
+    
+    return (
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-bold">{city.name}</h2>
+        <span className={`px-2 py-1 rounded-full text-sm ${
+          city.owner === 'player' ? 'bg-blue-100 text-blue-800' :
+            city.owner === 'neutral' ? 'bg-gray-100 text-gray-800' :
+              'bg-red-100 text-red-800'
+        }`}>
+          {city.owner === 'player' ? 'Ваш город' :
+            city.owner === 'neutral' ? 'Нейтральный' : 'Вражеский город'}
+        </span>
+      </div>
+    );
+  }, [city?.name, city?.owner]);
+
   return (
     <TooltipProvider>
       <Card className="fixed bottom-4 left-4 w-96 max-h-[80vh] z-[1000] overflow-hidden">
         <ScrollArea className="max-h-[80vh] h-[80vh]">
           <div className="p-4 space-y-4">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-bold">{city.name}</h2>
-            <span className={`px-2 py-1 rounded-full text-sm ${
-              city.owner === 'player' ? 'bg-blue-100 text-blue-800' :
-                city.owner === 'neutral' ? 'bg-gray-100 text-gray-800' :
-                  'bg-red-100 text-red-800'
-            }`}>
-              {city.owner === 'player' ? 'Ваш город' :
-                city.owner === 'neutral' ? 'Нейтральный' : 'Вражеский город'}
-            </span>
-          </div>
+            {cityInfo}
 
           <div className="space-y-2">
             <div className="flex items-center justify-between mb-3">

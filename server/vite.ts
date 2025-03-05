@@ -17,6 +17,70 @@ export function log(message: string, source = "express") {
     hour: "numeric",
     minute: "2-digit",
     second: "2-digit",
+
+import { createServer } from 'vite';
+import express from 'express';
+import { fileURLToPath } from 'url';
+import { dirname, resolve } from 'path';
+import { initDb } from './initDb.js';
+import { registerRoutes } from './routes.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Увеличиваем приоритет сервера для более быстрой обработки запросов
+process.env.NODE_ENV = process.env.NODE_ENV || 'development';
+const isProd = process.env.NODE_ENV === 'production';
+
+export async function createViteServer() {
+  // Инициализируем базу данных
+  await initDb();
+
+  // Создаем Express приложение
+  const app = express();
+  
+  // Оптимизация для повышения производительности
+  app.set('etag', false);
+  app.use(express.json({ limit: '5mb' }));
+  
+  // Без этих заголовков браузер будет кэшировать ответы, что может вызывать задержки
+  app.use((req, res, next) => {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    next();
+  });
+
+  // В режиме разработки создаем Vite сервер
+  if (!isProd) {
+    const vite = await createServer({
+      root: resolve(__dirname, '../client'),
+      server: {
+        middlewareMode: true,
+        hmr: {
+          // Оптимизация Hot Module Replacement
+          protocol: 'ws',
+          timeout: 5000, // Уменьшаем таймаут для более быстрого обновления
+          port: 24678
+        }
+      },
+      appType: 'spa',
+      clearScreen: false
+    });
+
+    // Используем Vite middleware
+    app.use(vite.middlewares);
+  } else {
+    // В продакшене просто раздаем статические файлы
+    app.use(express.static(resolve(__dirname, '../client/dist')));
+  }
+
+  // Регистрируем API маршруты
+  const httpServer = await registerRoutes(app);
+
+  return httpServer;
+}
+
     hour12: true,
   });
 

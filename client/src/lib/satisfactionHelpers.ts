@@ -26,8 +26,8 @@ export function getSatisfactionFactors(city: City): SatisfactionFactor[] {
       impact: '-5.0/с',
       isPositive: false
     });
-  } else {
-    // Только если достаточно рабочих, добавляем базовый прирост
+  } else if (cityPopulation > 0) {
+    // Только если достаточно рабочих и есть население, добавляем базовый прирост
     factors.push({
       name: 'Базовый прирост',
       impact: '+0.5/с',
