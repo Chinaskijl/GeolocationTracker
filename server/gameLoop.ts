@@ -1,6 +1,7 @@
 
 import { WebSocket } from 'ws';
 import { storage } from './storage';
+import { BUILDINGS } from '../client/src/lib/game';
 
 // Класс для управления игровым циклом
 class GameLoop {
@@ -224,8 +225,41 @@ class GameLoop {
       }
     }
 
-    // Обновляем население
-    gameState.population = totalPopulation;
+    // Обновляем население в каждом городе на основе построенных зданий
+    for (const city of playerCities) {
+      // Базовый рост населения
+      let populationGrowth = 0;
+      
+      // Рост от домов и других зданий
+      if (city.buildings) {
+        city.buildings.forEach(buildingId => {
+          const building = BUILDINGS.find(b => b.id === buildingId);
+          if (building && building.population && building.population.growth) {
+            populationGrowth += building.population.growth;
+          }
+        });
+      }
+      
+      // Проверяем, достаточно ли еды для роста
+      if (newResources.food > 0) {
+        // Если у города есть maxPopulation и текущее население меньше максимума
+        if (city.maxPopulation && city.population < city.maxPopulation) {
+          // Увеличиваем население на величину роста
+          const newPopulation = city.population + populationGrowth;
+          // Не превышаем максимальное население
+          city.population = Math.min(newPopulation, city.maxPopulation);
+          
+          await storage.updateCity(city.id, { 
+            population: city.population 
+          });
+          
+          console.log(`City ${city.name} population updated: ${city.population}`);
+        }
+      }
+    }
+
+    // Обновляем общее население
+    gameState.population = playerCities.reduce((sum, city) => sum + (city.population || 0), 0);
 
     // Сохраняем обновленное состояние
     const updatedGameState = {
