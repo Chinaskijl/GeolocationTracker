@@ -43,6 +43,7 @@ export class AIPlayer {
       // Проверяем возможность захвата нейтральных городов
       if (this.military > 50 && neutralCities.length > 0) {
         await this.considerCapturingCity(neutralCities);
+        console.log(`[AI] Considering capturing neutral cities. Military strength: ${this.military}`);
       }
       
       // Проверяем возможность атаки игрока

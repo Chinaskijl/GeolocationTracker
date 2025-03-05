@@ -244,6 +244,11 @@ class Storage {
 
       if (updates.owner !== undefined) {
         console.log(`DEBUG: Updating region ${id} owner from ${currentRegion.owner} to ${updates.owner}`);
+        
+        // При смене владельца НЕ сбрасываем удовлетворенность, если она явно не указана
+        if (updates.satisfaction === undefined && updates.owner === 'player' && currentRegion.owner === 'neutral') {
+          console.log(`DEBUG: Owner changed to player, keeping current satisfaction at ${currentRegion.satisfaction}%`);
+        }
       }
 
 
