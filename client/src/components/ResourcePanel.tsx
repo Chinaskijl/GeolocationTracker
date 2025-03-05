@@ -3,6 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Coins, Trees, Wheat, Droplet, Globe } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { BUILDINGS } from '@/lib/game';
+import { getSatisfactionFactors } from '@/lib/satisfactionHelpers'; // Added import
 
 export function ResourcePanel() {
   const { gameState, cities, resourcesIncome } = useGameStore();

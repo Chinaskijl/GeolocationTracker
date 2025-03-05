@@ -15,11 +15,13 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import React from "react";
+import { getSatisfactionFactors } from '@/lib/satisfactionHelpers'; // Added import
+
 
 // Placeholder Slider component - replace with actual implementation
 const Slider = ({ defaultValue, min, max, step, onValueCommit }) => {
   const [value, setValue] = React.useState(defaultValue[0]);
-  
+
   return (
     <div className="flex items-center gap-2">
       <input
