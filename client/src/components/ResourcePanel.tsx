@@ -130,8 +130,8 @@ export function ResourcePanel() {
           </span>
           {cities.filter(c => c.owner === 'player').map(city => (
             <div key={`tax-${city.id}`} className="text-xs ml-4">
-              {city.name}: {city.taxRate === 0 ? 
-                <span className="text-red-500">-{(city.population * 0.5).toFixed(1)}/с</span> : 
+              {city.name}: {city.taxRate === 0 ?
+                <span className="text-red-500">-{(city.population * 0.5).toFixed(1)}/с</span> :
                 <span className="text-green-500">+{(city.population * (city.taxRate / 5)).toFixed(1)}/с</span>}
             </div>
           ))}
@@ -263,7 +263,7 @@ export function ResourcePanel() {
                 {city.protestTimer ? <span className="ml-1 text-xs text-red-500">(⚠️ {Math.floor(city.protestTimer)}s)</span> : ''}
               </span>
             </div>
-            
+
             {/* Тултип для удовлетворенности */}
             <div className="hidden group-hover:block absolute top-full left-0 bg-black/80 text-white p-2 rounded text-xs z-50 w-64">
               <div className="font-bold mb-1">Факторы удовлетворенности:</div>
@@ -274,7 +274,8 @@ export function ResourcePanel() {
                     {factor.impact}
                   </span>
                 </div>
-              ))}Factors(city).length === 0 && (
+              ))}
+              {getSatisfactionFactors(city).length === 0 && (
                 <div className="text-gray-300">Нет активных факторов</div>
               )}
             </div>
