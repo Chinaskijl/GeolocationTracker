@@ -283,8 +283,8 @@ export const CityPanel: React.FC<CityPanelProps> = ({
 
   return (
     <TooltipProvider>
-      <Card className="fixed bottom-4 left-4 w-96 max-h-[80vh] z-[1000]">
-        <ScrollArea className="max-h-[80vh]">
+      <Card className="fixed bottom-4 left-4 w-96 max-h-[80vh] z-[1000] overflow-hidden">
+        <ScrollArea className="max-h-[80vh] h-[80vh]">
           <div className="p-4 space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-bold">{city.name}</h2>
@@ -497,8 +497,43 @@ export const CityPanel: React.FC<CityPanelProps> = ({
 
                 {/* Табы категорий зданий с возможностью прокрутки */}
                 <div 
-                  className="flex space-x-2 overflow-x-auto pb-2"
+                  className="flex space-x-2 overflow-x-auto pb-2 cursor-grab"
                   id="categories-container"
+                  onMouseDown={(e) => {
+                    const container = document.getElementById('categories-container');
+                    if (!container) return;
+                    
+                    // Начальные позиции
+                    const startX = e.pageX;
+                    const initialScroll = container.scrollLeft;
+                    
+                    // Изменяем курсор при перетаскивании
+                    container.classList.remove('cursor-grab');
+                    container.classList.add('cursor-grabbing');
+                    
+                    // Функция обработки движения мыши
+                    const onMouseMove = (moveEvent: MouseEvent) => {
+                      const x = moveEvent.pageX;
+                      const distance = startX - x;
+                      container.scrollLeft = initialScroll + distance;
+                      
+                      // Предотвращаем выделение текста
+                      moveEvent.preventDefault();
+                    };
+                    
+                    // Функция обработки отпускания кнопки мыши
+                    const onMouseUp = () => {
+                      document.removeEventListener('mousemove', onMouseMove);
+                      document.removeEventListener('mouseup', onMouseUp);
+                      
+                      // Возвращаем курсор
+                      container.classList.remove('cursor-grabbing');
+                      container.classList.add('cursor-grab');
+                    };
+                    
+                    document.addEventListener('mousemove', onMouseMove);
+                    document.addEventListener('mouseup', onMouseUp);
+                  }}
                 >
                   <Button 
                     variant="outline" 
