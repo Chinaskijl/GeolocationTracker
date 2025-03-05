@@ -1,0 +1,36 @@
+Warning: React has detected a change in the order of Hooks called by ResourcePanel. This will lead to bugs and errors if not fixed. For more information, read the Rules of Hooks: https://reactjs.org/link/rules-of-hooks
+
+   Previous render            Next render
+   ------------------------------------------------------
+1. useSyncExternalStore       useSyncExternalStore
+2. useDebugValue              useDebugValue
+3. useState                   useState
+4. useState                   useState
+5. useEffect                  useEffect
+6. undefined                  useMemo
+   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    at ResourcePanel (https://84d0bc2e-19bb-443e-9320-532c04726d75-00-241j164ue3oyx.sisko.replit.dev:5000/src/components/ResourcePanel.tsx:27:50)
+    at div
+    at Game (https://84d0bc2e-19bb-443e-9320-532c04726d75-00-241j164ue3oyx.sisko.replit.dev:5000/src/pages/Game.tsx:165:39)
+    at Route (https://84d0bc2e-19bb-443e-9320-532c04726d75-00-241j164ue3oyx.sisko.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=34da1522:323:16)
+    at Switch (https://84d0bc2e-19bb-443e-9320-532c04726d75-00-241j164ue3oyx.sisko.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=34da1522:379:17)
+    at Router
+    at QueryClientProvider (https://84d0bc2e-19bb-443e-9320-532c04726d75-00-241j164ue3oyx.sisko.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=34da1522:2805:3)
+    at App
+Rendered more hooks than during the previous render.
+Rendered more hooks than during the previous render.
+The above error occurred in the <ResourcePanel> component:
+
+    at ResourcePanel (https://84d0bc2e-19bb-443e-9320-532c04726d75-00-241j164ue3oyx.sisko.replit.dev:5000/src/components/ResourcePanel.tsx:27:50)
+    at div
+    at Game (https://84d0bc2e-19bb-443e-9320-532c04726d75-00-241j164ue3oyx.sisko.replit.dev:5000/src/pages/Game.tsx:165:39)
+    at Route (https://84d0bc2e-19bb-443e-9320-532c04726d75-00-241j164ue3oyx.sisko.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=34da1522:323:16)
+    at Switch (https://84d0bc2e-19bb-443e-9320-532c04726d75-00-241j164ue3oyx.sisko.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=34da1522:379:17)
+    at Router
+    at QueryClientProvider (https://84d0bc2e-19bb-443e-9320-532c04726d75-00-241j164ue3oyx.sisko.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=34da1522:2805:3)
+    at App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+Rendered more hooks than during the previous render.
