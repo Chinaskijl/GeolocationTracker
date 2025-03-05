@@ -1,0 +1,70 @@
+Received game state update: 
+Object {resources: {…}, population: 146, military: 0}
+Received cities update: 
+(5) [{…}, {…}, {…}, {…}, {…}]
+Received game state update: 
+Object {resources: {…}, population: 146, military: 0}
+Received cities update: 
+(5) [{…}, {…}, {…}, {…}, {…}]
+Received game state update: 
+Object {resources: {…}, population: 150, military: 0}
+Received cities update: 
+(5) [{…}, {…}, {…}, {…}, {…}]
+Received game state update: 
+Object {resources: {…}, population: 154, military: 0}
+Received cities update: 
+(5) [{…}, {…}, {…}, {…}, {…}]
+Received game state update: 
+Object {resources: {…}, population: 158, military: 0}
+Received cities update: 
+(5) [{…}, {…}, {…}, {…}, {…}]
+Received game state update: 
+Object {resources: {…}, population: 156, military: 0}
+Received cities update: 
+(5) [{…}, {…}, {…}, {…}, {…}]
+Received game state update: 
+Object {resources: {…}, population: 151, military: 0}
+Ошибка при мирном захвате: 
+TypeError {}
+
+toast.error is not a function
+Received cities update: 
+(5) [{…}, {…}, {…}, {…}, {…}]
+Received game state update: 
+Object {resources: {…}, population: 145, military: 0}
+Received cities update: 
+(5) [{…}, {…}, {…}, {…}, {…}]
+Received game state update: 
+Object {resources: {…}, population: 145, military: 0}
+Received cities update: 
+(5) [{…}, {…}, {…}, {…}, {…}]
+Received game state update: 
+Object {resources: {…}, population: 149, military: 0}
+Received cities update: 
+(5) [{…}, {…}, {…}, {…}, {…}]
+Ошибка при мирном захвате: 
+TypeError {}
+
+toast.error is not a function
+Ошибка при мирном захвате: 
+TypeError {}
+message: "toast.error is not a function"
+stack: "TypeError: toast.error is not a function↵ at handleCaptureWithInfluence (https://c2d6ae26-7fae-4440-9481-659130687b2b-00-29ukydvm3an3x.sisko.replit.dev:5000/src/components/CityPanel.tsx:201:15)"
+get stack: ƒ ()
+length: 0
+name: ""
+[[Prototype]]: ƒ ()
+set stack: ƒ ()
+length: 1
+name: ""
+[[Prototype]]: ƒ ()
+[[Prototype]]: Object
+constructor: ƒ TypeError()
+message: "toast.error is not a function"
+name: "TypeError"
+[[Prototype]]: Object
+
+at t.value (https://c2d6ae26-7fae-4440-9481-659130687b2b-00-29ukydvm3an3x.sisko.replit.dev:5000/__replco/static/devtools/eruda/3.2.3/eruda.js:2:17465)
+at new t (https://c2d6ae26-7fae-4440-9481-659130687b2b-00-29ukydvm3an3x.sisko.replit.dev:5000/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12630)
+at t.value (https://c2d6ae26-7fae-4440-9481-659130687b2b-00-29ukydvm3an3x.sisko.replit.dev:5000/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32766)
+at https://c2d6ae26-7fae-4440-9481-659130687b2b-00-29ukydvm3an3x.sisko.replit.dev:5000/__replco/static/devtools/eruda/3.2.3/eruda.js:2:34400
