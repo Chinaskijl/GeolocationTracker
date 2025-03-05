@@ -1,4 +1,3 @@
-
 import { WebSocket } from 'ws';
 import { storage } from './storage';
 import { BUILDINGS } from '../client/src/lib/game';
@@ -151,11 +150,11 @@ class GameLoop {
     // Проходим по всем городам игрока
     for (const city of playerCities) {
       totalPopulation += city.population || 0;
-      
+
       // Расчет дохода от налогов
       const taxRate = city.taxRate !== undefined ? city.taxRate : 5; // По умолчанию 5%
       let taxIncome;
-      
+
       if (taxRate === 0) {
         // Если налоговая ставка 0%, то государство платит за жителей (отрицательный доход)
         taxIncome = -(city.population || 0) * 0.5; // Субсидия населению
@@ -163,18 +162,18 @@ class GameLoop {
         // Доход от налогов зависит от ставки
         taxIncome = (city.population || 0) * (taxRate / 5); 
       }
-      
+
       cityResources.gold += taxIncome;
-      
+
       // Обновляем удовлетворенность города на основе налоговой ставки и других факторов
       let satisfactionChange = 0; // Начинаем с нуля
-      
+
       // Базовый прирост добавляем, но только если нет проблем с рабочими
       // Проверка нехватки рабочих
       const totalBuildingsCount = city.buildings?.length || 0;
       const cityPopulation = city.population || 0;
       const availableWorkers = cityPopulation - totalBuildingsCount;
-      
+
       if (totalBuildingsCount > 0 && availableWorkers < 0) {
         // Если не хватает рабочих, это сильно снижает удовлетворенность
         satisfactionChange -= 5.0;
@@ -183,20 +182,20 @@ class GameLoop {
         // Базовый прирост только если достаточно рабочих
         satisfactionChange += 0.5;
       }
-      
+
       // Эффект от налоговой ставки
       if (taxRate > 5) {
         satisfactionChange -= (taxRate - 5) * 0.2; // Высокие налоги снижают удовлетворенность
       } else if (taxRate < 5) {
         satisfactionChange += (5 - taxRate) * 0.1; // Низкие налоги немного повышают
       }
-      
+
       // Обновление удовлетворенности
       if (city.satisfaction !== undefined) {
         let newSatisfaction = city.satisfaction + satisfactionChange;
         // Ограничиваем значение от 0 до 100
         newSatisfaction = Math.max(0, Math.min(100, newSatisfaction));
-        
+
         if (Math.abs(newSatisfaction - city.satisfaction) > 0.01) {
           await storage.updateCity(city.id, {
             satisfaction: newSatisfaction
@@ -207,7 +206,7 @@ class GameLoop {
       // Базовые ресурсы добавляем только для специально построенных зданий
       // Базовое свойство city.resources используем только для определения возможных ресурсов в регионе
       // НЕ добавляем автоматически ресурсы из city.resources
-      
+
       // Вместо этого, у нас уже есть логика добавления ресурсов от построенных зданий ниже
 
       // Добавляем бонусы от построенных зданий
@@ -215,7 +214,7 @@ class GameLoop {
         for (const building of city.buildings) {
           // Здесь нужна логика для расчета бонусов от зданий
           // Например, 'farm' дает +5 food, 'logging_camp' дает +5 wood и т.д.
-          
+
           // Это примерная реализация, нужно дополнить на основе вашей игровой механики
           switch (building) {
             case 'farm':
@@ -250,19 +249,17 @@ class GameLoop {
             case 'temple':
               cityResources.influence += 1;
               break;
-              
+
             // Добавьте другие типы зданий по мере необходимости
           }
         }
       }
-      
+
       // Добавляем бонус влияния при высокой удовлетворенности (>70%)
       if (city.satisfaction && city.satisfaction > 70) {
         // Бонус растет на 0.05 за каждый процент удовлетворенности выше 70%
         const satisfactionBonus = (city.satisfaction - 70) * 0.05;
         cityResources.influence += satisfactionBonus;
-          }
-        }
       }
     }
 
@@ -286,7 +283,7 @@ class GameLoop {
     for (const city of playerCities) {
       // Базовый рост населения
       let populationGrowth = 0;
-      
+
       // Рост от домов и других зданий
       if (city.buildings) {
         city.buildings.forEach(buildingId => {
@@ -296,7 +293,7 @@ class GameLoop {
           }
         });
       }
-      
+
       // Проверяем, достаточно ли еды для роста
       if (newResources.food > 0) {
         // Если у города есть maxPopulation и текущее население меньше максимума
@@ -305,11 +302,11 @@ class GameLoop {
           const newPopulation = city.population + populationGrowth;
           // Не превышаем максимальное население
           city.population = Math.min(newPopulation, city.maxPopulation);
-          
+
           await storage.updateCity(city.id, { 
             population: city.population 
           });
-          
+
           console.log(`City ${city.name} population updated: ${city.population}`);
         }
       }
