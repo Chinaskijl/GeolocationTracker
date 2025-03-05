@@ -194,29 +194,15 @@ export class GameLoop {
 
           // Базовое падение удовлетворенности из-за нехватки работников
           if (cityTotalWorkers > 0) {
-            // Применяем штраф только если работников не хватает
             const workerSatisfactionImpact = (cityAvailableWorkers < 0) ? 
               -5 : // Сильное падение если вообще не хватает работников
-              (cityAvailableWorkers < cityTotalWorkers * 0.5) ? 
-                Math.min(0, -5 * (0.5 - cityAvailableWorkers / cityTotalWorkers)) : // Постепенное падение при менее 50% работников
-                0; // Нет штрафа если достаточно работников
+              Math.min(0, -5 * (1 - cityAvailableWorkers / cityTotalWorkers)); // Постепенное падение
 
-            // Применяем штраф за нехватку работников
-            if (workerSatisfactionImpact < 0) {
-              newSatisfaction += workerSatisfactionImpact * deltaTime;
-              console.log(`Worker satisfaction impact in ${city.name}: ${workerSatisfactionImpact.toFixed(2)}/s (available: ${cityAvailableWorkers}, total needed: ${cityTotalWorkers})`);
-            }
+            newSatisfaction += workerSatisfactionImpact * deltaTime;
           }
 
-          // Базовый прирост удовлетворенности
-          const baseGrowth = 0.5; // Базовый прирост +0.5/с
-          newSatisfaction += baseGrowth * deltaTime;
-          console.log(`Base satisfaction growth in ${city.name}: +${baseGrowth.toFixed(1)}/s`);
-
           // Добавляем бонус от культурных зданий
-          const culturalBonus = citySatisfactionBonus * 0.5; // Корректируем бонус от культурных зданий
-          newSatisfaction += culturalBonus * deltaTime;
-          console.log(`Cultural buildings bonus in ${city.name}: +${culturalBonus.toFixed(1)}/s`);
+          newSatisfaction += citySatisfactionBonus * deltaTime * 0.1; // Умножаем на маленький коэффициент
 
           // Влияние налоговой ставки на удовлетворенность
           const taxRate = city.taxRate !== undefined ? city.taxRate : 5; // По умолчанию 5
@@ -224,22 +210,14 @@ export class GameLoop {
           // Ниже 5 - повышение удовлетворенности, выше 5 - понижение
           const taxSatisfactionImpact = (5 - taxRate) * 0.5; // Коэффициент влияния налогов
           newSatisfaction += taxSatisfactionImpact * deltaTime;
-          console.log(`Tax rate impact in ${city.name}: ${taxSatisfactionImpact > 0 ? '+' : ''}${taxSatisfactionImpact.toFixed(1)}/s (rate: ${taxRate})`);
 
           // Расчет дохода от налогов
           if (city.population > 0) {
-            // При налоговой ставке 0 город потребляет золото, но только если оно есть
+            // При налоговой ставке 0 город потребляет золото
             if (taxRate === 0) {
-              if (newResources.gold > 0) {
-                const goldConsumption = Math.min(newResources.gold, city.population * 0.5 * deltaTime);
-                newResources.gold -= goldConsumption;
-                console.log(`City ${city.name} consumes gold due to zero taxes: -${goldConsumption.toFixed(2)}`);
-              } else {
-                // Если золота нет, удовлетворенность падает из-за невозможности субсидирования
-                const noGoldPenalty = -2.0; // Штраф за отсутствие золота при нулевой ставке
-                newSatisfaction += noGoldPenalty * deltaTime;
-                console.log(`No gold for zero tax rate in ${city.name}, satisfaction penalty: ${noGoldPenalty.toFixed(1)}/s`);
-              }
+              const goldConsumption = Math.min(newResources.gold, city.population * 0.5 * deltaTime);
+              newResources.gold -= goldConsumption;
+              console.log(`City ${city.name} consumes gold due to zero taxes: -${goldConsumption.toFixed(2)}`);
             } else {
               // Иначе производит золото в зависимости от ставки
               // Новая формула: 1 человек платит 1 золото в секунду при коэффициенте 1 (taxRate = 5)
