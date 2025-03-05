@@ -297,8 +297,6 @@ export const CityPanel: React.FC<CityPanelProps> = ({
                         <span className="text-green-500">+{city.buildings.filter(b => b === 'theater').length * 10 +
                         city.buildings.filter(b => b === 'park').length * 5 + 
                         city.buildings.filter(b => b === 'temple').length * 15}%</span> :
-                        <span className="text-green-500">Нет</span>}ngth * 3 +
-                        city.buildings.filter(b => b === 'temple').length * 10}%</span> :
                         <span className="text-gray-500">0%</span>}
                       </li>
                       <li>- Протесты: {city.protestTimer ?
