@@ -664,7 +664,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Получаем данные о регионе
       const regions = await storage.getRegions();
-      const region = regions.find(r => r.id === regionId);
+      const region = regions.find(r => r.id === Number(regionId));
 
       if (!region) {
         return res.status(404).json({ success: false, message: 'Регион не найден' });
@@ -683,12 +683,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Мирный захват через влияние
         const requiredInfluence = Math.ceil(region.maxPopulation / 2); // Требуется больше влияния, чем военных
 
+        console.log(`Required influence: ${requiredInfluence}, Available: ${gameState.resources.influence}`);
+
         // Проверяем, достаточно ли влияния
-        if (!gameState.resources.influence || gameState.resources.influence < requiredInfluence) {
+        if (gameState.resources.influence === undefined || gameState.resources.influence < requiredInfluence) {
           return res.status(400).json({ 
             success: false, 
             message: 'Недостаточно влияния для мирного захвата', 
-            required: requiredInfluence 
+            required: requiredInfluence,
+            available: gameState.resources.influence || 0
           });
         }
 
@@ -696,14 +699,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         gameState.resources.influence -= requiredInfluence;
         await storage.setGameState(gameState);
 
-        // Захватываем территорию с лучшими начальными условиями
-        const updatedRegion = await storage.updateRegion(regionId, { 
-          owner: 'player',
-          military: 0, // Без военных
-          satisfaction: 75 // Более высокая начальная удовлетворенность
-        });
-
-        return res.json({ success: true, region: updatedRegion, gameState });
+        try {
+          // Захватываем территорию с лучшими начальными условиями
+          const updatedRegion = await storage.updateRegion(Number(regionId), { 
+            owner: 'player',
+            military: 0, // Без военных
+            satisfaction: 75 // Более высокая начальная удовлетворенность
+          });
+          
+          console.log('Region captured through influence:', updatedRegion);
+          return res.json({ success: true, region: updatedRegion, gameState });
+        } catch (updateError) {
+          console.error('Error updating region:', updateError);
+          return res.status(500).json({ success: false, message: 'Ошибка при обновлении региона', error: updateError.message });
+        }
       } else {
         // Военный захват
         // Проверяем, что указано количество военных

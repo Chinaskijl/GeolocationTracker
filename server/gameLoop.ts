@@ -255,30 +255,33 @@ class GameLoop {
         }
       }
 
-      // Добавляем бонус влияния при высокой удовлетворенности (>70%)
-      if (city.satisfaction && city.satisfaction > 70) {
-        // Бонус растет на 0.05 за каждый процент удовлетворенности выше 70%
-        const satisfactionBonus = (city.satisfaction - 70) * 0.05;
-        cityResources.influence += satisfactionBonus;
+      // Проверяем свойство 'satisfaction' перед использованием
+      if (city.satisfaction !== undefined) {
+        // Добавляем бонус влияния ТОЛЬКО при высокой удовлетворенности (>70%)
+        if (city.satisfaction > 70) {
+          // Бонус растет на 0.05 за каждый процент удовлетворенности выше 70%
+          const satisfactionBonus = (city.satisfaction - 70) * 0.05;
+          cityResources.influence += satisfactionBonus;
+        } else {
+          // Иначе не добавляем никакого бонуса к влиянию от удовлетворенности
+          console.log(`City ${city.name} satisfaction (${city.satisfaction.toFixed(1)}%) is below 70%, no influence bonus`);
+        }
       }
     }
 
     // Рассчитываем расход еды на население
     const foodConsumption = totalPopulation * 0.1; // Например, 0.1 еды на 1 человека
     
-    // Сохраняем потребление еды отдельно для логов
-    const rawFoodConsumption = foodConsumption;
+    // Сохраняем общее производство еды перед вычетом потребления (для логов)
+    const rawFoodProduction = cityResources.food;
     
-    // Теперь вычитаем потребление из общего производства
-    if (cityResources.food > foodConsumption) {
-      // Если производство больше потребления, просто уменьшаем добавку
-      cityResources.food -= foodConsumption;
-    } else {
-      // Иначе обнуляем производство и не позволяем стать отрицательным
-      cityResources.food = 0;
-    }
+    // Вычисляем чистое производство (может быть отрицательным)
+    const netFoodProduction = rawFoodProduction - foodConsumption;
+    
+    // Устанавливаем значение в cityResources
+    cityResources.food = netFoodProduction;
 
-    console.log(`Total food consumption: ${-rawFoodConsumption.toFixed(2)}, Raw production: ${(cityResources.food + rawFoodConsumption).toFixed(2)}, Net production: ${cityResources.food.toFixed(2)}`);
+    console.log(`Total food consumption: ${-foodConsumption.toFixed(2)}, Raw production: ${rawFoodProduction.toFixed(2)}, Net production: ${netFoodProduction.toFixed(2)}`);
 
     // Обновляем состояние игры
     const newResources = { ...gameState.resources };
