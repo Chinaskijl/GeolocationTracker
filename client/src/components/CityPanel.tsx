@@ -279,9 +279,8 @@ export const CityPanel: React.FC<CityPanelProps> = ({
                     <h4 className="font-bold mb-1">Факторы влияющие на удовлетворенность:</h4>
                     <div className="space-y-1 text-sm">
                       {(() => {
-                        // Import analyzeSatisfactionFactors at the top of file instead
-                        // Using a dummy function here to prevent runtime errors
-                        const analyzeSatisfactionFactors = (city) => {
+                        // Use a local function instead of requiring an external module
+                        const getFactors = (city) => {
                           return [
                             { name: 'Базовое значение', value: 50, impact: 'neutral' },
                             ...(city.buildings.some(b => b === 'theater' || b === 'park' || b === 'temple') 
@@ -293,7 +292,7 @@ export const CityPanel: React.FC<CityPanelProps> = ({
                           ];
                         };
                         
-                        const factors = analyzeSatisfactionFactors(city);
+                        const factors = getFactors(city);
 
                         return factors.map((factor, index) => (
                           <div key={`factor-${index}`} className="flex justify-between">

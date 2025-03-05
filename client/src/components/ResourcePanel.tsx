@@ -312,3 +312,5 @@ export function getResourceIcon(type: string): string {
   };
   return icons[type] || '❓';
 }
+// Please provide the content of the ResourcePanel.tsx file so I can fix the hooks issue properly.
+// The error shows that there's a useMemo hook being conditionally rendered, which violates the Rules of Hooks.
