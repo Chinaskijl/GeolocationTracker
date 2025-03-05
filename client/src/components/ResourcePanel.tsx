@@ -99,7 +99,7 @@ export function ResourcePanel() {
   const resources = [
     { icon: <span className="w-5 h-5 flex items-center justify-center">💰</span>, value: Math.floor(gameState.resources.gold), name: 'Gold', production: resourceProduction.gold, key: 'gold' },
     { icon: <span className="w-5 h-5 flex items-center justify-center">🌲</span>, value: Math.floor(gameState.resources.wood), name: 'Wood', production: resourceProduction.wood, key: 'wood' },
-    { icon: <span className="w-5 h-5 flex items-center justify-center">🌾</span>, value: Math.floor(gameState.resources.food), name: 'Food', production: resourceProduction.food - foodConsumption, consumption: foodConsumption, netProduction: resourceProduction.food - foodConsumption, key: 'food' },
+    { icon: <span className="w-5 h-5 flex items-center justify-center">🌾</span>, value: Math.floor(gameState.resources.food), name: 'Food', production: resourceProduction.food, consumption: foodConsumption, netProduction: resourceProduction.food - foodConsumption, key: 'food' },
     { icon: <span className="w-5 h-5 flex items-center justify-center">💧</span>, value: Math.floor(gameState.resources.oil), name: 'Oil', production: resourceProduction.oil, key: 'oil' },
     { icon: <span className="w-5 h-5 flex items-center justify-center">⚙️</span>, value: Math.floor(gameState.resources.metal), name: 'Metal', production: resourceProduction.metal, key: 'metal' },
     { icon: <span className="w-5 h-5 flex items-center justify-center">🔩</span>, value: Math.floor(gameState.resources.steel), name: 'Steel', production: resourceProduction.steel, key: 'steel' },
@@ -114,8 +114,9 @@ export function ResourcePanel() {
     let tooltipContent = <p>No data available.</p>;
     if (resourceKey === 'food') {
       tooltipContent = <>
-        <p>Production: {resourceProduction.food}</p>
-        <p>Consumption: {foodConsumption}</p>
+        <p>Производство: +{resourceProduction.food.toFixed(1)}</p>
+        <p>Потребление: -{foodConsumption.toFixed(1)}</p>
+        <p>Итого: {(resourceProduction.food - foodConsumption).toFixed(1)}</p>
       </>;
     }
     return tooltipContent;

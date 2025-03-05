@@ -299,14 +299,13 @@ class GameLoop {
     // Обрабатываем все ресурсы
     for (const [resource, amount] of Object.entries(cityResources)) {
       if (newResources[resource] !== undefined || resource === 'influence') {
-        // Правильно обрабатываем положительные и отрицательные значения
-        // Если ресурс - еда и ее потребление превышает производство
-        if (resource === 'food' && amount < 0) {
-          // Вычитаем потребление из текущих запасов
+        // Специальный случай для еды - всегда применяем изменения, независимо от знака
+        if (resource === 'food') {
+          // Применяем чистый прирост (может быть отрицательным)
           newResources[resource] = Math.max(0, (newResources[resource] || 0) + Number(amount));
-          console.log(`Еда потребляется: ${amount}, новый остаток: ${newResources[resource]}`);
+          console.log(`Изменение еды: ${amount}, новый остаток: ${newResources[resource]}`);
         } else {
-          // Для других ресурсов или положительного прироста еды 
+          // Для других ресурсов 
           newResources[resource] = (newResources[resource] || 0) + Number(amount);
           
           // Проверяем, что ресурс не стал отрицательным
