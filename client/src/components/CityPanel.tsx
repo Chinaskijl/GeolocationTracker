@@ -51,6 +51,16 @@ export const CityPanel: React.FC<CityPanelProps> = ({
   onBuyResource,
   canBuyResource
 }) => {
+  const [tick, setTick] = React.useState(0);
+  
+  // Устанавливаем интервал для регулярного обновления панели
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setTick(prev => prev + 1);
+    }, 100);
+    
+    return () => clearInterval(interval);
+  }, []);
   // Update the building descriptions for theater and park
   const getBuildingDescription = (buildingId: string) => {
     switch (buildingId) {

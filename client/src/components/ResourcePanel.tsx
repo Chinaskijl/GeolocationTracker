@@ -287,7 +287,7 @@ export function ResourcePanel() {
       });
 
       setFoodConsumption(foodCons);
-    }, 250);
+    }, 100);
 
     return () => clearInterval(interval);
   }, [cities, gameState, resourcesIncome]);
