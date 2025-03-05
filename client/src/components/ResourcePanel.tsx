@@ -110,149 +110,31 @@ export function ResourcePanel() {
   const getProductionColor = (production) => (production >= 0 ? 'text-green-500' : 'text-red-500');
   const formatProduction = (production) => `${production >= 0 ? '+' : ''}${Math.round(production * 10) / 10}`;
 
-  // Функция для формирования содержимого тултипа
-  const getTooltipContent = (resourceKey) => {
+  const renderTooltipContent = (resourceKey) => {
+    let tooltipContent = <p>No data available.</p>;
+    if (resourceKey === 'food') {
+      tooltipContent = <>
+        <p>Производство: +{resourceProduction.food.toFixed(1)}</p>
+        <p>Потребление: -{foodConsumption.toFixed(1)}</p>
+        <p>Итого: {(resourceProduction.food - foodConsumption).toFixed(1)}</p>
+      </>;
+    }
+    return tooltipContent;
+  };
+
+
+  // Function to create tooltip content showing production sources
+  const createTooltipContent = (resourceType) => {
     const tooltipItems = [];
 
-    // Добавляем информацию о производстве и потреблении еды
-    if (resourceKey === 'food') {
+    // Add tax income for gold
+    if (resourceType === 'gold' && resourcesIncome?.gold !== undefined) {
       tooltipItems.push(
-        <div key="food-base" className="whitespace-nowrap">
-          <p>Производство: +{resourceProduction.food.toFixed(1)}</p>
-          <p>Потребление: -{foodConsumption.toFixed(1)}</p>
-          <p>Итого: {(resourceProduction.food - foodConsumption).toFixed(1)}</p>
-          
-          {cities.filter(c => c.owner === 'player').map(city => (
-            <div key={`food-city-${city.id}`} className="text-xs ml-4">
-              {city.name}: {city.population > 0 ? 
-                <span className="text-green-500">+{((city.population || 1) / 100).toFixed(1)}/с</span> :
-                <span className="text-yellow-500">+0/с (нет рабочих)</span>}
-            </div>
-          ))}
-        </div>
-      );
-    }
-
-    // Добавляем информацию о налогах для золота
-    if (resourceKey === 'gold' && resourcesIncome?.gold) {
-      tooltipItems.push(
-        <div key="gold-base" className="whitespace-nowrap">
+        <div key="taxes" className="whitespace-nowrap">
           Налоги: <span className={getProductionColor(resourcesIncome.gold)}>
             {formatProduction(resourcesIncome.gold)}/с
           </span>
-          
           {cities.filter(c => c.owner === 'player').map(city => (
-            <div key={`gold-${city.id}`} className="text-xs ml-4">
-              {city.name}: 
-              {city.taxRate === 0 ? 
-                <span className="text-red-500">-{((city.population || 0) * 0.5).toFixed(1)}/с (субсидии)</span> : 
-                <span className="text-green-500">+{((city.population * city.taxRate) / 5).toFixed(1)}/с</span>
-              }
-            </div>
-          ))}
-        </div>
-      );
-    }
-
-    // Добавляем информацию о влиянии
-    if (resourceKey === 'influence' && resourcesIncome?.influence) {
-      tooltipItems.push(
-        <div key="influence-base" className="whitespace-nowrap">
-          Базовое производство: <span className={getProductionColor(resourcesIncome.influence)}>
-            {formatProduction(resourcesIncome.influence)}/с
-          </span>
-          {cities.filter(c => c.owner === 'player').map(city => (
-            <div key={`influence-${city.id}`} className="text-xs ml-4">
-              {city.name}: <span className="text-green-500">
-                {city.population > 0 ?
-                  `+${(city.population * 0.1).toFixed(1)}/с` :
-                  '+0/с (нет населения)'}
-                {city.satisfaction && city.satisfaction > 70 ? 
-                  ` +${((city.satisfaction - 70) * 0.05).toFixed(1)}/с (бонус удовлетворенности)` : 
-                  ''}
-              </span>
-            </div>
-          ))}
-        </div>
-      );
-    }
-
-    // Группируем здания по типу ресурса, который они производят
-    const getBuildingsByResourceType = (resourceType) => {
-      const buildingProduction = {};
-
-      cities.forEach(city => {
-        if (city.owner === 'player') {
-          const cityBuildingCounts = {};
-
-          city.buildings.forEach(buildingId => {
-            const building = BUILDINGS.find(b => b.id === buildingId);
-            if (building && building.resourceProduction && building.resourceProduction.type === resourceType) {
-              // Проверяем, есть ли рабочие для здания
-              const hasWorkers = city.population > 0;
-
-              if (!cityBuildingCounts[buildingId]) {
-                cityBuildingCounts[buildingId] = {
-                  count: 1,
-                  name: building.name,
-                  production: hasWorkers ? building.resourceProduction.amount : 0,
-                  notWorking: !hasWorkers
-                };
-              } else {
-                cityBuildingCounts[buildingId].count++;
-                if (hasWorkers) {
-                  cityBuildingCounts[buildingId].production += building.resourceProduction.amount;
-                } else {
-                  cityBuildingCounts[buildingId].notWorking = true;
-                }
-              }
-            }
-          });
-
-          Object.entries(cityBuildingCounts).forEach(([buildingId, data]) => {
-            if (!buildingProduction[buildingId]) {
-              buildingProduction[buildingId] = { ...data, cities: [city.name] };
-            } else {
-              buildingProduction[buildingId].count += data.count;
-              buildingProduction[buildingId].production += data.production;
-              buildingProduction[buildingId].cities.push(city.name);
-              buildingProduction[buildingId].notWorking = buildingProduction[buildingId].notWorking || data.notWorking;
-            }
-          });
-        }
-      });
-
-      return buildingProduction;
-    };
-
-    // Добавляем информацию о зданиях для данного типа ресурса
-    const buildingProduction = getBuildingsByResourceType(resourceKey);
-    if (Object.keys(buildingProduction).length > 0) {
-      tooltipItems.push(
-        <div key={`buildings-${resourceKey}`} className="mt-1">
-          <div>Здания:</div>
-          {Object.entries(buildingProduction).map(([buildingId, data]) => (
-            <div key={`building-${buildingId}`} className="text-xs ml-4">
-              {data.name} x{data.count}: 
-              {data.notWorking ? 
-                <span className="text-yellow-500"> +0/с (нехватка рабочих)</span> : 
-                <span className="text-green-500"> +{data.production.toFixed(1)}/с</span>}
-            </div>
-          ))}
-        </div>
-      );
-    }
-
-    return (
-      <div>
-        {tooltipItems.length > 0 ? tooltipItems : <p>Нет данных о производстве</p>}
-      </div>
-    );
-  };
-
-  return (
-    <Card className="fixed top-4 left-4 p-4 z-[1000]">
-      <div className="flex flex-wrap gap-4">
             <div key={`tax-${city.id}`} className="text-xs ml-4">
               {city.name}: {city.taxRate === 0 ?
                 <span className="text-red-500">-{(city.population * 0.5).toFixed(1)}/с</span> :
@@ -373,25 +255,22 @@ export function ResourcePanel() {
             const building = BUILDINGS.find(b => b.id === buildingId);
             if (building && building.resourceProduction) {
               const { type, amount } = building.resourceProduction;
-              // Проверяем наличие населения для работы зданий
-              const hasWorkers = city.population > 0;
-              
               // Map the building IDs to their actual server-side production values
               const actualProductionValues = {
-                'logging_camp': hasWorkers ? 3 : 0, // Actual value on server
-                'gold_mine': hasWorkers ? 3 : 0,
-                'oil_rig': hasWorkers ? 3 : 0,
-                'metal_factory': hasWorkers ? 2 : 0,
-                'steel_factory': hasWorkers ? 1 : 0,
-                'weapons_factory': hasWorkers ? 1 : 0,
-                'farm': hasWorkers ? 5 * (city.population || 1) / 100 : 0,
-                'theater': hasWorkers ? 1 : 0,
-                'park': hasWorkers ? 1 : 0,
-                'temple': hasWorkers ? 1 : 0
+                'logging_camp': 3, // Actual value on server
+                'gold_mine': 3,
+                'oil_rig': 3,
+                'metal_factory': 2,
+                'steel_factory': 1,
+                'weapons_factory': 1,
+                'farm': 5 * (city.population || 1) / 100,
+                'theater': 1,
+                'park': 1,
+                'temple': 1
               };
 
               // Use the actual production value if available
-              const actualAmount = actualProductionValues[building.id] || (hasWorkers ? amount : 0);
+              const actualAmount = actualProductionValues[building.id] || amount;
 
               switch (type) {
                 case 'gold':
@@ -442,28 +321,6 @@ export function ResourcePanel() {
     return () => clearInterval(interval);
   }, [cities, gameState, resourcesIncome]);
 
-  // Function to create tooltip content showing production sources
-  const createTooltipContent = (resourceType) => {
-    const tooltipItems = [];
-
-    // Add tax income for gold
-    if (resourceType === 'gold' && resourcesIncome?.gold !== undefined) {
-      tooltipItems.push(
-        <div key="taxes" className="whitespace-nowrap">
-          Налоги: <span className={resourcesIncome.gold >= 0 ? 'text-green-500' : 'text-red-500'}>
-            {resourcesIncome.gold >= 0 ? '+' : ''}{resourcesIncome.gold.toFixed(1)}/с
-          </span>
-        </div>
-      );
-    }
-
-    return (
-      <div>
-        {tooltipItems.length > 0 ? tooltipItems : <p>Нет данных о производстве</p>}
-      </div>
-    );
-  };
-
   return (
     <Card className="fixed top-4 left-4 p-4 z-[1000]">
       <div className="flex flex-wrap gap-4">
@@ -492,7 +349,12 @@ export function ResourcePanel() {
 
               {/* Tooltip that appears on hover */}
               <div className="hidden group-hover:block absolute bg-black bg-opacity-80 text-white p-2 rounded z-50 left-full ml-2 whitespace-nowrap">
-                {getTooltipContent(resource.key)}
+                {resource.key === 'food' ? (
+                  <div>
+                    <p>Производство: +{resource.production.toFixed(1)}</p>
+                    <p>Потребление: -{resource.consumption.toFixed(1)}</p>
+                    <p>Итого: {totalProduction.toFixed(1)}</p>
+                  </div>
                 ) : (
                   <p>+{resource.production.toFixed(1)} в тик</p>
                 )}
