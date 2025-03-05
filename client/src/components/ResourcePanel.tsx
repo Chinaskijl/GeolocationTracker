@@ -454,6 +454,28 @@ export function ResourcePanel() {
     return () => clearInterval(interval);
   }, [cities, gameState, resourcesIncome]);
 
+  // Function to create tooltip content showing production sources
+  const createTooltipContent = (resourceType) => {
+    const tooltipItems = [];
+
+    // Add tax income for gold
+    if (resourceType === 'gold' && resourcesIncome?.gold !== undefined) {
+      tooltipItems.push(
+        <div key="taxes" className="whitespace-nowrap">
+          Налоги: <span className={resourcesIncome.gold >= 0 ? 'text-green-500' : 'text-red-500'}>
+            {resourcesIncome.gold >= 0 ? '+' : ''}{resourcesIncome.gold.toFixed(1)}/с
+          </span>
+        </div>
+      );
+    }
+
+    return (
+      <div>
+        {tooltipItems.length > 0 ? tooltipItems : <p>Нет данных о производстве</p>}
+      </div>
+    );
+  };
+
   return (
     <Card className="fixed top-4 left-4 p-4 z-[1000]">
       <div className="flex flex-wrap gap-4">
