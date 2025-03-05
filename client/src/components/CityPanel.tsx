@@ -19,7 +19,7 @@ import React from "react";
 // Placeholder Slider component - replace with actual implementation
 const Slider = ({ defaultValue, min, max, step, onValueCommit }) => {
   const [value, setValue] = React.useState(defaultValue[0]);
-  
+
   return (
     <div className="flex items-center gap-2">
       <input
@@ -273,17 +273,17 @@ export const CityPanel: React.FC<CityPanelProps> = ({
                       {Math.round(city.satisfaction)}%
                     </span>
                   </TooltipTrigger>
-                  <TooltipContent className="w-72 p-3">
+                  <TooltipContent>
                     <h4 className="font-bold mb-1">Факторы влияющие на удовлетворенность:</h4>
                     <div className="space-y-1 text-sm">
                       {(() => {
                         const { analyzeSatisfactionFactors } = require('@/lib/satisfactionHelpers');
                         const factors = analyzeSatisfactionFactors(city);
-                        
+
                         return factors.map((factor, index) => (
                           <div key={`factor-${index}`} className="flex justify-between">
                             <span>{factor.name}:</span>
-                            <span className={factor.impact === 'positive' ? 'text-green-400' : 
+                            <span className={factor.impact === 'positive' ? 'text-green-400' :
                                             factor.impact === 'negative' ? 'text-red-400' : 'text-gray-400'}>
                               {factor.value > 0 ? '+' : ''}{factor.value.toFixed(1)}/с
                             </span>
@@ -292,34 +292,12 @@ export const CityPanel: React.FC<CityPanelProps> = ({
                       })()}
                     </div>
                     <p className="mt-2 text-xs text-gray-400">
-                      {city.protestTimer 
-                        ? `⚠️ Протесты! Осталось ${Math.floor(city.protestTimer)} сек. до потери города.` 
-                        : city.satisfaction < 30 
-                          ? '⚠️ Низкая удовлетворенность! Город скоро начнет протестовать.' 
+                      {city.protestTimer
+                        ? `⚠️ Протесты! Осталось ${Math.floor(city.protestTimer)} сек. до потери города.`
+                        : city.satisfaction < 30
+                          ? '⚠️ Низкая удовлетворенность! Город скоро начнет протестовать.'
                           : '✅ Удовлетворенность в норме.'}
                     </p>
-                  </div>
-                </TooltipContent>
-              </Tooltip>
-            </div>
-            <div className="text-sm space-y-1">
-              <ul>
-                <li>- Базовое значение: 50%</li>
-                <li>- Количество рабочих мест: {city.satisfaction < 50 ?
-                  <span className="text-red-500">Недостаточно рабочих мест</span> :
-                        <span className="text-green-500">Достаточно</span>}
-                      </li>
-                      <li>- Бонусы от зданий: {city.buildings.some(b => b === 'theater' || b === 'park' || b === 'temple') ?
-                        <span className="text-green-500">+{city.buildings.filter(b => b === 'theater').length * 5 +
-                        city.buildings.filter(b => b === 'park').length * 3 +
-                        city.buildings.filter(b => b === 'temple').length * 10}%</span> :
-                        <span className="text-gray-500">0%</span>}
-                      </li>
-                      <li>- Протесты: {city.protestTimer ?
-                        <span className="text-red-500">Активны ({Math.ceil(city.protestTimer / 60)} мин)</span> :
-                        <span className="text-green-500">Нет</span>}
-                      </li>
-                    </ul>
                   </TooltipContent>
                 </Tooltip>
               </div>
@@ -513,7 +491,7 @@ export const CityPanel: React.FC<CityPanelProps> = ({
 
                             {/* Отображение производства ресурсов */}
                             {building.resourceProduction && (
-                              <span 
+                              <span
                                 className="text-xs text-green-600 mt-1"
                                 title={`Производит ${building.resourceProduction.amount} ${building.resourceProduction.type} в секунду`}
                               >
@@ -523,7 +501,7 @@ export const CityPanel: React.FC<CityPanelProps> = ({
 
                             {/* Отображение потребления ресурсов */}
                             {building.resourceConsumption && building.resourceConsumption.type && (
-                              <span 
+                              <span
                                 className="text-xs text-red-600 mt-1"
                                 title={`Потребляет ${building.resourceConsumption.amount} ${building.resourceConsumption.type} в секунду`}
                               >
@@ -533,7 +511,7 @@ export const CityPanel: React.FC<CityPanelProps> = ({
 
                             {/* Отображение производства населения */}
                             {building.population?.growth > 0 && (
-                              <span 
+                              <span
                                 className="text-xs text-green-600 mt-1"
                                 title={`Прирост населения: ${building.population.growth} человек в секунду`}
                               >
@@ -590,14 +568,14 @@ export const CityPanel: React.FC<CityPanelProps> = ({
                   const requiredWorkers = building.workers || 0;
 
                   // Подсказка с информацией о рабочих
-                  const workerTooltip = `${requiredWorkers > 0 ? 
-                    `Рабочих мест: ${Math.min(requiredWorkers, city.population || 0)}/${requiredWorkers} занято` : 
-                    'Не требует рабочих'} 
+                  const workerTooltip = `${requiredWorkers > 0 ?
+                    `Рабочих мест: ${Math.min(requiredWorkers, city.population || 0)}/${requiredWorkers} занято` :
+                    'Не требует рабочих'}
                     (Всего в городе: ${city.population || 0} чел.)`;
 
                   return (
-                    <div 
-                      key={`${buildingId}-${index}`} 
+                    <div
+                      key={`${buildingId}-${index}`}
                       className="flex justify-between items-center p-1 hover:bg-gray-100 rounded"
                       title={`${workerTooltip}
 ${building.resourceProduction ? `\nПроизводит: ${getResourceIcon(building.resourceProduction.type)} ${building.resourceProduction.amount}/сек` : ''}
