@@ -52,7 +52,7 @@ export const CityPanel: React.FC<CityPanelProps> = ({
   canBuyResource
 }) => {
   const [tick, setTick] = React.useState(0);
-  
+
   const { gameState, cities, selectedCity: cityFromStore, setGameState } = useGameStore();
   // Use the city from props or from store
   const city = cityProp || cityFromStore;
@@ -63,13 +63,13 @@ export const CityPanel: React.FC<CityPanelProps> = ({
     const updatePanel = () => {
       setTick(prev => prev + 1);
     };
-    
+
     // Устанавливаем интервал принудительного обновления
     const interval = setInterval(updatePanel, 50);
-    
+
     // Принудительно обновляем при монтировании
     updatePanel();
-    
+
     // Очищаем интервал при размонтировании
     return () => clearInterval(interval);
   }, [city, gameState]); // Добавляем зависимости, чтобы обновлять при изменениях
@@ -199,17 +199,19 @@ export const CityPanel: React.FC<CityPanelProps> = ({
         })
       });
 
-      if (response.ok) {
-        const result = await response.json();
-        toast.success('Территория мирно присоединена!');
-        // Обновление произойдет через WebSocket
+      const data = await response.json();
+
+      if (data.success) {
+        // Используем alert вместо toast, пока не добавим библиотеку toast
+        alert('Территория успешно присоединена');
+        // После успешного захвата можно обновить состояние игры
+        // или выполнить другие действия
       } else {
-        const error = await response.json();
-        toast.error(error.message || 'Ошибка при мирном присоединении территории');
+        alert(data.message || 'Не удалось присоединить территорию');
       }
     } catch (error) {
       console.error('Ошибка при мирном захвате:', error);
-      toast.error('Не удалось выполнить мирное присоединение');
+      alert('Произошла ошибка при присоединении территории');
     }
   };
 
@@ -302,7 +304,7 @@ export const CityPanel: React.FC<CityPanelProps> = ({
   // Оптимизируем рендеринг, используя мемоизацию
   const cityInfo = React.useMemo(() => {
     if (!city) return null;
-    
+
     return (
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-bold">{city.name}</h2>
@@ -529,35 +531,35 @@ export const CityPanel: React.FC<CityPanelProps> = ({
                   onMouseDown={(e) => {
                     const container = document.getElementById('categories-container');
                     if (!container) return;
-                    
+
                     // Начальные позиции
                     const startX = e.pageX;
                     const initialScroll = container.scrollLeft;
-                    
+
                     // Изменяем курсор при перетаскивании
                     container.classList.remove('cursor-grab');
                     container.classList.add('cursor-grabbing');
-                    
+
                     // Функция обработки движения мыши
                     const onMouseMove = (moveEvent: MouseEvent) => {
                       const x = moveEvent.pageX;
                       const distance = startX - x;
                       container.scrollLeft = initialScroll + distance;
-                      
+
                       // Предотвращаем выделение текста
                       moveEvent.preventDefault();
                     };
-                    
+
                     // Функция обработки отпускания кнопки мыши
                     const onMouseUp = () => {
                       document.removeEventListener('mousemove', onMouseMove);
                       document.removeEventListener('mouseup', onMouseUp);
-                      
+
                       // Возвращаем курсор
                       container.classList.remove('cursor-grabbing');
                       container.classList.add('cursor-grab');
                     };
-                    
+
                     document.addEventListener('mousemove', onMouseMove);
                     document.addEventListener('mouseup', onMouseUp);
                   }}
@@ -817,7 +819,7 @@ export const CityPanel: React.FC<CityPanelProps> = ({
           {city.buildings.length > 0 && (
             <div className="space-y-2">
               <h3 className="font-medium">Постройки</h3>
-              
+
               <ScrollArea className="h-[300px] pr-3">
                 <div 
                   className="space-y-2 cursor-grab"
@@ -825,45 +827,45 @@ export const CityPanel: React.FC<CityPanelProps> = ({
                   onMouseDown={(e) => {
                     const container = document.getElementById('buildings-container');
                     if (!container) return;
-                    
+
                     // Получаем родительский ScrollArea
                     const scrollAreaParent = container.closest('[data-radix-scroll-area-viewport]');
                     if (!scrollAreaParent) return;
-                    
+
                     // Начальные позиции
                     const startY = e.pageY;
                     const scrollTop = scrollAreaParent.scrollTop;
-                    
+
                     // Функция обработки движения мыши
                     const onMouseMove = (moveEvent: MouseEvent) => {
                       // Вычисляем насколько переместилась мышь
                       const y = moveEvent.pageY;
                       const distance = y - startY;
-                      
+
                       // Прокручиваем контейнер
                       scrollAreaParent.scrollTop = scrollTop - distance;
-                      
+
                       // Запрещаем выделение текста при перетаскивании
                       moveEvent.preventDefault();
                     };
-                    
+
                     // Функция обработки отпускания кнопки мыши
                     const onMouseUp = () => {
                       // Удаляем обработчики событий
                       document.removeEventListener('mousemove', onMouseMove);
                       document.removeEventListener('mouseup', onMouseUp);
-                      
+
                       // Возвращаем курсор
                       if (container) {
                         container.classList.remove('cursor-grabbing');
                         container.classList.add('cursor-grab');
                       }
                     };
-                    
+
                     // Изменяем курсор при перетаскивании
                     container.classList.remove('cursor-grab');
                     container.classList.add('cursor-grabbing');
-                    
+
                     // Добавляем обработчики событий
                     document.addEventListener('mousemove', onMouseMove);
                     document.addEventListener('mouseup', onMouseUp);
@@ -885,7 +887,7 @@ export const CityPanel: React.FC<CityPanelProps> = ({
 
                     // Эффективность работы здания (для слайдера)
                     const efficiency = requiredWorkers > 0 ? (allocatedWorkers / requiredWorkers) * 100 : 100;
-                    
+
                     // Подсказка с информацией о рабочих
                     const workerTooltip = `${requiredWorkers > 0 ? 
                       `Рабочих мест: ${allocatedWorkers}/${requiredWorkers} занято` : 
@@ -910,7 +912,7 @@ export const CityPanel: React.FC<CityPanelProps> = ({
                             </div>
                           )}
                         </div>
-                        
+
                         {/* Индикатор эффективности */}
                         {requiredWorkers > 0 && (
                           <div className="mt-1">
@@ -921,7 +923,7 @@ export const CityPanel: React.FC<CityPanelProps> = ({
                               </span>
                             </div>
                             <Progress value={efficiency} className={efficiency < 100 ? "bg-red-100" : "bg-green-100"} />
-                            
+
                             {/* Слайдер распределения рабочих */}
                             <div className="mt-2">
                               <Slider
@@ -938,7 +940,7 @@ export const CityPanel: React.FC<CityPanelProps> = ({
                             </div>
                           </div>
                         )}
-                        
+
                         <div className="flex flex-wrap gap-2 mt-2 text-sm">
                           {building.resourceProduction && (
                             <div className={efficiency < 100 ? "text-red-500" : "text-green-500"}>

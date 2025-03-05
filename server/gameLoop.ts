@@ -275,13 +275,19 @@ class GameLoop {
     // Сохраняем общее производство еды перед вычетом потребления (для логов)
     const rawFoodProduction = cityResources.food;
     
-    // Вычисляем чистое производство (может быть отрицательным)
-    const netFoodProduction = rawFoodProduction - foodConsumption;
+    // Вычисляем чистое производство с проверкой на отрицательное значение
+    let netFoodProduction = rawFoodProduction - foodConsumption;
+    
+    // Если производство меньше расхода, не позволяем еде становиться отрицательной в ресурсах
+    if (gameState.resources.food + netFoodProduction < 0) {
+        // Ограничиваем расход так, чтобы еда не стала отрицательной
+        netFoodProduction = -gameState.resources.food;
+    }
     
     // Устанавливаем значение в cityResources
     cityResources.food = netFoodProduction;
 
-    console.log(`Total food consumption: ${-foodConsumption.toFixed(2)}, Raw production: ${rawFoodProduction.toFixed(2)}, Net production: ${netFoodProduction.toFixed(2)}`);
+    console.log(`Total food consumption: ${-foodConsumption.toFixed(2)}, Raw production: ${rawFoodProduction.toFixed(2)}, Net production: ${cityResources.food.toFixed(2)}, Available food: ${gameState.resources.food.toFixed(2)}`);
 
     // Обновляем состояние игры
     const newResources = { ...gameState.resources };

@@ -655,7 +655,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { regionId, militaryAmount, captureMethod } = req.body;
 
-      console.log(`Attempting to capture city ${regionId} using method: ${captureMethod}`);
+      console.log(`Attempting to capture region ${regionId} using method: ${captureMethod}`);
 
       // Проверяем наличие всех необходимых данных
       if (!regionId) {
@@ -677,77 +677,147 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Получаем текущее состояние игры
       const gameState = await storage.getGameState();
+      if (!gameState || !gameState.resources) {
+        return res.status(500).json({ success: false, message: 'Ошибка получения состояния игры' });
+      }
 
       // Определяем метод захвата
       if (captureMethod === 'influence') {
         // Мирный захват через влияние
-        const requiredInfluence = Math.ceil(region.maxPopulation / 2); // Требуется больше влияния, чем военных
+        // Инициализируем influence если его нет
+        if (gameState.resources.influence === undefined) {
+          gameState.resources.influence = 0;
+        }
+
+        // Расчет требуемого влияния
+        const requiredInfluence = region.maxPopulation ? Math.ceil(region.maxPopulation / 2) : 30; 
 
         console.log(`Required influence: ${requiredInfluence}, Available: ${gameState.resources.influence}`);
 
         // Проверяем, достаточно ли влияния
-        if (gameState.resources.influence === undefined || gameState.resources.influence < requiredInfluence) {
+        if (gameState.resources.influence < requiredInfluence) {
           return res.status(400).json({ 
             success: false, 
             message: 'Недостаточно влияния для мирного захвата', 
             required: requiredInfluence,
-            available: gameState.resources.influence || 0
+            available: gameState.resources.influence
           });
         }
 
         // Уменьшаем количество влияния
         gameState.resources.influence -= requiredInfluence;
+        
+        // Обновляем состояние игры
         await storage.setGameState(gameState);
 
-        try {
-          // Захватываем территорию с лучшими начальными условиями
-          const updatedRegion = await storage.updateRegion(Number(regionId), { 
-            owner: 'player',
-            military: 0, // Без военных
-            satisfaction: 75 // Более высокая начальная удовлетворенность
-          });
-          
-          console.log('Region captured through influence:', updatedRegion);
-          return res.json({ success: true, region: updatedRegion, gameState });
-        } catch (updateError) {
-          console.error('Error updating region:', updateError);
-          return res.status(500).json({ success: false, message: 'Ошибка при обновлении региона', error: updateError.message });
+        // Захватываем территорию с лучшими начальными условиями
+        // Проверяем, существует ли функция updateRegion
+        if (typeof storage.updateRegion !== 'function') {
+          // Если функция не существует, попробуем обновить как город
+          if (typeof storage.updateCity === 'function') {
+            try {
+              const updatedCity = await storage.updateCity(Number(regionId), { 
+                owner: 'player',
+                military: 0,
+                satisfaction: 75
+              });
+              
+              console.log('City captured through influence:', updatedCity);
+              return res.json({ success: true, region: updatedCity, gameState });
+            } catch (updateError) {
+              console.error('Error updating city:', updateError);
+              return res.status(500).json({ 
+                success: false, 
+                message: 'Ошибка при обновлении города', 
+                error: updateError.message 
+              });
+            }
+          } else {
+            return res.status(500).json({ 
+              success: false, 
+              message: 'Метод обновления региона не реализован'
+            });
+          }
+        } else {
+          try {
+            const updatedRegion = await storage.updateRegion(Number(regionId), { 
+              owner: 'player',
+              military: 0,
+              satisfaction: 75
+            });
+            
+            console.log('Region captured through influence:', updatedRegion);
+            return res.json({ success: true, region: updatedRegion, gameState });
+          } catch (updateError) {
+            console.error('Error updating region:', updateError);
+            return res.status(500).json({ 
+              success: false, 
+              message: 'Ошибка при обновлении региона', 
+              error: updateError.message 
+            });
+          }
         }
       } else {
         // Военный захват
         // Проверяем, что указано количество военных
-        if (militaryAmount === undefined) {
+        if (militaryAmount === undefined || militaryAmount <= 0) {
           return res.status(400).json({ 
             success: false, 
-            message: 'Не указано количество военных для захвата' 
+            message: 'Не указано или неверное количество военных для захвата' 
           });
         }
 
         // Проверяем, что у игрока достаточно военных
-        if (gameState.military < militaryAmount) {
+        if (!gameState.military || gameState.military < militaryAmount) {
           return res.status(400).json({ 
             success: false, 
             message: 'Недостаточно военных для захвата',
-            required: militaryAmount
+            required: militaryAmount,
+            available: gameState.military || 0
           });
         }
 
-        // Захватываем территорию и сохраняем текущую удовлетворенность
-        const updatedRegion = await storage.updateRegion(regionId, { 
-          owner: 'player',
-          military: militaryAmount,
-          satisfaction: 50 // Стандартная удовлетворенность при военном захвате
-        });
+        // Определим функцию обновления в зависимости от доступных методов
+        const updateFunction = typeof storage.updateRegion === 'function' 
+                              ? storage.updateRegion 
+                              : storage.updateCity;
+        
+        if (!updateFunction) {
+          return res.status(500).json({ 
+            success: false, 
+            message: 'Метод обновления региона/города не реализован'
+          });
+        }
 
-        // Уменьшаем количество военных
-        gameState.military -= militaryAmount;
-        await storage.setGameState(gameState);
+        // Захватываем территорию
+        try {
+          const updatedEntity = await updateFunction(Number(regionId), { 
+            owner: 'player',
+            military: militaryAmount,
+            satisfaction: 50
+          });
 
-        return res.json({ success: true, region: updatedRegion, gameState });
+          // Уменьшаем количество военных
+          gameState.military -= militaryAmount;
+          await storage.setGameState(gameState);
+
+          return res.json({ success: true, region: updatedEntity, gameState });
+        } catch (updateError) {
+          console.error('Error updating region/city:', updateError);
+          return res.status(500).json({ 
+            success: false, 
+            message: 'Ошибка при обновлении региона/города', 
+            error: updateError.message 
+          });
+        }
       }
     } catch (error) {
       console.error('Error capturing region:', error);
-      res.status(500).json({ success: false, message: 'Ошибка захвата региона' });
+      res.status(500).json({ 
+        success: false, 
+        message: 'Ошибка захвата региона', 
+        error: error.message || String(error)
+      });
     }
   });
 
