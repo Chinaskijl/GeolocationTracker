@@ -55,12 +55,20 @@ export const CityPanel: React.FC<CityPanelProps> = ({
   
   // Устанавливаем интервал для регулярного обновления панели
   React.useEffect(() => {
-    const interval = setInterval(() => {
+    // Обновляем панель при каждом изменении города или игрового состояния
+    const updatePanel = () => {
       setTick(prev => prev + 1);
-    }, 100);
+    };
     
+    // Устанавливаем интервал принудительного обновления
+    const interval = setInterval(updatePanel, 50);
+    
+    // Принудительно обновляем при монтировании
+    updatePanel();
+    
+    // Очищаем интервал при размонтировании
     return () => clearInterval(interval);
-  }, []);
+  }, [city, gameState]); // Добавляем зависимости, чтобы обновлять при изменениях
   // Update the building descriptions for theater and park
   const getBuildingDescription = (buildingId: string) => {
     switch (buildingId) {

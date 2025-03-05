@@ -154,7 +154,16 @@ class GameLoop {
       
       // Расчет дохода от налогов
       const taxRate = city.taxRate !== undefined ? city.taxRate : 5; // По умолчанию 5%
-      const taxIncome = (city.population || 0) * (taxRate / 5); // Доход от налогов зависит от ставки
+      let taxIncome;
+      
+      if (taxRate === 0) {
+        // Если налоговая ставка 0%, то государство платит за жителей (отрицательный доход)
+        taxIncome = -(city.population || 0) * 0.5; // Субсидия населению
+      } else {
+        // Доход от налогов зависит от ставки
+        taxIncome = (city.population || 0) * (taxRate / 5); 
+      }
+      
       cityResources.gold += taxIncome;
       
       // Обновляем удовлетворенность города на основе налоговой ставки и других факторов

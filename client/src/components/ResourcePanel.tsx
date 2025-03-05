@@ -35,8 +35,13 @@ export function ResourcePanel() {
     // resourcesIncome comes from server and includes tax income and other special sources
 
     // Добавляем налоговый доход от сервера, если он есть
-    if (resourcesIncome && resourcesIncome.gold) {
+    if (resourcesIncome && resourcesIncome.gold !== undefined) {
       taxIncome = resourcesIncome.gold;
+      
+      // Явно добавляем информацию о налогах для отображения в тултипе
+      if (Math.abs(taxIncome) > 0.01) {
+        goldProd += taxIncome; // Включаем налоги в общую добычу золота
+      }
     }
 
     cities.forEach(city => {
@@ -122,7 +127,7 @@ export function ResourcePanel() {
     const tooltipItems = [];
 
     // Add tax income for gold
-    if (resourceType === 'gold' && resourcesIncome?.gold) {
+    if (resourceType === 'gold' && resourcesIncome?.gold !== undefined) {
       tooltipItems.push(
         <div key="taxes" className="whitespace-nowrap">
           Налоги: <span className={getProductionColor(resourcesIncome.gold)}>
@@ -276,7 +281,7 @@ export function ResourcePanel() {
       });
 
       setResourceProduction({
-        gold: goldProd + (resourcesIncome?.gold || 0),
+        gold: goldProd, // Теперь налоги уже включены в goldProd выше
         wood: woodProd,
         food: foodProd,
         oil: oilProd,
@@ -287,7 +292,7 @@ export function ResourcePanel() {
       });
 
       setFoodConsumption(foodCons);
-    }, 100);
+    }, 50); // Уменьшаем интервал для более быстрого обновления
 
     return () => clearInterval(interval);
   }, [cities, gameState, resourcesIncome]);
