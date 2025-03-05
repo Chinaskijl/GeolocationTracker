@@ -265,15 +265,31 @@ class GameLoop {
 
     // Рассчитываем расход еды на население
     const foodConsumption = totalPopulation * 0.1; // Например, 0.1 еды на 1 человека
-    cityResources.food -= foodConsumption;
+    
+    // Сохраняем потребление еды отдельно для логов
+    const rawFoodConsumption = foodConsumption;
+    
+    // Теперь вычитаем потребление из общего производства
+    if (cityResources.food > foodConsumption) {
+      // Если производство больше потребления, просто уменьшаем добавку
+      cityResources.food -= foodConsumption;
+    } else {
+      // Иначе обнуляем производство и не позволяем стать отрицательным
+      cityResources.food = 0;
+    }
 
-    console.log(`Total food consumption: ${-foodConsumption.toFixed(2)}`);
+    console.log(`Total food consumption: ${-rawFoodConsumption.toFixed(2)}, Raw production: ${(cityResources.food + rawFoodConsumption).toFixed(2)}, Net production: ${cityResources.food.toFixed(2)}`);
 
     // Обновляем состояние игры
     const newResources = { ...gameState.resources };
+    // Инициализируем influence если его ещё нет
+    if (newResources.influence === undefined) {
+      newResources.influence = 0;
+    }
+    
     for (const [resource, amount] of Object.entries(cityResources)) {
-      if (newResources[resource] !== undefined) {
-        newResources[resource] += Number(amount);
+      if (newResources[resource] !== undefined || resource === 'influence') {
+        newResources[resource] = (newResources[resource] || 0) + Number(amount);
         // Округляем до 4 знаков после запятой чтобы избежать проблем с плавающей точкой
         newResources[resource] = Math.round(newResources[resource] * 10000) / 10000;
       }
@@ -314,6 +330,25 @@ class GameLoop {
 
     // Обновляем общее население
     gameState.population = playerCities.reduce((sum, city) => sum + (city.population || 0), 0);
+    
+    // Производство военных из оружия
+    // Проверяем наличие оружия
+    if (newResources.weapons > 0) {
+      // Проверяем, что у нас достаточно населения для новых военных
+      const availablePopulation = gameState.population - gameState.military;
+      if (availablePopulation > 0) {
+        // За каждую единицу оружия создаём 1 военного, но не больше чем доступно населения
+        const newMilitary = Math.min(1, availablePopulation, newResources.weapons);
+        
+        // Потребляем оружие
+        newResources.weapons -= newMilitary;
+        
+        // Увеличиваем количество военных
+        gameState.military = (gameState.military || 0) + newMilitary;
+        
+        console.log(`Military produced: ${newMilitary}, Total military: ${gameState.military}`);
+      }
+    }
 
     // Сохраняем обновленное состояние
     const updatedGameState = {
