@@ -218,6 +218,80 @@ export function ResourcePanel() {
     ) : null;
   };
 
+  // Обновляем данные каждые 250мс для более плавного отображения
+  useEffect(() => {
+    const interval = setInterval(() => {
+      let goldProd = 0;
+      let woodProd = 0;
+      let foodProd = 0;
+      let oilProd = 0;
+      let metalProd = 0;
+      let steelProd = 0;
+      let weaponsProd = 0;
+      let foodCons = 0;
+      let influenceProd = 0;
+      let taxIncome = 0;
+
+
+      if (resourcesIncome && resourcesIncome.gold) {
+        taxIncome = resourcesIncome.gold;
+      }
+
+      cities.forEach(city => {
+        if (city.owner === 'player') {
+          city.buildings.forEach(buildingId => {
+            const building = BUILDINGS.find(b => b.id === buildingId);
+            if (building && building.resourceProduction) {
+              const { type, amount } = building.resourceProduction;
+              switch (type) {
+                case 'gold':
+                  goldProd += amount;
+                  break;
+                case 'wood':
+                  woodProd += amount;
+                  break;
+                case 'food':
+                  foodProd += amount;
+                  break;
+                case 'oil':
+                  oilProd += amount;
+                  break;
+                case 'metal':
+                  metalProd += amount;
+                  break;
+                case 'steel':
+                  steelProd += amount;
+                  break;
+                case 'weapons':
+                  weaponsProd += amount;
+                  break;
+                case 'influence':
+                  influenceProd += amount;
+                  break;
+              }
+            }
+          });
+          foodCons += city.population * 0.1;
+        }
+      });
+
+      setResourceProduction({
+        gold: goldProd + (resourcesIncome?.gold || 0),
+        wood: woodProd,
+        food: foodProd,
+        oil: oilProd,
+        metal: metalProd,
+        steel: steelProd,
+        weapons: weaponsProd,
+        influence: influenceProd
+      });
+
+      setFoodConsumption(foodCons);
+    }, 250);
+
+    return () => clearInterval(interval);
+  }, [cities, gameState, resourcesIncome]);
+
   return (
     <Card className="fixed top-4 left-4 p-4 z-[1000]">
       <div className="flex flex-wrap gap-4">

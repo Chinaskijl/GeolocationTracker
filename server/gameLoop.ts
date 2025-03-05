@@ -151,6 +151,34 @@ class GameLoop {
     // Проходим по всем городам игрока
     for (const city of playerCities) {
       totalPopulation += city.population || 0;
+      
+      // Расчет дохода от налогов
+      const taxRate = city.taxRate !== undefined ? city.taxRate : 5; // По умолчанию 5%
+      const taxIncome = (city.population || 0) * (taxRate / 5); // Доход от налогов зависит от ставки
+      cityResources.gold += taxIncome;
+      
+      // Обновляем удовлетворенность города на основе налоговой ставки и других факторов
+      let satisfactionChange = 0.5; // Базовый прирост
+      
+      // Эффект от налоговой ставки
+      if (taxRate > 5) {
+        satisfactionChange -= (taxRate - 5) * 0.2; // Высокие налоги снижают удовлетворенность
+      } else if (taxRate < 5) {
+        satisfactionChange += (5 - taxRate) * 0.1; // Низкие налоги немного повышают
+      }
+      
+      // Обновление удовлетворенности
+      if (city.satisfaction !== undefined) {
+        let newSatisfaction = city.satisfaction + satisfactionChange;
+        // Ограничиваем значение от 0 до 100
+        newSatisfaction = Math.max(0, Math.min(100, newSatisfaction));
+        
+        if (Math.abs(newSatisfaction - city.satisfaction) > 0.01) {
+          await storage.updateCity(city.id, {
+            satisfaction: newSatisfaction
+          });
+        }
+      }
 
       // Добавляем базовые ресурсы от города (если они есть)
       if (city.resources) {
