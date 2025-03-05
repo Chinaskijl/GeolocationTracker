@@ -99,7 +99,7 @@ export function ResourcePanel() {
   const resources = [
     { icon: <span className="w-5 h-5 flex items-center justify-center">💰</span>, value: Math.floor(gameState.resources.gold), name: 'Gold', production: resourceProduction.gold, key: 'gold' },
     { icon: <span className="w-5 h-5 flex items-center justify-center">🌲</span>, value: Math.floor(gameState.resources.wood), name: 'Wood', production: resourceProduction.wood, key: 'wood' },
-    { icon: <span className="w-5 h-5 flex items-center justify-center">🌾</span>, value: Math.floor(gameState.resources.food), name: 'Food', production: resourceProduction.food - foodConsumption, consumption: foodConsumption, key: 'food' },
+    { icon: <span className="w-5 h-5 flex items-center justify-center">🌾</span>, value: Math.floor(gameState.resources.food), name: 'Food', production: resourceProduction.food - foodConsumption, consumption: foodConsumption, netProduction: resourceProduction.food - foodConsumption, key: 'food' },
     { icon: <span className="w-5 h-5 flex items-center justify-center">💧</span>, value: Math.floor(gameState.resources.oil), name: 'Oil', production: resourceProduction.oil, key: 'oil' },
     { icon: <span className="w-5 h-5 flex items-center justify-center">⚙️</span>, value: Math.floor(gameState.resources.metal), name: 'Metal', production: resourceProduction.metal, key: 'metal' },
     { icon: <span className="w-5 h-5 flex items-center justify-center">🔩</span>, value: Math.floor(gameState.resources.steel), name: 'Steel', production: resourceProduction.steel, key: 'steel' },
@@ -324,11 +324,17 @@ export function ResourcePanel() {
     <Card className="fixed top-4 left-4 p-4 z-[1000]">
       <div className="flex flex-wrap gap-4">
         {resources.map((resource) => {
-          // Calculate actual production including income from resourcesIncome
-          const totalProduction = resource.production + (
-            resourcesIncome && resourcesIncome[resource.key] ? resourcesIncome[resource.key] : 0
-          ) - (resource.consumption || 0);
+          // Для еды используем готовое значение netProduction
+          const totalProduction = resource.key === 'food' && resource.netProduction !== undefined
+            ? resource.netProduction
+            : (resource.production + (
+                resourcesIncome && resourcesIncome[resource.key] ? resourcesIncome[resource.key] : 0
+              ) - (resource.consumption || 0));
 
+          // Отображаем реальное производство/потребление с учетом знака
+          const displayProduction = typeof resource.production === 'number' ? 
+            resource.production : 0;
+            
           return (
             <div key={resource.name} className="flex items-center gap-2 relative group">
               {resource.icon}

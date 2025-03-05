@@ -470,7 +470,7 @@ export const CityPanel: React.FC<CityPanelProps> = ({
                     Для военного захвата города требуется {Math.ceil(city.maxPopulation / 4)} военных единиц.
                   </p>
                   <p className="text-xs">
-                    Для мирного присоединения через влияние требуется {Math.ceil(city.maxPopulation / 500)} влияния.
+                    Для мирного присоединения через влияние требуется {city.maxPopulation ? Math.min(Math.ceil(city.maxPopulation * 0.2), 100) : 30} влияния.
                   </p>
                 </div>
 
@@ -852,7 +852,7 @@ export const CityPanel: React.FC<CityPanelProps> = ({
 
                 <ScrollArea className="h-[300px] pr-3">
                   <div
-                    className="space-y-2 cursor-grab"
+                    className="space-y-2 cursorgrab"
                     id="buildings-container"
                     onMouseDown={(e) => {
                       const container = document.getElementById('buildings-container');
