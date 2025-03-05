@@ -689,8 +689,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           gameState.resources.influence = 0;
         }
 
-        // Расчет требуемого влияния
-        const requiredInfluence = region.maxPopulation ? Math.ceil(region.maxPopulation / 2) : 30; 
+        // Расчет требуемого влияния - используем более разумное значение
+        // Используем либо 20% от максимального населения, либо фиксированное значение 30
+        const requiredInfluence = region.maxPopulation ? Math.min(Math.ceil(region.maxPopulation * 0.2), 100) : 30; 
 
         console.log(`Required influence: ${requiredInfluence}, Available: ${gameState.resources.influence}`);
 
