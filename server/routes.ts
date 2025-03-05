@@ -710,52 +710,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Обновляем состояние игры
         await storage.setGameState(gameState);
 
-        // Захватываем территорию с лучшими начальными условиями
-        // Проверяем, существует ли функция updateRegion
-        if (typeof storage.updateRegion !== 'function') {
-          // Если функция не существует, попробуем обновить как город
-          if (typeof storage.updateCity === 'function') {
-            try {
-              const updatedCity = await storage.updateCity(Number(regionId), { 
-                owner: 'player',
-                military: 0,
-                satisfaction: 75
-              });
+        try {
+          let updatedRegion;
+
+          // Используем updateCity вместо updateRegion, т.к. в API мы работаем с городами
+          console.log(`Attempting to update city ${regionId} to player ownership`);
+          updatedRegion = await storage.updateCity(Number(regionId), { 
+            owner: 'player',
+            military: 0,
+            satisfaction: 75
+          });
+          
+          console.log('City captured through influence:', updatedRegion);
+          
+          // Получаем обновленный список городов для обновления UI
+          const cities = await storage.getCities();
+          
+          // Отправляем обновленное состояние через WebSocket
+          for (const client of wss.clients) {
+            if (client.readyState === WebSocket.OPEN) {
+              client.send(JSON.stringify({
+                type: 'CITIES_UPDATE',
+                cities
+              }));
               
-              console.log('City captured through influence:', updatedCity);
-              return res.json({ success: true, region: updatedCity, gameState });
-            } catch (updateError) {
-              console.error('Error updating city:', updateError);
-              return res.status(500).json({ 
-                success: false, 
-                message: 'Ошибка при обновлении города', 
-                error: updateError.message 
-              });
+              client.send(JSON.stringify({
+                type: 'GAME_UPDATE',
+                gameState
+              }));
             }
-          } else {
-            return res.status(500).json({ 
-              success: false, 
-              message: 'Метод обновления региона не реализован'
-            });
           }
-        } else {
-          try {
-            const updatedRegion = await storage.updateRegion(Number(regionId), { 
-              owner: 'player',
-              military: 0,
-              satisfaction: 75
-            });
-            
-            console.log('Region captured through influence:', updatedRegion);
-            return res.json({ success: true, region: updatedRegion, gameState });
-          } catch (updateError) {
-            console.error('Error updating region:', updateError);
-            return res.status(500).json({ 
-              success: false, 
-              message: 'Ошибка при обновлении региона', 
-              error: updateError.message 
-            });
-          }
+          
+          return res.json({ 
+            success: true, 
+            region: updatedRegion, 
+            gameState,
+            message: 'Регион успешно присоединен через влияние!'
+          });
+        } catch (updateError) {
+          console.error('Error updating city/region:', updateError);
+          return res.status(500).json({ 
+            success: false, 
+            message: 'Ошибка при обновлении региона', 
+            error: updateError.message 
+          });
         }
       } else {
         // Военный захват

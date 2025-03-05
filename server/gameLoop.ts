@@ -280,19 +280,14 @@ class GameLoop {
     // Сохраняем общее производство еды перед вычетом потребления (для логов)
     const rawFoodProduction = cityResources.food;
     
-    // Вычисляем чистое производство с проверкой на отрицательное значение
-    let netFoodProduction = rawFoodProduction - foodConsumption;
+    // Вычисляем чистое производство
+    const netFoodProduction = rawFoodProduction - foodConsumption;
     
-    // Если производство меньше расхода, не позволяем еде становиться отрицательной в ресурсах
-    if (gameState.resources.food + netFoodProduction < 0) {
-        // Ограничиваем расход так, чтобы еда не стала отрицательной
-        netFoodProduction = -gameState.resources.food;
-    }
-    
-    // Устанавливаем значение в cityResources
+    // Устанавливаем значение в cityResources, но если прирост отрицательный,
+    // обеспечиваем что мы будем вычитать, а не добавлять отрицательное число
     cityResources.food = netFoodProduction;
 
-    console.log(`Total food consumption: ${-foodConsumption.toFixed(2)}, Raw production: ${rawFoodProduction.toFixed(2)}, Net production: ${cityResources.food.toFixed(2)}, Available food: ${gameState.resources.food.toFixed(2)}`);
+    console.log(`Total food consumption: ${-foodConsumption.toFixed(2)}, Raw production: ${rawFoodProduction.toFixed(2)}, Net production: ${netFoodProduction.toFixed(2)}, Available food: ${gameState.resources.food.toFixed(2)}`);
 
     // Обновляем состояние игры
     const newResources = { ...gameState.resources };
@@ -301,9 +296,17 @@ class GameLoop {
       newResources.influence = 0;
     }
     
+    // Обрабатываем все ресурсы
     for (const [resource, amount] of Object.entries(cityResources)) {
       if (newResources[resource] !== undefined || resource === 'influence') {
+        // Добавляем значение к существующему ресурсу
         newResources[resource] = (newResources[resource] || 0) + Number(amount);
+        
+        // Проверяем, что ресурс не стал отрицательным
+        if (newResources[resource] < 0) {
+          newResources[resource] = 0;
+        }
+        
         // Округляем до 4 знаков после запятой чтобы избежать проблем с плавающей точкой
         newResources[resource] = Math.round(newResources[resource] * 10000) / 10000;
       }

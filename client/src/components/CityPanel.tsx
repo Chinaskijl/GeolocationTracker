@@ -15,7 +15,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import React from "react";
-import { getSatisfactionFactors } from '@/lib/satisfactionHelpers'; // Added import
+import { getSatisfactionFactors } from '@/lib/satisfactionHelpers';
 
 
 // Placeholder Slider component - replace with actual implementation
@@ -199,34 +199,37 @@ export const CityPanel: React.FC<CityPanelProps> = ({
       const data = await response.json();
 
       if (response.ok) {
-        toast({
-          title: "Успех",
-          description: "Область успешно присоединена!",
-          variant: "default",
-        });
-      } else {
-        toast({
-          title: "Ошибка",
-          description: data.message || 'Ошибка при мирном захвате',
-          variant: "destructive",
-        });
-
-        // Если требуется конкретное количество влияния, покажем это
-        if (data.required && data.available) {
-          toast({
-            title: "Недостаточно влияния",
-            description: `Требуется: ${data.required}, доступно: ${Math.floor(data.available)}`,
-            variant: "destructive",
-          });
+        // Используем внешнюю библиотеку toast только если она существует
+        if (typeof toast !== 'undefined' && toast.success) {
+          toast.success('Регион успешно присоединен через влияние!');
+        } else {
+          alert('Регион успешно присоединен через влияние!');
         }
+
+        // Обновляем состояние игры
+        if (data.gameState) {
+          setGameState(data.gameState);
+        }
+        if (data.region) {
+          // Обновляем город в списке городов
+          updateCity(data.region);
+        }
+      } else {
+        // Используем внешнюю библиотеку toast только если она существует
+        if (typeof toast !== 'undefined' && toast.error) {
+          toast.error(`Ошибка при мирном захвате: ${data.message}`);
+        } else {
+          alert(`Ошибка при мирном захвате: ${data.message}`);
+        }
+        console.error('Ошибка при мирном захвате:', data);
       }
     } catch (error) {
       console.error('Ошибка при мирном захвате:', error);
-      toast({
-        title: "Ошибка",
-        description: "Произошла ошибка при мирном захвате",
-        variant: "destructive",
-      });
+      if (typeof toast !== 'undefined' && toast.error) {
+        toast.error('Не удалось выполнить мирный захват');
+      } else {
+        alert('Не удалось выполнить мирный захват');
+      }
     }
   };
 
@@ -335,6 +338,18 @@ export const CityPanel: React.FC<CityPanelProps> = ({
     );
   }, [city?.name, city?.owner]);
 
+  const updateCity = (updatedCity: any) => {
+    // Находим индекс города в массиве
+    const cityIndex = cities.findIndex((c: any) => c.id === updatedCity.id);
+
+    // Если город найден, обновляем его в массиве
+    if (cityIndex !== -1) {
+      const updatedCities = [...cities];
+      updatedCities[cityIndex] = updatedCity;
+      useGameStore.getState().setCities(updatedCities);
+    }
+  };
+
   return (
     <TooltipProvider>
       <Card className="fixed bottom-4 left-4 w-96 max-h-[80vh] z-[1000] overflow-hidden">
@@ -342,651 +357,651 @@ export const CityPanel: React.FC<CityPanelProps> = ({
           <div className="p-4 space-y-4">
             {cityInfo}
 
-          <div className="space-y-2">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <span className="font-medium">Удовлетворенность:</span>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className={`${city.satisfaction < 30 ? 'text-red-500' : 'text-green-500'}`}>
-                      {Math.round(city.satisfaction)}%
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent className="w-72 p-3">
-                    <h4 className="font-bold mb-1">Факторы влияющие на удовлетворенность:</h4>
-                    <ul className="space-y-1">
-                      {getSatisfactionFactors(city).map((factor, idx) => (
-                        <li key={`city-factor-${idx}`} className="flex justify-between">
-                          <span>{factor.name}:</span>
-                          <span className={`${factor.isPositive ? 'text-green-500' : factor.isWarning ? 'text-yellow-500' : 'text-red-500'}`}>
-                            {factor.impact}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                    <ul className="text-sm space-y-1">
-                      <li>- Базовое значение: 50%</li>
-                      <li>- Количество рабочих мест: {city.satisfaction < 50 ?
-                        <span className="text-red-500">Недостаточно рабочих мест</span> :
-                        <span className="text-green-500">Достаточно</span>}
-                      </li>
-                      <li>- Бонусы от зданий: {city.buildings.some(b => b === 'theater' || b === 'park' || b === 'temple') ?
-                        <span className="text-green-500">+{city.buildings.filter(b => b === 'theater').length * 10 +
-                        city.buildings.filter(b => b === 'park').length * 5 + 
-                        city.buildings.filter(b => b === 'temple').length * 15}%</span> :
-                        <span className="text-gray-500">0%</span>}
-                      </li>
-                      <li>- Протесты: {city.protestTimer ?
-                        <span className="text-red-500">Активны ({Math.ceil(city.protestTimer / 60)} мин)</span> :
-                        <span className="text-green-500">Нет</span>}
-                      </li>
-                    </ul>
-                  </TooltipContent>
-                </Tooltip>
-              </div>
-              <div>
-                <span className="font-medium">Население:</span> {Math.floor(city.population)}/{city.maxPopulation}
-              </div>
-            </div>
-            <Progress value={(city.population / city.maxPopulation) * 100} />
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex justify-between items-center pb-2">
-              <span className="font-medium">Военные</span>
-              <span>{city.military || 0}</span>
-            </div>
-          </div>
-
-          {city.owner === 'player' && playerCities.length > 0 && (
             <div className="space-y-2">
-              <h3 className="font-medium">Перемещение войск</h3>
-              <div className="grid grid-cols-1 gap-2">
-                {playerCities.map(targetCity => (
-                  <Button
-                    key={targetCity.id}
-                    variant="outline"
-                    onClick={() => handleTransferMilitary(targetCity.id)}
-                    disabled={!city.military}
-                    className="w-full"
-                  >
-                    Отправить в {targetCity.name}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          )}
-
-
-          {!city.owner || city.owner === 'neutral' ? (
-            <div className="space-y-4">
-              <Card className="p-4">
-                <h3 className="font-medium mb-2">Захват территории</h3>
-                <p className="text-sm mb-4">
-                  {!cities.some(city => city.owner === 'player')
-                    ? "Выберите эту область в качестве своей столицы"
-                    : "Вы можете захватить эту территорию, но вам понадобятся военные или влияние."}
-                </p>
-                <div className="space-y-2">
-                  <Button
-                    onClick={handleCapture}
-                    className="w-full"
-                    disabled={hasCapital && gameState.military < Math.ceil(city.maxPopulation / 4)}
-                  >
-                    {hasCapital ? "Военный захват" : "Выбрать столицей"}
-                  </Button>
-                  {hasCapital && <p className="text-xs text-center">Будет использовано {Math.ceil(city.maxPopulation / 4)} военных</p>}
-
-                  <Button
-                    onClick={handleCaptureWithInfluence} // Updated button onClick
-                    className="w-full mt-2"
-                    variant="outline"
-                    disabled={hasCapital && gameState.resources.influence < Math.ceil(city.maxPopulation / 500)}
-                  >
-                    Мирное присоединение
-                  </Button>
-                  {hasCapital && <p className="text-xs text-center">Будет использовано {Math.ceil(city.maxPopulation / 500)} влияния</p>}
-                </div>
-              </Card>
-
-              <div className="space-y-2 mb-4">
-                <h4 className="text-sm font-medium">Стоимость захвата</h4>
-                <p className="text-xs">
-                  Для военного захвата города требуется {Math.ceil(city.maxPopulation / 4)} военных единиц.
-                </p>
-                <p className="text-xs">
-                  Для мирного присоединения через влияние требуется {Math.ceil(city.maxPopulation / 500)} влияния.
-                </p>
-              </div>
-
-              {/* Отображаем возможные постройки для нейтральной области */}
-              {city.buildings && city.buildings.length > 0 && (
-                <Card className="p-4">
-                  <h3 className="font-medium mb-2">Построенные здания</h3>
-                  <div className="text-sm">
-                    <ul className="list-disc pl-5 space-y-1">
-                      {/* Группируем здания по типу и считаем количество */}
-                      {Object.entries(
-                        city.buildings.reduce((acc, buildingId) => {
-                          acc[buildingId] = (acc[buildingId] || 0) + 1;
-                          return acc;
-                        }, {} as Record<string, number>)
-                      ).map(([buildingId, count]) => {
-                        const building = BUILDINGS.find(b => b.id === buildingId);
-                        const maxCount = city.buildingLimits?.[buildingId] || building?.maxCount || 0;
-
-                        return (
-                          <li key={`${buildingId}-built`} className="text-green-600" title={`Занято ${city.usedWorkers || 0} из ${city.totalWorkers || 0} рабочих, свободно ${(city.totalWorkers || 0) - (city.usedWorkers || 0)} рабочих`}>
-                            {building?.name || buildingId.replace("_", " ")}: {building?.icon || '🏢'} {count}/{maxCount}
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </div>
-                </Card>
-              )}
-
-              {city.availableBuildings && city.availableBuildings.length > 0 && (
-                <Card className="p-4">
-                  <h3 className="font-medium mb-2">Возможные постройки</h3>
-                  <div className="text-sm">
-                    <ul className="list-disc pl-5 space-y-1">
-                      {city.availableBuildings.map((buildingId, index) => {
-                        const limit = city.buildingLimits?.[buildingId] || 0;
-                        const building = BUILDINGS.find(b => b.id === buildingId);
-                        const currentCount = city.buildings.filter(b => b === buildingId).length;
-
-                        return (
-                          <li key={`${buildingId}-${index}`} className="text-gray-500">
-                            {building?.name || buildingId.replace("_", " ")}: {building?.icon || '🏢'} {' '}
-                            <span className={currentCount > 0 ? "text-green-600" : ""}>
-                              построено {currentCount}/{limit} шт.
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">Удовлетворенность:</span>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className={`${city.satisfaction < 30 ? 'text-red-500' : 'text-green-500'}`}>
+                        {Math.round(city.satisfaction)}%
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent className="w-72 p-3">
+                      <h4 className="font-bold mb-1">Факторы влияющие на удовлетворенность:</h4>
+                      <ul className="space-y-1">
+                        {getSatisfactionFactors(city).map((factor, idx) => (
+                          <li key={`city-factor-${idx}`} className="flex justify-between">
+                            <span>{factor.name}:</span>
+                            <span className={`${factor.isPositive ? 'text-green-500' : factor.isWarning ? 'text-yellow-500' : 'text-red-500'}`}>
+                              {factor.impact}
                             </span>
                           </li>
-                        );
-                      })}
-                    </ul>
+                        ))}
+                      </ul>
+                      <ul className="text-sm space-y-1">
+                        <li>- Базовое значение: 50%</li>
+                        <li>- Количество рабочих мест: {city.satisfaction < 50 ?
+                          <span className="text-red-500">Недостаточно рабочих мест</span> :
+                          <span className="text-green-500">Достаточно</span>}
+                        </li>
+                        <li>- Бонусы от зданий: {city.buildings.some(b => b === 'theater' || b === 'park' || b === 'temple') ?
+                          <span className="text-green-500">+{city.buildings.filter(b => b === 'theater').length * 10 +
+                          city.buildings.filter(b => b === 'park').length * 5 +
+                          city.buildings.filter(b => b === 'temple').length * 15}%</span> :
+                          <span className="text-gray-500">0%</span>}
+                        </li>
+                        <li>- Протесты: {city.protestTimer ?
+                          <span className="text-red-500">Активны ({Math.ceil(city.protestTimer / 60)} мин)</span> :
+                          <span className="text-green-500">Нет</span>}
+                        </li>
+                      </ul>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                <div>
+                  <span className="font-medium">Население:</span> {Math.floor(city.population)}/{city.maxPopulation}
+                </div>
+              </div>
+              <Progress value={(city.population / city.maxPopulation) * 100} />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex justify-between items-center pb-2">
+                <span className="font-medium">Военные</span>
+                <span>{city.military || 0}</span>
+              </div>
+            </div>
+
+            {city.owner === 'player' && playerCities.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="font-medium">Перемещение войск</h3>
+                <div className="grid grid-cols-1 gap-2">
+                  {playerCities.map(targetCity => (
+                    <Button
+                      key={targetCity.id}
+                      variant="outline"
+                      onClick={() => handleTransferMilitary(targetCity.id)}
+                      disabled={!city.military}
+                      className="w-full"
+                    >
+                      Отправить в {targetCity.name}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+
+            {!city.owner || city.owner === 'neutral' ? (
+              <div className="space-y-4">
+                <Card className="p-4">
+                  <h3 className="font-medium mb-2">Захват территории</h3>
+                  <p className="text-sm mb-4">
+                    {!cities.some(city => city.owner === 'player')
+                      ? "Выберите эту область в качестве своей столицы"
+                      : "Вы можете захватить эту территорию, но вам понадобятся военные или влияние."}
+                  </p>
+                  <div className="space-y-2">
+                    <Button
+                      onClick={handleCapture}
+                      className="w-full"
+                      disabled={hasCapital && gameState.military < Math.ceil(city.maxPopulation / 4)}
+                    >
+                      {hasCapital ? "Военный захват" : "Выбрать столицей"}
+                    </Button>
+                    {hasCapital && <p className="text-xs text-center">Будет использовано {Math.ceil(city.maxPopulation / 4)} военных</p>}
+
+                    <Button
+                      onClick={handleCaptureWithInfluence}
+                      className="w-full mt-2"
+                      variant="outline"
+                      disabled={hasCapital && gameState.resources.influence < Math.ceil(city.maxPopulation / 500)}
+                    >
+                      Мирное присоединение
+                    </Button>
+                    {hasCapital && <p className="text-xs text-center">Будет использовано {Math.ceil(city.maxPopulation / 500)} влияния</p>}
                   </div>
                 </Card>
-              )}
-            </div>
-          ) : city.owner === 'player' ? (
-            <div className="space-y-4">
-              {/* Ползунок с налогами */}
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <h3 className="font-medium">Налоговая ставка</h3>
-                  <span className="text-sm">{city.taxRate !== undefined ? city.taxRate : 5}%</span>
+
+                <div className="space-y-2 mb-4">
+                  <h4 className="text-sm font-medium">Стоимость захвата</h4>
+                  <p className="text-xs">
+                    Для военного захвата города требуется {Math.ceil(city.maxPopulation / 4)} военных единиц.
+                  </p>
+                  <p className="text-xs">
+                    Для мирного присоединения через влияние требуется {Math.ceil(city.maxPopulation / 500)} влияния.
+                  </p>
                 </div>
-                <div className="p-1">
-                  <Slider
-                    defaultValue={[city.taxRate !== undefined ? city.taxRate : 5]}
-                    min={0}
-                    max={10}
-                    step={1}
-                    onValueCommit={handleTaxRateChange}
-                  />
-                </div>
-                <p className="text-xs text-gray-500">
-                  Более высокие налоги снижают удовлетворенность населения,
-                  но увеличивают доход от города.
-                </p>
+
+                {/* Отображаем возможные постройки для нейтральной области */}
+                {city.buildings && city.buildings.length > 0 && (
+                  <Card className="p-4">
+                    <h3 className="font-medium mb-2">Построенные здания</h3>
+                    <div className="text-sm">
+                      <ul className="list-disc pl-5 space-y-1">
+                        {/* Группируем здания по типу и считаем количество */}
+                        {Object.entries(
+                          city.buildings.reduce((acc, buildingId) => {
+                            acc[buildingId] = (acc[buildingId] || 0) + 1;
+                            return acc;
+                          }, {} as Record<string, number>)
+                        ).map(([buildingId, count]) => {
+                          const building = BUILDINGS.find(b => b.id === buildingId);
+                          const maxCount = city.buildingLimits?.[buildingId] || building?.maxCount || 0;
+
+                          return (
+                            <li key={`${buildingId}-built`} className="text-green-600" title={`Занято ${city.usedWorkers || 0} из ${city.totalWorkers || 0} рабочих, свободно ${(city.totalWorkers || 0) - (city.usedWorkers || 0)} рабочих`}>
+                              {building?.name || buildingId.replace("_", " ")}: {building?.icon || '🏢'} {count}/{maxCount}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  </Card>
+                )}
+
+                {city.availableBuildings && city.availableBuildings.length > 0 && (
+                  <Card className="p-4">
+                    <h3 className="font-medium mb-2">Возможные постройки</h3>
+                    <div className="text-sm">
+                      <ul className="list-disc pl-5 space-y-1">
+                        {city.availableBuildings.map((buildingId, index) => {
+                          const limit = city.buildingLimits?.[buildingId] || 0;
+                          const building = BUILDINGS.find(b => b.id === buildingId);
+                          const currentCount = city.buildings.filter(b => b === buildingId).length;
+
+                          return (
+                            <li key={`${buildingId}-${index}`} className="text-gray-500">
+                              {building?.name || buildingId.replace("_", " ")}: {building?.icon || '🏢'} {' '}
+                              <span className={currentCount > 0 ? "text-green-600" : ""}>
+                                построено {currentCount}/{limit} шт.
+                              </span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  </Card>
+                )}
               </div>
-
-              {/* Налоговая ставка */}
-
-              <div className="space-y-2">
-                <h3 className="font-medium">Строительство</h3>
-                <p className="text-sm">Постройте здания для производства ресурсов и расширения города.</p>
-
-                {/* Табы категорий зданий с возможностью прокрутки */}
-                <div 
-                  className="flex space-x-2 overflow-x-auto pb-2 cursor-grab"
-                  id="categories-container"
-                  onMouseDown={(e) => {
-                    const container = document.getElementById('categories-container');
-                    if (!container) return;
-
-                    // Начальные позиции
-                    const startX = e.pageX;
-                    const initialScroll = container.scrollLeft;
-
-                    // Изменяем курсор при перетаскивании
-                    container.classList.remove('cursor-grab');
-                    container.classList.add('cursor-grabbing');
-
-                    // Функция обработки движения мыши
-                    const onMouseMove = (moveEvent: MouseEvent) => {
-                      const x = moveEvent.pageX;
-                      const distance = startX - x;
-                      container.scrollLeft = initialScroll + distance;
-
-                      // Предотвращаем выделение текста
-                      moveEvent.preventDefault();
-                    };
-
-                    // Функция обработки отпускания кнопки мыши
-                    const onMouseUp = () => {
-                      document.removeEventListener('mousemove', onMouseMove);
-                      document.removeEventListener('mouseup', onMouseUp);
-
-                      // Возвращаем курсор
-                      container.classList.remove('cursor-grabbing');
-                      container.classList.add('cursor-grab');
-                    };
-
-                    document.addEventListener('mousemove', onMouseMove);
-                    document.addEventListener('mouseup', onMouseUp);
-                  }}
-                >
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="whitespace-nowrap"
-                    onClick={() => {
-                      // Отображение всех зданий
-                      const filterBtn = document.getElementById('filter-all');
-                      if (filterBtn) filterBtn.click();
-                    }}
-                  >
-                    📋 Все здания
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="whitespace-nowrap"
-                    onClick={() => {
-                      // Фильтрация по жилым зданиям
-                      const buildingList = document.getElementById('building-list');
-                      if (buildingList) {
-                        const items = buildingList.querySelectorAll('[data-category]');
-                        items.forEach(item => {
-                          if (item.getAttribute('data-category') === 'housing') {
-                            item.classList.remove('hidden');
-                          } else {
-                            item.classList.add('hidden');
-                          }
-                        });
-                      }
-                    }}
-                  >
-                    🏠 Жилые
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="whitespace-nowrap"
-                    onClick={() => {
-                      // Фильтрация по производственным зданиям
-                      const buildingList = document.getElementById('building-list');
-                      if (buildingList) {
-                        const items = buildingList.querySelectorAll('[data-category]');
-                        items.forEach(item => {
-                          if (item.getAttribute('data-category') === 'production') {
-                            item.classList.remove('hidden');
-                          } else {
-                            item.classList.add('hidden');
-                          }
-                        });
-                      }
-                    }}
-                  >
-                    🏭 Производство
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="whitespace-nowrap"
-                    onClick={() => {
-                      // Фильтрация по ресурсным зданиям
-                      const buildingList = document.getElementById('building-list');
-                      if (buildingList) {
-                        const items = buildingList.querySelectorAll('[data-category]');
-                        items.forEach(item => {
-                          if (item.getAttribute('data-category') === 'resource') {
-                            item.classList.remove('hidden');
-                          } else {
-                            item.classList.add('hidden');
-                          }
-                        });
-                      }
-                    }}
-                  >
-                    💰 Ресурсы
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="whitespace-nowrap"
-                    onClick={() => {
-                      // Фильтрация по военным зданиям
-                      const buildingList = document.getElementById('building-list');
-                      if (buildingList) {
-                        const items = buildingList.querySelectorAll('[data-category]');
-                        items.forEach(item => {
-                          if (item.getAttribute('data-category') === 'military') {
-                            item.classList.remove('hidden');
-                          } else {
-                            item.classList.add('hidden');
-                          }
-                        });
-                      }
-                    }}
-                  >
-                    ⚔️ Военные
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="whitespace-nowrap"
-                    onClick={() => {
-                      // Фильтрация по культурным зданиям
-                      const buildingList = document.getElementById('building-list');
-                      if (buildingList) {
-                        const items = buildingList.querySelectorAll('[data-category]');
-                        items.forEach(item => {
-                          if (item.getAttribute('data-category') === 'culture') {
-                            item.classList.remove('hidden');
-                          } else {
-                            item.classList.add('hidden');
-                          }
-                        });
-                      }
-                    }}
-                  >
-                    🎭 Культура
-                  </Button>
-                  <Button 
-                    id="filter-all" 
-                    variant="outline" 
-                    size="sm" 
-                    className="whitespace-nowrap hidden"
-                    onClick={() => {
-                      // Отображение всех зданий
-                      const buildingList = document.getElementById('building-list');
-                      if (buildingList) {
-                        const items = buildingList.querySelectorAll('[data-category]');
-                        items.forEach(item => {
-                          item.classList.remove('hidden');
-                        });
-                      }
-                    }}
-                  />
+            ) : city.owner === 'player' ? (
+              <div className="space-y-4">
+                {/* Ползунок с налогами */}
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <h3 className="font-medium">Налоговая ставка</h3>
+                    <span className="text-sm">{city.taxRate !== undefined ? city.taxRate : 5}%</span>
+                  </div>
+                  <div className="p-1">
+                    <Slider
+                      defaultValue={[city.taxRate !== undefined ? city.taxRate : 5]}
+                      min={0}
+                      max={10}
+                      step={1}
+                      onValueCommit={handleTaxRateChange}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Более высокие налоги снижают удовлетворенность населения,
+                    но увеличивают доход от города.
+                  </p>
                 </div>
+
+                {/* Налоговая ставка */}
+
+                <div className="space-y-2">
+                  <h3 className="font-medium">Строительство</h3>
+                  <p className="text-sm">Постройте здания для производства ресурсов и расширения города.</p>
+
+                  {/* Табы категорий зданий с возможностью прокрутки */}
+                  <div
+                    className="flex space-x-2 overflow-x-auto pb-2 cursor-grab"
+                    id="categories-container"
+                    onMouseDown={(e) => {
+                      const container = document.getElementById('categories-container');
+                      if (!container) return;
+
+                      // Начальные позиции
+                      const startX = e.pageX;
+                      const initialScroll = container.scrollLeft;
+
+                      // Изменяем курсор при перетаскивании
+                      container.classList.remove('cursor-grab');
+                      container.classList.add('cursor-grabbing');
+
+                      // Функция обработки движения мыши
+                      const onMouseMove = (moveEvent: MouseEvent) => {
+                        const x = moveEvent.pageX;
+                        const distance = startX - x;
+                        container.scrollLeft = initialScroll + distance;
+
+                        // Предотвращаем выделение текста
+                        moveEvent.preventDefault();
+                      };
+
+                      // Функция обработки отпускания кнопки мыши
+                      const onMouseUp = () => {
+                        document.removeEventListener('mousemove', onMouseMove);
+                        document.removeEventListener('mouseup', onMouseUp);
+
+                        // Возвращаем курсор
+                        container.classList.remove('cursor-grabbing');
+                        container.classList.add('cursor-grab');
+                      };
+
+                      document.addEventListener('mousemove', onMouseMove);
+                      document.addEventListener('mouseup', onMouseUp);
+                    }}
+                  >
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="whitespace-nowrap"
+                      onClick={() => {
+                        // Отображение всех зданий
+                        const filterBtn = document.getElementById('filter-all');
+                        if (filterBtn) filterBtn.click();
+                      }}
+                    >
+                      📋 Все здания
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="whitespace-nowrap"
+                      onClick={() => {
+                        // Фильтрация по жилым зданиям
+                        const buildingList = document.getElementById('building-list');
+                        if (buildingList) {
+                          const items = buildingList.querySelectorAll('[data-category]');
+                          items.forEach(item => {
+                            if (item.getAttribute('data-category') === 'housing') {
+                              item.classList.remove('hidden');
+                            } else {
+                              item.classList.add('hidden');
+                            }
+                          });
+                        }
+                      }}
+                    >
+                      🏠 Жилые
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="whitespace-nowrap"
+                      onClick={() => {
+                        // Фильтрация по производственным зданиям
+                        const buildingList = document.getElementById('building-list');
+                        if (buildingList) {
+                          const items = buildingList.querySelectorAll('[data-category]');
+                          items.forEach(item => {
+                            if (item.getAttribute('data-category') === 'production') {
+                              item.classList.remove('hidden');
+                            } else {
+                              item.classList.add('hidden');
+                            }
+                          });
+                        }
+                      }}
+                    >
+                      🏭 Производство
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="whitespace-nowrap"
+                      onClick={() => {
+                        // Фильтрация по ресурсным зданиям
+                        const buildingList = document.getElementById('building-list');
+                        if (buildingList) {
+                          const items = buildingList.querySelectorAll('[data-category]');
+                          items.forEach(item => {
+                            if (item.getAttribute('data-category') === 'resource') {
+                              item.classList.remove('hidden');
+                            } else {
+                              item.classList.add('hidden');
+                            }
+                          });
+                        }
+                      }}
+                    >
+                      💰 Ресурсы
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="whitespace-nowrap"
+                      onClick={() => {
+                        // Фильтрация по военным зданиям
+                        const buildingList = document.getElementById('building-list');
+                        if (buildingList) {
+                          const items = buildingList.querySelectorAll('[data-category]');
+                          items.forEach(item => {
+                            if (item.getAttribute('data-category') === 'military') {
+                              item.classList.remove('hidden');
+                            } else {
+                              item.classList.add('hidden');
+                            }
+                          });
+                        }
+                      }}
+                    >
+                      ⚔️ Военные
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="whitespace-nowrap"
+                      onClick={() => {
+                        // Фильтрация по культурным зданиям
+                        const buildingList = document.getElementById('building-list');
+                        if (buildingList) {
+                          const items = buildingList.querySelectorAll('[data-category]');
+                          items.forEach(item => {
+                            if (item.getAttribute('data-category') === 'culture') {
+                              item.classList.remove('hidden');
+                            } else {
+                              item.classList.add('hidden');
+                            }
+                          });
+                        }
+                      }}
+                    >
+                      🎭 Культура
+                    </Button>
+                    <Button
+                      id="filter-all"
+                      variant="outline"
+                      size="sm"
+                      className="whitespace-nowrap hidden"
+                      onClick={() => {
+                        // Отображение всех зданий
+                        const buildingList = document.getElementById('building-list');
+                        if (buildingList) {
+                          const items = buildingList.querySelectorAll('[data-category]');
+                          items.forEach(item => {
+                            item.classList.remove('hidden');
+                          });
+                        }
+                      }}
+                    />
+                  </div>
+
+                  <ScrollArea className="h-[300px] pr-3">
+                    <div id="building-list" className="space-y-2">
+                      {BUILDINGS.filter(building =>
+                        // Фильтруем только доступные для этой области здания
+                        city.availableBuildings &&
+                        city.availableBuildings.includes(building.id)
+                      ).map((building, index) => {
+                        // Проверяем, можно ли построить здание с текущими ресурсами
+                        const canAfford = Object.entries(building.cost).every(
+                          ([resource, amount]) => gameState.resources[resource as keyof typeof gameState.resources] >= amount
+                        );
+
+                        // Проверяем лимит построек данного типа
+                        const currentCount = city.buildings.filter((b: string) => b === building.id).length;
+                        const maxCount = city.buildingLimits?.[building.id] || building.maxCount;
+                        const atLimit = currentCount >= maxCount;
+
+                        // Определяем категорию здания
+                        let category = 'other';
+                        if (building.id === 'house') {
+                          category = 'housing';
+                        } else if (building.id === 'farm') {
+                          category = 'resource';
+                        } else if (building.id === 'logging_camp' || building.id === 'gold_mine' || building.id === 'oil_rig') {
+                          category = 'resource';
+                        } else if (building.id === 'barracks') {
+                          category = 'military';
+                        } else if (building.id === 'metal_factory' || building.id === 'steel_factory' || building.id === 'weapons_factory') {
+                          category = 'production';
+                        } else if (building.id === 'theater' || building.id === 'park' || building.id === 'temple') {
+                          category = 'culture';
+                        }
+
+                        return (
+                          <Button
+                            key={`${building.id}-${index}`}
+                            variant={canAfford && !atLimit ? "outline" : "ghost"}
+                            disabled={!canAfford || atLimit}
+                            className={`w-full flex justify-between items-start p-3 h-auto ${(!canAfford || atLimit) ? 'opacity-50' : ''}`}
+                            data-category={category}
+                            onClick={() => {
+                              console.log(`Attempting to build ${building.id}`);
+                              handleBuild(building.id);
+                            }}
+                          >
+                            <div className="flex flex-col items-start">
+                              <span className="font-medium">{building.icon} {building.name}</span>
+                              {/* Отображение описания */}
+                              <p className="text-xs text-gray-600 mt-1">{getBuildingDescription(building.id)}</p>
+
+                              {/* Отображение производства ресурсов */}
+                              {building.resourceProduction && (
+                                <span
+                                  className="text-xs text-green-600 mt-1"
+                                  title={`Производит ${building.resourceProduction.amount} ${building.resourceProduction.type} в секунду`}
+                                >
+                                  {getResourceIcon(building.resourceProduction.type)} +{building.resourceProduction.amount}/сек
+                                </span>
+                              )}
+
+                              {/* Отображение потребления ресурсов */}
+                              {building.resourceConsumption && building.resourceConsumption.type && (
+                                <span
+                                  className="text-xs text-red-600 mt-1"
+                                  title={`Потребляет ${building.resourceConsumption.amount} ${building.resourceConsumption.type} в секунду`}
+                                >
+                                  {getResourceIcon(building.resourceConsumption.type)} -{building.resourceConsumption.amount}/сек
+                                </span>
+                              )}
+
+                              {/* Отображение производства населения */}
+                              {building.population?.growth > 0 && (
+                                <span
+                                  className="text-xs text-green-600 mt-1"
+                                  title={`Прирост населения: ${building.population.growth} человек в секунду`}
+                                >
+                                  👥 +{building.population.growth}/сек
+                                </span>
+                              )}
+
+                              {/* Отображение производства военной мощи */}
+                              {building.military?.production > 0 && (
+                                <span className="text-xs text-green-600 mt-1">
+                                  🪖 +{building.military.production}/сек
+                                </span>
+                              )}
+
+                              <span className="text-xs text-blue-600 mt-1">
+                                {currentCount}/{maxCount} построено
+                              </span>
+                            </div>
+
+                            <div className="flex flex-col items-end">
+                              <div className="flex flex-wrap gap-1 justify-end">
+                                {Object.entries(building.cost).map(([resource, amount]) => (
+                                  <span
+                                    key={resource}
+                                    className={`text-xs px-1 py-0.5 rounded ${
+                                      gameState.resources[resource as keyof typeof gameState.resources] >= amount
+                                        ? 'bg-green-100 text-green-800'
+                                        : 'bg-red-100 text-red-800'
+                                    }`}
+                                  >
+                                    {getResourceIcon(resource)} {amount}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  </ScrollArea>
+                </div>
+              </div>
+            ) : null}
+
+            {city.buildings.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="font-medium">Постройки</h3>
 
                 <ScrollArea className="h-[300px] pr-3">
-                  <div id="building-list" className="space-y-2">
-                    {BUILDINGS.filter(building =>
-                      // Фильтруем только доступные для этой области здания
-                      city.availableBuildings &&
-                      city.availableBuildings.includes(building.id)
-                    ).map((building, index) => {
-                      // Проверяем, можно ли построить здание с текущими ресурсами
-                      const canAfford = Object.entries(building.cost).every(
-                        ([resource, amount]) => gameState.resources[resource as keyof typeof gameState.resources] >= amount
-                      );
+                  <div
+                    className="space-y-2 cursor-grab"
+                    id="buildings-container"
+                    onMouseDown={(e) => {
+                      const container = document.getElementById('buildings-container');
+                      if (!container) return;
 
-                      // Проверяем лимит построек данного типа
-                      const currentCount = city.buildings.filter((b: string) => b === building.id).length;
-                      const maxCount = city.buildingLimits?.[building.id] || building.maxCount;
-                      const atLimit = currentCount >= maxCount;
+                      // Получаем родительский ScrollArea
+                      const scrollAreaParent = container.closest('[data-radix-scroll-area-viewport]');
+                      if (!scrollAreaParent) return;
 
-                      // Определяем категорию здания
-                      let category = 'other';
-                      if (building.id === 'house') {
-                        category = 'housing';
-                      } else if (building.id === 'farm') {
-                        category = 'resource';
-                      } else if (building.id === 'logging_camp' || building.id === 'gold_mine' || building.id === 'oil_rig') {
-                        category = 'resource';
-                      } else if (building.id === 'barracks') {
-                        category = 'military';
-                      } else if (building.id === 'metal_factory' || building.id === 'steel_factory' || building.id === 'weapons_factory') {
-                        category = 'production';
-                      } else if (building.id === 'theater' || building.id === 'park' || building.id === 'temple') {
-                        category = 'culture';
-                      }
+                      // Начальные позиции
+                      const startY = e.pageY;
+                      const scrollTop = scrollAreaParent.scrollTop;
+
+                      // Функция обработки движения мыши
+                      const onMouseMove = (moveEvent: MouseEvent) => {
+                        // Вычисляем насколько переместилась мышь
+                        const y = moveEvent.pageY;
+                        const distance = y - startY;
+
+                        // Прокручиваем контейнер
+                        scrollAreaParent.scrollTop = scrollTop - distance;
+
+                        // Запрещаем выделение текста при перетаскивании
+                        moveEvent.preventDefault();
+                      };
+
+                      // Функция обработки отпускания кнопки мыши
+                      const onMouseUp = () => {
+                        // Удаляем обработчики событий
+                        document.removeEventListener('mousemove', onMouseMove);
+                        document.removeEventListener('mouseup', onMouseUp);
+
+                        // Возвращаем курсор
+                        if (container) {
+                          container.classList.remove('cursor-grabbing');
+                          container.classList.add('cursor-grab');
+                        }
+                      };
+
+                      // Изменяем курсор при перетаскивании
+                      container.classList.remove('cursor-grab');
+                      container.classList.add('cursor-grabbing');
+
+                      // Добавляем обработчики событий
+                      document.addEventListener('mousemove', onMouseMove);
+                      document.addEventListener('mouseup', onMouseUp);
+                    }}
+                  >
+                    {/* Группировка зданий по типу */}
+                    {Object.entries(
+                      city.buildings.reduce((acc, buildingId) => {
+                        acc[buildingId] = (acc[buildingId] || 0) + 1;
+                        return acc;
+                      }, {} as Record<string, number>)
+                    ).map(([buildingId, count]) => {
+                      const building = BUILDINGS.find(b => b.id === buildingId);
+                      if (!building) return null;
+
+                      // Количество требуемых рабочих для этого здания
+                      const requiredWorkers = (building.workers || 0) * count;
+                      const allocatedWorkers = Math.min(requiredWorkers, city.population || 0);
+
+                      // Эффективность работы здания (для слайдера)
+                      const efficiency = requiredWorkers > 0 ? (allocatedWorkers / requiredWorkers) * 100 : 100;
+
+                      // Подсказка с информацией о рабочих
+                      const workerTooltip = `${requiredWorkers > 0 ?
+                        `Рабочих мест: ${allocatedWorkers}/${requiredWorkers} занято` :
+                        'Не требует рабочих'}
+                      (Всего в городе: ${city.population || 0} чел.)`;
 
                       return (
-                        <Button
-                          key={`${building.id}-${index}`}
-                          variant={canAfford && !atLimit ? "outline" : "ghost"}
-                          disabled={!canAfford || atLimit}
-                          className={`w-full flex justify-between items-start p-3 h-auto ${(!canAfford || atLimit) ? 'opacity-50' : ''}`}
-                          data-category={category}
-                          onClick={() => {
-                            console.log(`Attempting to build ${building.id}`);
-                            handleBuild(building.id);
-                          }}
+                        <div
+                          key={`building-group-${buildingId}`}
+                          className="p-2 border rounded hover:bg-gray-50"
+                          title={`${workerTooltip}
+  ${building.resourceProduction ? `\nПроизводит: ${getResourceIcon(building.resourceProduction.type)} ${building.resourceProduction.amount * count}/сек` : ''}
+  ${building.resourceConsumption ? `\nПотребляет: ${getResourceIcon(building.resourceConsumption.type)} ${building.resourceConsumption.amount * count}/сек` : ''}
+  ${building.population?.growth ? `\nПрирост населения: ${building.population.growth * count}/сек` : ''}
+  ${building.military?.production ? `\nПроизводство военных: ${building.military.production * count}/сек` : ''}`}
                         >
-                          <div className="flex flex-col items-start">
-                            <span className="font-medium">{building.icon} {building.name}</span>
-                            {/* Отображение описания */}
-                            <p className="text-xs text-gray-600 mt-1">{getBuildingDescription(building.id)}</p>
-
-                            {/* Отображение производства ресурсов */}
-                            {building.resourceProduction && (
-                              <span 
-                                className="text-xs text-green-600 mt-1"
-                                title={`Производит ${building.resourceProduction.amount} ${building.resourceProduction.type} в секунду`}
-                              >
-                                {getResourceIcon(building.resourceProduction.type)} +{building.resourceProduction.amount}/сек
-                              </span>
+                          <div className="flex justify-between items-center mb-1">
+                            <div className="font-medium">{building.icon} {building.name} x{count}</div>
+                            {requiredWorkers > 0 && (
+                              <div className={`text-xs ${efficiency < 100 ? "text-red-500" : "text-green-500"}`}>
+                                👥 {allocatedWorkers}/{requiredWorkers}
+                              </div>
                             )}
-
-                            {/* Отображение потребления ресурсов */}
-                            {building.resourceConsumption && building.resourceConsumption.type && (
-                              <span 
-                                className="text-xs text-red-600 mt-1"
-                                title={`Потребляет ${building.resourceConsumption.amount} ${building.resourceConsumption.type} в секунду`}
-                              >
-                                {getResourceIcon(building.resourceConsumption.type)} -{building.resourceConsumption.amount}/сек
-                              </span>
-                            )}
-
-                            {/* Отображение производства населения */}
-                            {building.population?.growth > 0 && (
-                              <span 
-                                className="text-xs text-green-600 mt-1"
-                                title={`Прирост населения: ${building.population.growth} человек в секунду`}
-                              >
-                                👥 +{building.population.growth}/сек
-                              </span>
-                            )}
-
-                            {/* Отображение производства военной мощи */}
-                            {building.military?.production > 0 && (
-                              <span className="text-xs text-green-600 mt-1">
-                                🪖 +{building.military.production}/сек
-                              </span>
-                            )}
-
-                            <span className="text-xs text-blue-600 mt-1">
-                              {currentCount}/{maxCount} построено
-                            </span>
                           </div>
 
-                          <div className="flex flex-col items-end">
-                            <div className="flex flex-wrap gap-1 justify-end">
-                              {Object.entries(building.cost).map(([resource, amount]) => (
-                                <span
-                                  key={resource}
-                                  className={`text-xs px-1 py-0.5 rounded ${
-                                    gameState.resources[resource as keyof typeof gameState.resources] >= amount
-                                      ? 'bg-green-100 text-green-800'
-                                      : 'bg-red-100 text-red-800'
-                                  }`}
-                                >
-                                  {getResourceIcon(resource)} {amount}
+                          {/* Индикатор эффективности */}
+                          {requiredWorkers > 0 && (
+                            <div className="mt-1">
+                              <div className="text-xs flex justify-between mb-1">
+                                <span>Эффективность:</span>
+                                <span className={efficiency < 100 ? "text-red-500" : "text-green-500"}>
+                                  {Math.round(efficiency)}%
                                 </span>
-                              ))}
+                              </div>
+                              <Progress value={efficiency} className={efficiency < 100 ? "bg-red-100" : "bg-green-100"} />
+
+                              {/* Слайдер распределения рабочих */}
+                              <div className="mt-2">
+                                <Slider
+                                  defaultValue={[Math.round(efficiency)]}
+                                  min={0}
+                                  max={100}
+                                  step={5}
+                                  onValueCommit={(value) => {
+                                    // В будущем здесь можно добавить функцию для распределения рабочих
+                                    console.log(`Установлена эффективность ${value}% для ${building.name}`);
+                                  }}
+                                />
+                                <p className="text-xs text-gray-500 mt-1">Распределение рабочих</p>
+                              </div>
                             </div>
+                          )}
+
+                          <div className="flex flex-wrap gap-2 mt-2 text-sm">
+                            {building.resourceProduction && (
+                              <div className={efficiency < 100 ? "text-red-500" : "text-green-500"}>
+                                {getResourceIcon(building.resourceProduction.type)}
+                                +{(building.resourceProduction.amount * count * (efficiency / 100)).toFixed(1)}/сек
+                              </div>
+                            )}
+                            {building.population?.growth && (
+                              <div className="text-green-500">
+                                👥 +{(building.population.growth * count * (efficiency / 100)).toFixed(1)}/сек
+                              </div>
+                            )}
+                            {building.military?.production && (
+                              <div className="text-blue-500">
+                                ⚔️ +{(building.military.production * count * (efficiency / 100)).toFixed(1)}/сек
+                              </div>
+                            )}
                           </div>
-                        </Button>
+                        </div>
                       );
                     })}
                   </div>
                 </ScrollArea>
               </div>
+            )}
+
+
+            {/* Вкладки панели */}
+            <div className="flex border-b">
             </div>
-          ) : null}
-
-          {city.buildings.length > 0 && (
-            <div className="space-y-2">
-              <h3 className="font-medium">Постройки</h3>
-
-              <ScrollArea className="h-[300px] pr-3">
-                <div 
-                  className="space-y-2 cursor-grab"
-                  id="buildings-container"
-                  onMouseDown={(e) => {
-                    const container = document.getElementById('buildings-container');
-                    if (!container) return;
-
-                    // Получаем родительский ScrollArea
-                    const scrollAreaParent = container.closest('[data-radix-scroll-area-viewport]');
-                    if (!scrollAreaParent) return;
-
-                    // Начальные позиции
-                    const startY = e.pageY;
-                    const scrollTop = scrollAreaParent.scrollTop;
-
-                    // Функция обработки движения мыши
-                    const onMouseMove = (moveEvent: MouseEvent) => {
-                      // Вычисляем насколько переместилась мышь
-                      const y = moveEvent.pageY;
-                      const distance = y - startY;
-
-                      // Прокручиваем контейнер
-                      scrollAreaParent.scrollTop= scrollTop - distance;
-
-                      // Запрещаем выделение текста при перетаскивании
-                      moveEvent.preventDefault();
-                    };
-
-                    // Функция обработки отпускания кнопки мыши
-                    const onMouseUp = () => {
-                      // Удаляем обработчики событий
-                      document.removeEventListener('mousemove', onMouseMove);
-                      document.removeEventListener('mouseup', onMouseUp);
-
-                      // Возвращаем курсор
-                      if (container) {
-                        container.classList.remove('cursor-grabbing');
-                        container.classList.add('cursor-grab');
-                      }
-                    };
-
-                    // Изменяем курсор при перетаскивании
-                    container.classList.remove('cursor-grab');
-                    container.classList.add('cursor-grabbing');
-
-                    // Добавляем обработчики событий
-                    document.addEventListener('mousemove', onMouseMove);
-                    document.addEventListener('mouseup', onMouseUp);
-                  }}
-                >
-                  {/* Группировка зданий по типу */}
-                  {Object.entries(
-                    city.buildings.reduce((acc, buildingId) => {
-                      acc[buildingId] = (acc[buildingId] || 0) + 1;
-                      return acc;
-                    }, {} as Record<string, number>)
-                  ).map(([buildingId, count]) => {
-                    const building = BUILDINGS.find(b => b.id === buildingId);
-                    if (!building) return null;
-
-                    // Количество требуемых рабочих для этого здания
-                    const requiredWorkers = (building.workers || 0) * count;
-                    const allocatedWorkers = Math.min(requiredWorkers, city.population || 0);
-
-                    // Эффективность работы здания (для слайдера)
-                    const efficiency = requiredWorkers > 0 ? (allocatedWorkers / requiredWorkers) * 100 : 100;
-
-                    // Подсказка с информацией о рабочих
-                    const workerTooltip = `${requiredWorkers > 0 ? 
-                      `Рабочих мест: ${allocatedWorkers}/${requiredWorkers} занято` : 
-                      'Не требует рабочих'} 
-                      (Всего в городе: ${city.population || 0} чел.)`;
-
-                    return (
-                      <div 
-                        key={`building-group-${buildingId}`} 
-                        className="p-2 border rounded hover:bg-gray-50"
-                        title={`${workerTooltip}
-  ${building.resourceProduction ? `\nПроизводит: ${getResourceIcon(building.resourceProduction.type)} ${building.resourceProduction.amount * count}/сек` : ''}
-  ${building.resourceConsumption ? `\nПотребляет: ${getResourceIcon(building.resourceConsumption.type)} ${building.resourceConsumption.amount * count}/сек` : ''}
-  ${building.population?.growth ? `\nПрирост населения: ${building.population.growth * count}/сек` : ''}
-  ${building.military?.production ? `\nПроизводство военных: ${building.military.production * count}/сек` : ''}`}
-                      >
-                        <div className="flex justify-between items-center mb-1">
-                          <div className="font-medium">{building.icon} {building.name} x{count}</div>
-                          {requiredWorkers > 0 && (
-                            <div className={`text-xs ${efficiency < 100 ? "text-red-500" : "text-green-500"}`}>
-                              👥 {allocatedWorkers}/{requiredWorkers}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Индикатор эффективности */}
-                        {requiredWorkers > 0 && (
-                          <div className="mt-1">
-                            <div className="text-xs flex justify-between mb-1">
-                              <span>Эффективность:</span>
-                              <span className={efficiency < 100 ? "text-red-500" : "text-green-500"}>
-                                {Math.round(efficiency)}%
-                              </span>
-                            </div>
-                            <Progress value={efficiency} className={efficiency < 100 ? "bg-red-100" : "bg-green-100"} />
-
-                            {/* Слайдер распределения рабочих */}
-                            <div className="mt-2">
-                              <Slider
-                                defaultValue={[Math.round(efficiency)]}
-                                min={0}
-                                max={100}
-                                step={5}
-                                onValueCommit={(value) => {
-                                  // В будущем здесь можно добавить функцию для распределения рабочих
-                                  console.log(`Установлена эффективность ${value}% для ${building.name}`);
-                                }}
-                              />
-                              <p className="text-xs text-gray-500 mt-1">Распределение рабочих</p>
-                            </div>
-                          </div>
-                        )}
-
-                        <div className="flex flex-wrap gap-2 mt-2 text-sm">
-                          {building.resourceProduction && (
-                            <div className={efficiency < 100 ? "text-red-500" : "text-green-500"}>
-                              {getResourceIcon(building.resourceProduction.type)} 
-                              +{(building.resourceProduction.amount * count * (efficiency / 100)).toFixed(1)}/сек
-                            </div>
-                          )}
-                          {building.population?.growth && (
-                            <div className="text-green-500">
-                              👥 +{(building.population.growth * count * (efficiency / 100)).toFixed(1)}/сек
-                            </div>
-                          )}
-                          {building.military?.production && (
-                            <div className="text-blue-500">
-                              ⚔️ +{(building.military.production * count * (efficiency / 100)).toFixed(1)}/сек
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </ScrollArea>
-            </div>
-          )}
-
-
-          {/* Вкладки панели */}
-          <div className="flex border-b">
           </div>
-        </div>
         </ScrollArea>
       </Card>
     </TooltipProvider>
@@ -999,7 +1014,7 @@ function getResourceIcon(resource: string): string {
     case 'wood': return '🌲';
     case 'food': return '🌾';
     case 'oil': return '🛢️';
-    case 'influence': return '👑'; // Added influence icon
+    case 'influence': return '👑';
     default: return '📦';
   }
 }
