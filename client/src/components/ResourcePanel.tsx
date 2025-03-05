@@ -248,10 +248,11 @@ export function ResourcePanel() {
         {tooltipItems.length > 0 ? tooltipItems : <p>Нет данных о производстве</p>}
       </div>
     );
-  };lassName={getProductionColor(resourcesIncome.gold)}>
-            {formatProduction(resourcesIncome.gold)}/с
-          </span>
-          {cities.filter(c => c.owner === 'player').map(city => (
+  };
+
+  return (
+    <Card className="fixed top-4 left-4 p-4 z-[1000]">
+      <div className="flex flex-wrap gap-4">
             <div key={`tax-${city.id}`} className="text-xs ml-4">
               {city.name}: {city.taxRate === 0 ?
                 <span className="text-red-500">-{(city.population * 0.5).toFixed(1)}/с</span> :
