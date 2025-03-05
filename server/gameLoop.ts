@@ -158,7 +158,21 @@ class GameLoop {
       cityResources.gold += taxIncome;
       
       // Обновляем удовлетворенность города на основе налоговой ставки и других факторов
-      let satisfactionChange = 0.5; // Базовый прирост
+      let satisfactionChange = 0; // Начинаем с нуля
+      
+      // Проверка нехватки рабочих
+      const totalBuildingsCount = city.buildings?.length || 0;
+      const cityPopulation = city.population || 0;
+      const availableWorkers = cityPopulation - totalBuildingsCount;
+      
+      if (totalBuildingsCount > 0 && availableWorkers < 0) {
+        // Если не хватает рабочих, это сильно снижает удовлетворенность
+        satisfactionChange -= 5.0;
+        console.log(`City ${city.name} lacks workers: ${availableWorkers}, applying -5.0 satisfaction penalty`);
+      } else {
+        // Базовый прирост только если хватает рабочих
+        satisfactionChange += 0.5;
+      }
       
       // Эффект от налоговой ставки
       if (taxRate > 5) {

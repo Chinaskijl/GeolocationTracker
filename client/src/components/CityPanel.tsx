@@ -597,42 +597,78 @@ export const CityPanel: React.FC<CityPanelProps> = ({
           {city.buildings.length > 0 && (
             <div className="space-y-2">
               <h3 className="font-medium">Постройки</h3>
-              <div className="space-y-1">
-                {city.buildings.map((buildingId, index) => {
+              <div className="space-y-2">
+                {/* Группировка зданий по типу */}
+                {Object.entries(
+                  city.buildings.reduce((acc, buildingId) => {
+                    acc[buildingId] = (acc[buildingId] || 0) + 1;
+                    return acc;
+                  }, {} as Record<string, number>)
+                ).map(([buildingId, count]) => {
                   const building = BUILDINGS.find(b => b.id === buildingId);
                   if (!building) return null;
 
                   // Количество требуемых рабочих для этого здания
-                  const requiredWorkers = building.workers || 0;
+                  const requiredWorkers = (building.workers || 0) * count;
+                  const allocatedWorkers = Math.min(requiredWorkers, city.population || 0);
 
+                  // Эффективность работы здания (для слайдера)
+                  const efficiency = requiredWorkers > 0 ? (allocatedWorkers / requiredWorkers) * 100 : 100;
+                  
                   // Подсказка с информацией о рабочих
                   const workerTooltip = `${requiredWorkers > 0 ? 
-                    `Рабочих мест: ${Math.min(requiredWorkers, city.population || 0)}/${requiredWorkers} занято` : 
+                    `Рабочих мест: ${allocatedWorkers}/${requiredWorkers} занято` : 
                     'Не требует рабочих'} 
                     (Всего в городе: ${city.population || 0} чел.)`;
 
                   return (
                     <div 
-                      key={`${buildingId}-${index}`} 
-                      className="flex justify-between items-center p-1 hover:bg-gray-100 rounded"
+                      key={`building-group-${buildingId}`} 
+                      className="p-2 border rounded hover:bg-gray-50"
                       title={`${workerTooltip}
-${building.resourceProduction ? `\nПроизводит: ${getResourceIcon(building.resourceProduction.type)} ${building.resourceProduction.amount}/сек` : ''}
-${building.resourceConsumption ? `\nПотребляет: ${getResourceIcon(building.resourceConsumption.type)} ${building.resourceConsumption.amount}/сек` : ''}
-${building.population?.growth ? `\nПрирост населения: ${building.population.growth}/сек` : ''}
-${building.military?.production ? `\nПроизводство военных: ${building.military.production}/сек` : ''}`}
+${building.resourceProduction ? `\nПроизводит: ${getResourceIcon(building.resourceProduction.type)} ${building.resourceProduction.amount * count}/сек` : ''}
+${building.resourceConsumption ? `\nПотребляет: ${getResourceIcon(building.resourceConsumption.type)} ${building.resourceConsumption.amount * count}/сек` : ''}
+${building.population?.growth ? `\nПрирост населения: ${building.population.growth * count}/сек` : ''}
+${building.military?.production ? `\nПроизводство военных: ${building.military.production * count}/сек` : ''}`}
                     >
-                      <span>{building.name} {requiredWorkers > 0 ? `👥 ${Math.min(requiredWorkers, city.population || 0)}/${requiredWorkers}` : ''}</span>
-                      <div className="flex items-center gap-2 text-sm">
+                      <div className="flex justify-between items-center mb-1">
+                        <div className="font-medium">{building.name} x{count}</div>
+                        {requiredWorkers > 0 && (
+                          <div className={`text-xs ${efficiency < 100 ? "text-red-500" : "text-green-500"}`}>
+                            👥 {allocatedWorkers}/{requiredWorkers}
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Индикатор эффективности */}
+                      {requiredWorkers > 0 && (
+                        <div className="mt-1">
+                          <div className="text-xs flex justify-between mb-1">
+                            <span>Эффективность:</span>
+                            <span className={efficiency < 100 ? "text-red-500" : "text-green-500"}>
+                              {Math.round(efficiency)}%
+                            </span>
+                          </div>
+                          <Progress value={efficiency} className={efficiency < 100 ? "bg-red-100" : "bg-green-100"} />
+                        </div>
+                      )}
+                      
+                      <div className="flex flex-wrap gap-2 mt-2 text-sm">
                         {building.resourceProduction && (
-                          <span className={requiredWorkers > city.population ? "text-red-500" : ""}>
-                            {getResourceIcon(building.resourceProduction.type)} +{building.resourceProduction.amount}
-                          </span>
+                          <div className={efficiency < 100 ? "text-red-500" : "text-green-500"}>
+                            {getResourceIcon(building.resourceProduction.type)} 
+                            +{(building.resourceProduction.amount * count * (efficiency / 100)).toFixed(1)}/сек
+                          </div>
                         )}
                         {building.population?.growth && (
-                          <span>👥 +{building.population.growth}</span>
+                          <div className="text-green-500">
+                            👥 +{(building.population.growth * count * (efficiency / 100)).toFixed(1)}/сек
+                          </div>
                         )}
                         {building.military?.production && (
-                          <span>⚔️ +{building.military.production}</span>
+                          <div className="text-blue-500">
+                            ⚔️ +{(building.military.production * count * (efficiency / 100)).toFixed(1)}/сек
+                          </div>
                         )}
                       </div>
                     </div>
