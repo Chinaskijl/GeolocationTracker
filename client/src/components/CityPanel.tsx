@@ -297,7 +297,12 @@ export const CityPanel: React.FC<CityPanelProps> = ({
                         : city.satisfaction < 30 
                           ? '⚠️ Низкая удовлетворенность! Город скоро начнет протестовать.' 
                           : '✅ Удовлетворенность в норме.'}
-                    </p>Name="text-sm space-y-1">
+                    </p>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            <div className="text-sm space-y-1">
                       <li>- Базовое значение: 50%</li>
                       <li>- Количество рабочих мест: {city.satisfaction < 50 ?
                         <span className="text-red-500">Недостаточно рабочих мест</span> :
