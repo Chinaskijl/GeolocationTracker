@@ -169,9 +169,7 @@ class GameLoop {
       // Обновляем удовлетворенность города на основе налоговой ставки и других факторов
       let satisfactionChange = 0; // Начинаем с нуля
       
-      // Базовый прирост всегда добавляем
-      satisfactionChange += 0.5;
-      
+      // Базовый прирост добавляем, но только если нет проблем с рабочими
       // Проверка нехватки рабочих
       const totalBuildingsCount = city.buildings?.length || 0;
       const cityPopulation = city.population || 0;
@@ -181,6 +179,9 @@ class GameLoop {
         // Если не хватает рабочих, это сильно снижает удовлетворенность
         satisfactionChange -= 5.0;
         console.log(`City ${city.name} lacks workers: ${availableWorkers}, applying -5.0 satisfaction penalty`);
+      } else {
+        // Базовый прирост только если достаточно рабочих
+        satisfactionChange += 0.5;
       }
       
       // Эффект от налоговой ставки
@@ -203,16 +204,11 @@ class GameLoop {
         }
       }
 
-      // Добавляем базовые ресурсы от города (если они есть)
-      if (city.resources) {
-        for (const [resource, amount] of Object.entries(city.resources)) {
-          if (cityResources[resource] !== undefined) {
-            // Базовое количество ресурсов умножаем на население / 1000 (но не меньше 0.1)
-            const populationMultiplier = Math.max(0.1, (city.population || 0) / 1000);
-            cityResources[resource] += Number(amount) * populationMultiplier;
-          }
-        }
-      }
+      // Базовые ресурсы добавляем только для специально построенных зданий
+      // Базовое свойство city.resources используем только для определения возможных ресурсов в регионе
+      // НЕ добавляем автоматически ресурсы из city.resources
+      
+      // Вместо этого, у нас уже есть логика добавления ресурсов от построенных зданий ниже
 
       // Добавляем бонусы от построенных зданий
       if (city.buildings) {
