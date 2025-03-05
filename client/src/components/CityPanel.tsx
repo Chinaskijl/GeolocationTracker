@@ -157,10 +157,19 @@ export const CityPanel: React.FC<CityPanelProps> = ({
         variant: 'destructive',
       });
     }
-          isCapital: false,
-          method: 'influence'
-        });
-        console.log('City captured successfully using influence');
+    
+    // Send the capture request
+    const response = await fetch(`/api/cities/${city.id}/capture`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        isCapital: false,
+        method: 'influence'
+      })
+    });
+    console.log('City captured successfully using influence');
       } else {
         throw new Error('Insufficient resources for capture.');
       }
