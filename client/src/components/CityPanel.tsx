@@ -146,7 +146,17 @@ export const CityPanel: React.FC<CityPanelProps> = ({
       } else {
         toast({
           title: "Недостаточно ресурсов",
-          description: "Недостаточно военных или влияния для захвата",
+          description: "Недостаточно военных или влияния для захвата города"
+        });
+      }
+    } catch (error) {
+      console.error('Error capturing city:', error);
+      toast({
+        title: 'Ошибка при захвате',
+        description: 'Не удалось захватить город',
+        variant: 'destructive',
+      });
+    }та",
           variant: "destructive"
         });
       }st('PATCH', `/api/cities/${city.id}/capture`, {
