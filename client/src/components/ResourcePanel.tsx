@@ -138,7 +138,7 @@ export function ResourcePanel() {
               {city.name}: {city.taxRate === 0 ?
                 <span className="text-red-500">-{(city.population * 0.5).toFixed(1)}/с</span> :
                 <span className="text-green-500">+{((city.population * city.taxRate) / 5).toFixed(1)}/с</span>
-              }span className="text-green-500">+{(city.population * (city.taxRate / 5)).toFixed(1)}/с</span>}
+              }
             </div>
           ))}
         </div>
