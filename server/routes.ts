@@ -221,7 +221,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Захватываем город
         const capturedCity = await storage.updateCity(cityId, { 
           owner: 'player',
-          population: 0 // Устанавливаем начальное население в 0
+          population: 0, // Устанавливаем начальное население в 0
+          satisfaction: 50 // Устанавливаем начальное значение удовлетворенности
         });
 
         // Уменьшаем количество военных

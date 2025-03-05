@@ -234,17 +234,17 @@ export class GameLoop {
           // Проверяем на начало протестов (если удовлетворенность < 30% и протесты еще не начались)
           let newProtestTimer = city.protestTimer;
 
-          if (newSatisfaction <= 0 && !isProtesting) {
-            // Если удовлетворенность упала до нуля - начинаем протесты с малым таймером (60 секунд)
-            newProtestTimer = 60;
-            // Гарантируем, что не будет отрицательной удовлетворенности
-            newSatisfaction = 0;
-            console.log(`⚠️ CRITICAL! Satisfaction hit 0% in ${city.name}! 60 seconds until loss of control.`);
-            console.log(`DEBUG: Setting protest timer and keeping satisfaction at ${newSatisfaction}%`);
-          } else if (newSatisfaction < 30 && !isProtesting) {
+          if (newSatisfaction < 30 && !isProtesting) {
             // Начинаем протесты с таймером 5 минут (300 секунд)
             newProtestTimer = 300;
-            console.log(`⚠️ Protests started in ${city.name}! Satisfaction: ${newSatisfaction.toFixed(1)}%. 5 minutes to resolve.`);
+            
+            // Гарантируем, что не будет отрицательной удовлетворенности
+            if (newSatisfaction <= 0) {
+              newSatisfaction = 0;
+              console.log(`⚠️ CRITICAL! Satisfaction hit 0% in ${city.name}! 5 minutes until loss of control.`);
+            } else {
+              console.log(`⚠️ Protests started in ${city.name}! Satisfaction: ${newSatisfaction.toFixed(1)}%. 5 minutes to resolve.`);
+            }
           } else if (isProtesting) {
             // Если протесты уже идут, уменьшаем таймер
             newProtestTimer -= deltaTime;

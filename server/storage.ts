@@ -154,7 +154,7 @@ class Storage {
         owner: "neutral",
         buildings: [],
         buildingLimits: generateFixedBuildingLimits(generateAvailableBuildings()),
-        satisfaction: 0 // Устанавливаем начальную удовлетворенность в 0
+        satisfaction: 50 // Устанавливаем начальную удовлетворенность в 50%
       },
       {
         id: 2,
