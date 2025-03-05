@@ -283,8 +283,9 @@ export const CityPanel: React.FC<CityPanelProps> = ({
 
   return (
     <TooltipProvider>
-      <Card className="fixed bottom-4 left-4 w-96 max-h-[80vh] overflow-hidden z-[1000]">
-        <div className="p-4 space-y-4">
+      <Card className="fixed bottom-4 left-4 w-96 max-h-[80vh] z-[1000]">
+        <ScrollArea className="max-h-[80vh]">
+          <div className="p-4 space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-bold">{city.name}</h2>
             <span className={`px-2 py-1 rounded-full text-sm ${
@@ -494,52 +495,10 @@ export const CityPanel: React.FC<CityPanelProps> = ({
                 <h3 className="font-medium">Строительство</h3>
                 <p className="text-sm">Постройте здания для производства ресурсов и расширения города.</p>
 
-                {/* Табы категорий зданий с возможностью перетаскивания */}
+                {/* Табы категорий зданий с возможностью прокрутки */}
                 <div 
-                  className="flex space-x-2 overflow-x-auto pb-2 cursor-grab"
+                  className="flex space-x-2 overflow-x-auto pb-2"
                   id="categories-container"
-                  onMouseDown={(e) => {
-                    const container = document.getElementById('categories-container');
-                    if (!container) return;
-                    
-                    // Начальные позиции
-                    const startX = e.pageX;
-                    const scrollLeft = container.scrollLeft;
-                    
-                    // Функция обработки движения мыши
-                    const onMouseMove = (moveEvent: MouseEvent) => {
-                      // Вычисляем насколько переместилась мышь
-                      const x = moveEvent.pageX;
-                      const distance = x - startX;
-                      
-                      // Прокручиваем контейнер
-                      container.scrollLeft = scrollLeft - distance;
-                      
-                      // Запрещаем выделение текста при перетаскивании
-                      moveEvent.preventDefault();
-                    };
-                    
-                    // Функция обработки отпускания кнопки мыши
-                    const onMouseUp = () => {
-                      // Удаляем обработчики событий
-                      document.removeEventListener('mousemove', onMouseMove);
-                      document.removeEventListener('mouseup', onMouseUp);
-                      
-                      // Возвращаем курсор
-                      if (container) {
-                        container.classList.remove('cursor-grabbing');
-                        container.classList.add('cursor-grab');
-                      }
-                    };
-                    
-                    // Изменяем курсор при перетаскивании
-                    container.classList.remove('cursor-grab');
-                    container.classList.add('cursor-grabbing');
-                    
-                    // Добавляем обработчики событий
-                    document.addEventListener('mousemove', onMouseMove);
-                    document.addEventListener('mouseup', onMouseUp);
-                  }}
                 >
                   <Button 
                     variant="outline" 
@@ -949,6 +908,7 @@ export const CityPanel: React.FC<CityPanelProps> = ({
           <div className="flex border-b">
           </div>
         </div>
+        </ScrollArea>
       </Card>
     </TooltipProvider>
   );
