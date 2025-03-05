@@ -170,9 +170,9 @@ export const CityPanel: React.FC<CityPanelProps> = ({
       })
     });
     console.log('City captured successfully using influence');
-      } else {
-        throw new Error('Insufficient resources for capture.');
-      }
+    } else {
+      throw new Error('Insufficient resources for capture.');
+    }
 
       // Обновляем данные после успешного захвата
       await queryClient.invalidateQueries({ queryKey: ['/api/cities'] });
