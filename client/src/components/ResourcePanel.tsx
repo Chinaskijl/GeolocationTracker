@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { useGameStore } from '@/lib/store';
@@ -29,36 +30,32 @@ export default function ResourcePanel() {
       }
     };
 
-    document.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mousemove', handleMouseMove);
     return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mousemove', handleMouseMove);
     };
   }, [hoveredResource, showTooltip]);
 
-  // Function to determine production/consumption color
-  const getProductionColor = (value: number) => {
-    if (value > 0) return 'text-green-500';
-    if (value < 0) return 'text-red-500';
-    return 'text-gray-500';
-  };
-
-  // Render tooltips for resources
   const renderTooltip = (resourceType: string) => {
     const tooltipItems: React.ReactNode[] = [];
 
-    // City production sources
-    gameState.cities?.forEach(city => {
-      if (city.owner === 'player') {
-        city.buildings?.forEach(buildingId => {
-          const building = window.BUILDINGS?.find(b => b.id === buildingId);
-          if (building?.resourceProduction?.type === resourceType) {
-            tooltipItems.push(
-              <div key={`${city.id}-${buildingId}`} className="whitespace-nowrap">
-                {city.name} ({building.name}): <span className="text-green-500">+{building.resourceProduction.amount}/s</span>
-                {city.population < (building.workers || 0) && <span className="text-red-500 ml-1">(нет рабочих)</span>}
-              </div>
-            );
-          }
+    // Check if there is income for this resource
+    if (resourcesIncome && resourcesIncome[resourceType] !== 0) {
+      tooltipItems.push(
+        <div key="income" className="whitespace-nowrap">
+          Income: <span className={resourcesIncome[resourceType] > 0 ? "text-green-500" : "text-red-500"}>
+            {resourcesIncome[resourceType] > 0 ? "+" : ""}{resourcesIncome[resourceType].toFixed(1)}/s
+          </span>
+        </div>
+      );
+    }
+
+    // Add production sources
+    Object.entries(resourcesIncome || {}).forEach(([resource, amount]) => {
+      if (resource === resourceType && amount !== 0) {
+        tooltipItems.push({
+          city: "Total",
+          amount
         });
       }
     });
@@ -86,46 +83,37 @@ export default function ResourcePanel() {
           // Calculate actual production including income from resourcesIncome
           const totalProduction = resource.production + (
             resourcesIncome && resourcesIncome[resource.key] ? resourcesIncome[resource.key] : 0
-          ) - (resource.consumption || 0);
-
+          );
+          
           return (
-            <div key={resource.name} className="flex items-center gap-2 relative group">
-              {resource.icon}
-              <span className="font-medium">
-                {resource.value}
-                <span className={`ml-1 text-xs ${getProductionColor(totalProduction)}`}>
-                  {totalProduction !== 0 ? `(${totalProduction > 0 ? '+' : ''}${totalProduction.toFixed(1)}/s)` : ''}
-                </span>
-              </span>
+            <div 
+              key={resource.key} 
+              className="flex items-center gap-2 relative"
+              onMouseEnter={() => {
+                setHoveredResource(resource.key);
+                setShowTooltip(true);
+              }}
+              onMouseLeave={() => {
+                setShowTooltip(false);
+              }}
+            >
+              <span className="text-lg">{resource.icon}</span>
+              <div>
+                <div className="font-medium">{Math.floor(resource.value)}</div>
+                {totalProduction !== 0 && (
+                  <div className={`text-xs ${totalProduction > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                    {totalProduction > 0 ? '+' : ''}{totalProduction.toFixed(1)}/s
+                  </div>
+                )}
+              </div>
               {hoveredResource === resource.key && showTooltip && renderTooltip(resource.key)}
             </div>
           );
         })}
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2">
-            <span>👥</span>
-            <span className="font-medium">{Math.floor(gameState.population)}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span>⚔️</span>
-            <span className="font-medium">{Math.floor(gameState.military)}</span>
-          </div>
-        </div>
       </div>
     </Card>
   );
 }
 
-export function getResourceIcon(type: string): string {
-  const icons: { [key: string]: string } = {
-    food: '🍞',
-    gold: '💰',
-    wood: '🪵',
-    oil: '🛢️',
-    influence: '🌐',
-    weapons: '🔫',
-    metal: '🔧',
-    steel: '⚒️'
-  };
-  return icons[type] || '❓';
-}
+// Also export as named export for components that might be importing it that way
+export const ResourcePanel = ResourcePanel;
