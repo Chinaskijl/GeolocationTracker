@@ -164,6 +164,38 @@ export const CityPanel: React.FC<CityPanelProps> = ({
     }
   };
 
+  // Функция для мирного захвата территории с использованием влияния
+  const handleCaptureWithInfluence = async () => {
+    if (!city) return;
+
+    try {
+      // Используем другой эндпоинт для захвата территории
+      const response = await fetch(`/api/capture-region`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          regionId: city.id,
+          captureMethod: 'influence'
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        toast.success('Территория мирно присоединена!');
+        // Обновление произойдет через WebSocket
+      } else {
+        const error = await response.json();
+        toast.error(error.message || 'Ошибка при мирном присоединении территории');
+      }
+    } catch (error) {
+      console.error('Ошибка при мирном захвате:', error);
+      toast.error('Не удалось выполнить мирное присоединение');
+    }
+  };
+
+
   const handleTransferMilitary = async (targetCityId: number) => {
     try {
       // По умолчанию отправляем половину имеющихся войск
@@ -361,7 +393,7 @@ export const CityPanel: React.FC<CityPanelProps> = ({
                   {hasCapital && <p className="text-xs text-center">Будет использовано {Math.ceil(city.maxPopulation / 4)} военных</p>}
 
                   <Button
-                    onClick={() => handleCapture('influence')}
+                    onClick={handleCaptureWithInfluence} // Updated button onClick
                     className="w-full mt-2"
                     variant="outline"
                     disabled={hasCapital && gameState.resources.influence < Math.ceil(city.maxPopulation / 500)}

@@ -653,11 +653,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Захват нейтральной территории
   app.post('/api/capture-region', async (req, res) => {
     try {
-      const { regionId, militaryAmount } = req.body;
+      const { regionId, militaryAmount, captureMethod } = req.body;
+
+      console.log(`Attempting to capture city ${regionId} using method: ${captureMethod}`);
 
       // Проверяем наличие всех необходимых данных
-      if (!regionId || militaryAmount === undefined) {
-        return res.status(400).json({ success: false, message: 'Не указаны все необходимые параметры' });
+      if (!regionId) {
+        return res.status(400).json({ success: false, message: 'Не указан ID региона' });
       }
 
       // Получаем данные о регионе
@@ -676,19 +678,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Получаем текущее состояние игры
       const gameState = await storage.getGameState();
 
-      // Проверяем, что у игрока достаточно военных
-      if (gameState.military < militaryAmount) {
-        return res.status(400).json({ success: false, message: 'Недостаточно военных для захвата' });
+      // Определяем метод захвата
+      if (captureMethod === 'influence') {
+        // Мирный захват через влияние
+        const requiredInfluence = Math.ceil(region.maxPopulation / 2); // Требуется больше влияния, чем военных
+
+        // Проверяем, достаточно ли влияния
+        if (!gameState.resources.influence || gameState.resources.influence < requiredInfluence) {
+          return res.status(400).json({ 
+            success: false, 
+            message: 'Недостаточно влияния для мирного захвата', 
+            required: requiredInfluence 
+          });
+        }
+
+        // Уменьшаем количество влияния
+        gameState.resources.influence -= requiredInfluence;
+        await storage.setGameState(gameState);
+
+        // Захватываем территорию с лучшими начальными условиями
+        const updatedRegion = await storage.updateRegion(regionId, { 
+          owner: 'player',
+          military: 0, // Без военных
+          satisfaction: 75 // Более высокая начальная удовлетворенность
+        });
+
+        return res.json({ success: true, region: updatedRegion, gameState });
+      } else {
+        // Военный захват
+        // Проверяем, что указано количество военных
+        if (militaryAmount === undefined) {
+          return res.status(400).json({ 
+            success: false, 
+            message: 'Не указано количество военных для захвата' 
+          });
+        }
+
+        // Проверяем, что у игрока достаточно военных
+        if (gameState.military < militaryAmount) {
+          return res.status(400).json({ 
+            success: false, 
+            message: 'Недостаточно военных для захвата',
+            required: militaryAmount
+          });
+        }
+
+        // Захватываем территорию и сохраняем текущую удовлетворенность
+        const updatedRegion = await storage.updateRegion(regionId, { 
+          owner: 'player',
+          military: militaryAmount,
+          satisfaction: 50 // Стандартная удовлетворенность при военном захвате
+        });
+
+        // Уменьшаем количество военных
+        gameState.military -= militaryAmount;
+        await storage.setGameState(gameState);
+
+        return res.json({ success: true, region: updatedRegion, gameState });
       }
-
-      // Захватываем территорию и сохраняем текущую удовлетворенность
-      const updatedRegion = await storage.updateRegion(regionId, { 
-        owner: 'player',
-        military: militaryAmount
-        // Не меняем satisfaction, оставляем текущее значение
-      });
-
-      res.json({ success: true, region: updatedRegion });
     } catch (error) {
       console.error('Error capturing region:', error);
       res.status(500).json({ success: false, message: 'Ошибка захвата региона' });
