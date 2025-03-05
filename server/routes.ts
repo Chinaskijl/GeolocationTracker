@@ -682,12 +682,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (captureMethod === 'influence') {
         // Мирный захват через влияние
         const requiredInfluence = Math.ceil(region.maxPopulation / 2); // Требуется больше влияния, чем военных
+        
+        console.log(`Attempting influence capture of region ${regionId}. Required influence: ${requiredInfluence}, Available: ${gameState.resources.influence || 0}`);
+
+        // Проверяем, есть ли вообще влияние в ресурсах
+        if (!gameState.resources.hasOwnProperty('influence')) {
+          gameState.resources.influence = 0;
+        }
 
         // Проверяем, достаточно ли влияния
-        if (!gameState.resources.influence || gameState.resources.influence < requiredInfluence) {
+        if (gameState.resources.influence < requiredInfluence) {
+          console.log(`Insufficient influence for capture: ${gameState.resources.influence} < ${requiredInfluence}`);
           return res.status(400).json({ 
             success: false, 
-            message: 'Недостаточно влияния для мирного захвата', 
+            message: `Недостаточно влияния для мирного захвата (нужно ${requiredInfluence})`, 
             required: requiredInfluence 
           });
         }
@@ -695,6 +703,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Уменьшаем количество влияния
         gameState.resources.influence -= requiredInfluence;
         await storage.setGameState(gameState);
+        
+        console.log(`Influence capture successful. Remaining influence: ${gameState.resources.influence}`);
 
         // Захватываем территорию с лучшими начальными условиями
         const updatedRegion = await storage.updateRegion(regionId, { 
@@ -702,6 +712,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           military: 0, // Без военных
           satisfaction: 75 // Более высокая начальная удовлетворенность
         });
+        
+        if (!updatedRegion) {
+          console.error(`Failed to update region ${regionId} during influence capture`);
+          return res.status(500).json({ 
+            success: false, 
+            message: 'Ошибка при обновлении данных региона' 
+          });
+        }
 
         return res.json({ success: true, region: updatedRegion, gameState });
       } else {

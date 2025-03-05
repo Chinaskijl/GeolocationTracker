@@ -141,8 +141,15 @@ export const CityPanel: React.FC<CityPanelProps> = ({
           isCapital: false
         });
         console.log('City captured successfully');
-      } else if (method === 'influence' && gameState.resources.influence >= Math.ceil(city.maxPopulation / 500)) {
-        await apiRequest('PATCH', `/api/cities/${city.id}/capture`, {
+      } else if (method === 'influence') {
+        await handleCaptureWithInfluence();
+      } else {
+        toast({
+          title: "Недостаточно ресурсов",
+          description: "Недостаточно военных или влияния для захвата",
+          variant: "destructive"
+        });
+      }st('PATCH', `/api/cities/${city.id}/capture`, {
           isCapital: false,
           method: 'influence'
         });
@@ -183,6 +190,39 @@ export const CityPanel: React.FC<CityPanelProps> = ({
 
       if (response.ok) {
         const result = await response.json();
+        if (result.success) {
+          // Обновляем данные после успешного захвата
+          await queryClient.invalidateQueries({ queryKey: ['/api/cities'] });
+          await queryClient.invalidateQueries({ queryKey: ['/api/game-state'] });
+          
+          toast({
+            title: "Успешный захват",
+            description: "Территория захвачена мирным путем",
+            variant: "default"
+          });
+        } else {
+          toast({
+            title: "Ошибка захвата",
+            description: result.message || "Не удалось захватить территорию",
+            variant: "destructive"
+          });
+        }
+      } else {
+        const errorData = await response.json();
+        toast({
+          title: "Ошибка захвата",
+          description: errorData.message || "Не удалось захватить территорию",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Ошибка при мирном захвате:', error);
+      toast({
+        title: "Ошибка захвата",
+        description: error instanceof Error ? error.message : "Не удалось захватить территорию",
+        variant: "destructive"
+      });
+    }esult = await response.json();
         toast.success('Территория мирно присоединена!');
         // Обновление произойдет через WebSocket
       } else {
