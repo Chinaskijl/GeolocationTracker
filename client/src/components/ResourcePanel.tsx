@@ -254,24 +254,41 @@ export function ResourcePanel() {
             const building = BUILDINGS.find(b => b.id === buildingId);
             if (building && building.resourceProduction) {
               const { type, amount } = building.resourceProduction;
+              // Map the building IDs to their actual server-side production values
+              const actualProductionValues = {
+                'logging_camp': 3, // Actual value on server
+                'gold_mine': 3,
+                'oil_rig': 3,
+                'metal_factory': 2,
+                'steel_factory': 1,
+                'weapons_factory': 1,
+                'farm': 5 * (city.population || 1) / 100,
+                'theater': 1,
+                'park': 1,
+                'temple': 1
+              };
+              
+              // Use the actual production value if available
+              const actualAmount = actualProductionValues[building.id] || amount;
+              
               switch (type) {
                 case 'gold':
-                  goldProd += amount;
+                  goldProd += actualAmount;
                   break;
                 case 'wood':
-                  woodProd += amount;
+                  woodProd += actualAmount;
                   break;
                 case 'food':
-                  foodProd += amount;
+                  foodProd += actualAmount;
                   break;
                 case 'oil':
-                  oilProd += amount;
+                  oilProd += actualAmount;
                   break;
                 case 'metal':
-                  metalProd += amount;
+                  metalProd += actualAmount;
                   break;
                 case 'steel':
-                  steelProd += amount;
+                  steelProd += actualAmount;
                   break;
                 case 'weapons':
                   weaponsProd += amount;

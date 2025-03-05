@@ -167,40 +167,45 @@ class GameLoop {
 
       // Обновляем удовлетворенность города на основе налоговой ставки и других факторов
       let satisfactionChange = 0; // Начинаем с нуля
-
-      // Базовый прирост добавляем, но только если нет проблем с рабочими
-      // Проверка нехватки рабочих
-      const totalBuildingsCount = city.buildings?.length || 0;
       const cityPopulation = city.population || 0;
-      const availableWorkers = cityPopulation - totalBuildingsCount;
-
-      if (totalBuildingsCount > 0 && availableWorkers < 0) {
-        // Если не хватает рабочих, это сильно снижает удовлетворенность
-        satisfactionChange -= 5.0;
-        console.log(`City ${city.name} lacks workers: ${availableWorkers}, applying -5.0 satisfaction penalty`);
-      } else {
-        // Базовый прирост только если достаточно рабочих
-        satisfactionChange += 0.5;
-      }
-
-      // Эффект от налоговой ставки
-      if (taxRate > 5) {
-        satisfactionChange -= (taxRate - 5) * 0.2; // Высокие налоги снижают удовлетворенность
-      } else if (taxRate < 5) {
-        satisfactionChange += (5 - taxRate) * 0.1; // Низкие налоги немного повышают
-      }
-
-      // Обновление удовлетворенности
-      if (city.satisfaction !== undefined) {
-        let newSatisfaction = city.satisfaction + satisfactionChange;
-        // Ограничиваем значение от 0 до 100
-        newSatisfaction = Math.max(0, Math.min(100, newSatisfaction));
-
-        if (Math.abs(newSatisfaction - city.satisfaction) > 0.01) {
-          await storage.updateCity(city.id, {
-            satisfaction: newSatisfaction
-          });
+      
+      // Проверяем, есть ли население в городе
+      if (cityPopulation > 0) {
+        // Базовый прирост добавляем, но только если нет проблем с рабочими
+        // Проверка нехватки рабочих
+        const totalBuildingsCount = city.buildings?.length || 0;
+        const availableWorkers = cityPopulation - totalBuildingsCount;
+  
+        if (totalBuildingsCount > 0 && availableWorkers < 0) {
+          // Если не хватает рабочих, это сильно снижает удовлетворенность
+          satisfactionChange -= 5.0;
+          console.log(`City ${city.name} lacks workers: ${availableWorkers}, applying -5.0 satisfaction penalty`);
+        } else {
+          // Базовый прирост только если достаточно рабочих
+          satisfactionChange += 0.5;
         }
+  
+        // Эффект от налоговой ставки
+        if (taxRate > 5) {
+          satisfactionChange -= (taxRate - 5) * 0.2; // Высокие налоги снижают удовлетворенность
+        } else if (taxRate < 5) {
+          satisfactionChange += (5 - taxRate) * 0.1; // Низкие налоги немного повышают
+        }
+  
+        // Обновление удовлетворенности
+        if (city.satisfaction !== undefined) {
+          let newSatisfaction = city.satisfaction + satisfactionChange;
+          // Ограничиваем значение от 0 до 100
+          newSatisfaction = Math.max(0, Math.min(100, newSatisfaction));
+  
+          if (Math.abs(newSatisfaction - city.satisfaction) > 0.01) {
+            await storage.updateCity(city.id, {
+              satisfaction: newSatisfaction
+            });
+          }
+        }
+      } else {
+        console.log(`City ${city.name} has no population, skipping satisfaction changes`);
       }
 
       // Базовые ресурсы добавляем только для специально построенных зданий

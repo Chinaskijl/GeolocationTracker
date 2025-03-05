@@ -77,7 +77,7 @@ export const CityPanel: React.FC<CityPanelProps> = ({
   const getBuildingDescription = (buildingId: string) => {
     switch (buildingId) {
       case 'theater':
-        return "Повышает удовлетворённость населения на 10%";
+        return "Повышает удовлетворенность населения на 10%";
       case 'park':
         return "Повышает удовлетворенность населения на 5%";
       default:
@@ -184,10 +184,7 @@ export const CityPanel: React.FC<CityPanelProps> = ({
 
   // Функция для мирного захвата территории с использованием влияния
   const handleCaptureWithInfluence = async () => {
-    if (!city) return;
-
     try {
-      // Используем другой эндпоинт для захвата территории
       const response = await fetch(`/api/capture-region`, {
         method: 'POST',
         headers: {
@@ -201,17 +198,35 @@ export const CityPanel: React.FC<CityPanelProps> = ({
 
       const data = await response.json();
 
-      if (data.success) {
-        // Используем alert вместо toast, пока не добавим библиотеку toast
-        alert('Территория успешно присоединена');
-        // После успешного захвата можно обновить состояние игры
-        // или выполнить другие действия
+      if (response.ok) {
+        toast({
+          title: "Успех",
+          description: "Область успешно присоединена!",
+          variant: "default",
+        });
       } else {
-        alert(data.message || 'Не удалось присоединить территорию');
+        toast({
+          title: "Ошибка",
+          description: data.message || 'Ошибка при мирном захвате',
+          variant: "destructive",
+        });
+
+        // Если требуется конкретное количество влияния, покажем это
+        if (data.required && data.available) {
+          toast({
+            title: "Недостаточно влияния",
+            description: `Требуется: ${data.required}, доступно: ${Math.floor(data.available)}`,
+            variant: "destructive",
+          });
+        }
       }
     } catch (error) {
       console.error('Ошибка при мирном захвате:', error);
-      alert('Произошла ошибка при присоединении территории');
+      toast({
+        title: "Ошибка",
+        description: "Произошла ошибка при мирном захвате",
+        variant: "destructive",
+      });
     }
   };
 
@@ -843,7 +858,7 @@ export const CityPanel: React.FC<CityPanelProps> = ({
                       const distance = y - startY;
 
                       // Прокручиваем контейнер
-                      scrollAreaParent.scrollTop = scrollTop - distance;
+                      scrollAreaParent.scrollTop= scrollTop - distance;
 
                       // Запрещаем выделение текста при перетаскивании
                       moveEvent.preventDefault();
