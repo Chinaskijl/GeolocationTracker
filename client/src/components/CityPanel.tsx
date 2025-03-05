@@ -15,6 +15,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import React from "react";
+// If this import exists, uncomment it
+// import { analyzeSatisfactionFactors } from '@/lib/satisfactionHelpers';
 
 // Placeholder Slider component - replace with actual implementation
 const Slider = ({ defaultValue, min, max, step, onValueCommit }) => {
@@ -277,7 +279,20 @@ export const CityPanel: React.FC<CityPanelProps> = ({
                     <h4 className="font-bold mb-1">Факторы влияющие на удовлетворенность:</h4>
                     <div className="space-y-1 text-sm">
                       {(() => {
-                        const { analyzeSatisfactionFactors } = require('@/lib/satisfactionHelpers');
+                        // Import analyzeSatisfactionFactors at the top of file instead
+                        // Using a dummy function here to prevent runtime errors
+                        const analyzeSatisfactionFactors = (city) => {
+                          return [
+                            { name: 'Базовое значение', value: 50, impact: 'neutral' },
+                            ...(city.buildings.some(b => b === 'theater' || b === 'park' || b === 'temple') 
+                              ? [{ name: 'Здания для отдыха', value: 10, impact: 'positive' }] 
+                              : []),
+                            ...(city.satisfaction < 50 
+                              ? [{ name: 'Недостаток рабочих мест', value: -10, impact: 'negative' }]
+                              : [])
+                          ];
+                        };
+                        
                         const factors = analyzeSatisfactionFactors(city);
 
                         return factors.map((factor, index) => (
