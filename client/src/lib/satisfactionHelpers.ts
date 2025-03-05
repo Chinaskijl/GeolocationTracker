@@ -13,23 +13,25 @@ export interface SatisfactionFactor {
 export function getSatisfactionFactors(city: City): SatisfactionFactor[] {
   const factors = [];
 
+  // Базовый прирост
+  factors.push({
+    name: 'Базовый прирост',
+    impact: '+0.5/с',
+    isPositive: true
+  });
+
   // Проверяем влияние нехватки рабочих
   const cityTotalWorkers = city.buildings?.length || 0;
   const cityPopulation = city.population || 0;
   const cityAvailableWorkers = cityPopulation - cityTotalWorkers;
   
-  if (cityTotalWorkers > 0) {
-    const workerSatisfactionImpact = (cityAvailableWorkers < 0) ? 
-      -5 : // Сильное падение если вообще не хватает работников
-      Math.min(0, -5 * (1 - cityAvailableWorkers / cityTotalWorkers)); // Постепенное падение
-    
-    if (workerSatisfactionImpact < 0) {
-      factors.push({
-        name: 'Нехватка рабочих',
-        impact: workerSatisfactionImpact.toFixed(1) + '/с',
-        isPositive: false
-      });
-    }
+  if (cityTotalWorkers > 0 && cityAvailableWorkers < 0) {
+    // Только если реально не хватает работников
+    factors.push({
+      name: 'Нехватка рабочих',
+      impact: '-5.0/с',
+      isPositive: false
+    });
   }
 
   // Добавляем влияние от культурных зданий
