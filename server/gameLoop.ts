@@ -7,7 +7,7 @@ import { BUILDINGS } from '../client/src/lib/game';
 class GameLoop {
   private clients: WebSocket[] = [];
   private interval: NodeJS.Timeout | null = null;
-  private tickRate: number = 5000; // Интервал между обновлениями (5 секунд)
+  private tickRate: number = 1000; // Интервал между обновлениями (1 секунда)
 
   // Добавление нового клиента
   addClient(ws: WebSocket) {
