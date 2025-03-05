@@ -156,10 +156,7 @@ export const CityPanel: React.FC<CityPanelProps> = ({
         description: 'Не удалось захватить город',
         variant: 'destructive',
       });
-    }та",
-          variant: "destructive"
-        });
-      }st('PATCH', `/api/cities/${city.id}/capture`, {
+    }
           isCapital: false,
           method: 'influence'
         });
