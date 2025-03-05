@@ -494,8 +494,53 @@ export const CityPanel: React.FC<CityPanelProps> = ({
                 <h3 className="font-medium">Строительство</h3>
                 <p className="text-sm">Постройте здания для производства ресурсов и расширения города.</p>
 
-                {/* Табы категорий зданий */}
-                <div className="flex space-x-2 overflow-x-auto pb-2">
+                {/* Табы категорий зданий с возможностью перетаскивания */}
+                <div 
+                  className="flex space-x-2 overflow-x-auto pb-2 cursor-grab"
+                  id="categories-container"
+                  onMouseDown={(e) => {
+                    const container = document.getElementById('categories-container');
+                    if (!container) return;
+                    
+                    // Начальные позиции
+                    const startX = e.pageX;
+                    const scrollLeft = container.scrollLeft;
+                    
+                    // Функция обработки движения мыши
+                    const onMouseMove = (moveEvent: MouseEvent) => {
+                      // Вычисляем насколько переместилась мышь
+                      const x = moveEvent.pageX;
+                      const distance = x - startX;
+                      
+                      // Прокручиваем контейнер
+                      container.scrollLeft = scrollLeft - distance;
+                      
+                      // Запрещаем выделение текста при перетаскивании
+                      moveEvent.preventDefault();
+                    };
+                    
+                    // Функция обработки отпускания кнопки мыши
+                    const onMouseUp = () => {
+                      // Удаляем обработчики событий
+                      document.removeEventListener('mousemove', onMouseMove);
+                      document.removeEventListener('mouseup', onMouseUp);
+                      
+                      // Возвращаем курсор
+                      if (container) {
+                        container.classList.remove('cursor-grabbing');
+                        container.classList.add('cursor-grab');
+                      }
+                    };
+                    
+                    // Изменяем курсор при перетаскивании
+                    container.classList.remove('cursor-grab');
+                    container.classList.add('cursor-grabbing');
+                    
+                    // Добавляем обработчики событий
+                    document.addEventListener('mousemove', onMouseMove);
+                    document.addEventListener('mouseup', onMouseUp);
+                  }}
+                >
                   <Button 
                     variant="outline" 
                     size="sm" 
@@ -752,8 +797,11 @@ export const CityPanel: React.FC<CityPanelProps> = ({
             <div className="space-y-2">
               <h3 className="font-medium">Постройки</h3>
               
-              <ScrollArea className="h-[250px] pr-3">
-                <div className="space-y-2">
+              <ScrollArea className="h-[300px] pr-3">
+                <div 
+                  className="space-y-2"
+                  id="buildings-container"
+                >
                   {/* Группировка зданий по типу */}
                   {Object.entries(
                     city.buildings.reduce((acc, buildingId) => {
