@@ -1,8 +1,16 @@
 
 import { City } from '../../shared/regionTypes';
 
+// Интерфейс для факторов удовлетворенности
+export interface SatisfactionFactor {
+  name: string;
+  impact: string;
+  isPositive: boolean;
+  isWarning?: boolean;
+}
+
 // Функция для получения всех факторов, влияющих на удовлетворенность
-export function getSatisfactionFactors(city: City) {
+export function getSatisfactionFactors(city: City): SatisfactionFactor[] {
   const factors = [];
 
   // Проверяем влияние нехватки рабочих
@@ -29,10 +37,10 @@ export function getSatisfactionFactors(city: City) {
     ['theater', 'park', 'temple'].includes(buildingId)) || [];
   
   if (culturalBuildings.length > 0) {
-    const citySatisfactionBonus = culturalBuildings.length * 5; // Примерный расчет бонуса
+    const citySatisfactionBonus = culturalBuildings.length * 0.5; // Корректировка бонуса
     factors.push({
       name: 'Культурные здания',
-      impact: '+' + (citySatisfactionBonus * 0.1).toFixed(1) + '/с',
+      impact: '+' + citySatisfactionBonus.toFixed(1) + '/с',
       isPositive: true
     });
   }
@@ -49,16 +57,42 @@ export function getSatisfactionFactors(city: City) {
     });
   }
 
-  // Проверка на наличие еды для населения
+  // Проверка на общее потребление еды
   if (city.population > 0) {
     const foodNeeded = city.population * 0.1; // 0.1 еды на человека
-    if (foodNeeded > 0) {
+    const foodBalance = city.resources?.food || 0;
+    
+    if (foodBalance < foodNeeded) {
       factors.push({
-        name: 'Потребление еды',
-        impact: 'Требуется: ' + foodNeeded.toFixed(1) + '/с',
-        isPositive: true
+        name: 'Нехватка еды',
+        impact: '-1.0/с',
+        isPositive: false,
+        isWarning: true
       });
     }
+  }
+
+  // Добавляем влияние перенаселения
+  if (city.population > 0 && city.maxPopulation > 0) {
+    const populationRatio = city.population / city.maxPopulation;
+    if (populationRatio > 0.8) {
+      const overpopulationImpact = -2 * (populationRatio - 0.8) / 0.2;
+      factors.push({
+        name: 'Перенаселение',
+        impact: overpopulationImpact.toFixed(1) + '/с',
+        isPositive: false
+      });
+    }
+  }
+
+  // Базовое падение при росте населения
+  if (city.population > 20) {
+    const baseDecayImpact = -0.2 - (city.population * 0.01);
+    factors.push({
+      name: 'Базовое падение',
+      impact: baseDecayImpact.toFixed(1) + '/с',
+      isPositive: false
+    });
   }
 
   // Статус протестов

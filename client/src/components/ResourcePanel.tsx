@@ -255,13 +255,29 @@ export function ResourcePanel() {
         </div>
 
         {cities.filter(city => city.owner === 'player').map(city => (
-          <div key={`satisfaction-${city.id}`} className="border-l pl-4">
+          <div key={`satisfaction-${city.id}`} className="border-l pl-4 relative group">
             <div className="flex items-center gap-2">
               <span>{city.satisfaction >= 70 ? '😃' : city.satisfaction >= 30 ? '😐' : '😠'}</span>
               <span className="font-medium">
                 {city.name.split(' ')[0]}: {Math.floor(city.satisfaction || 0)}%
                 {city.protestTimer ? <span className="ml-1 text-xs text-red-500">(⚠️ {Math.floor(city.protestTimer)}s)</span> : ''}
               </span>
+            </div>
+            
+            {/* Тултип для удовлетворенности */}
+            <div className="hidden group-hover:block absolute top-full left-0 bg-black/80 text-white p-2 rounded text-xs z-50 w-64">
+              <div className="font-bold mb-1">Факторы удовлетворенности:</div>
+              {getSatisfactionFactors(city).map((factor, idx) => (
+                <div key={`factor-${idx}`} className="flex justify-between items-center my-1">
+                  <span>{factor.name}:</span>
+                  <span className={`${factor.isPositive ? 'text-green-400' : factor.isWarning ? 'text-yellow-400' : 'text-red-400'}`}>
+                    {factor.impact}
+                  </span>
+                </div>
+              ))}
+              {getSatisfactionFactors(city).length === 0 && (
+                <div className="text-gray-300">Нет активных факторов</div>
+              )}
             </div>
           </div>
         ))}
