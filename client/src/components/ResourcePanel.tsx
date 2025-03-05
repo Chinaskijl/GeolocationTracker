@@ -248,20 +248,7 @@ export function ResourcePanel() {
         {tooltipItems.length > 0 ? tooltipItems : <p>Нет данных о производстве</p>}
       </div>
     );
-  };
-    return tooltipContent;
-  };
-
-
-  // Function to create tooltip content showing production sources
-  const createTooltipContent = (resourceType) => {
-    const tooltipItems = [];
-
-    // Add tax income for gold
-    if (resourceType === 'gold' && resourcesIncome?.gold !== undefined) {
-      tooltipItems.push(
-        <div key="taxes" className="whitespace-nowrap">
-          Налоги: <span className={getProductionColor(resourcesIncome.gold)}>
+  };lassName={getProductionColor(resourcesIncome.gold)}>
             {formatProduction(resourcesIncome.gold)}/с
           </span>
           {cities.filter(c => c.owner === 'player').map(city => (
