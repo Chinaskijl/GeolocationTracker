@@ -57,17 +57,26 @@ export function getSatisfactionFactors(city: City): SatisfactionFactor[] {
     });
   }
 
-  // Проверка на общее потребление еды
-  if (city.population > 0) {
+  // Проверка наличия еды в глобальных ресурсах, а не в ресурсах города
+  // Импортируем состояние игры из store для проверки глобальных ресурсов
+  const globalFood = window.gameStore?.getState()?.gameState?.resources?.food;
+  
+  if (city.population > 0 && globalFood !== undefined) {
     const foodNeeded = city.population * 0.1; // 0.1 еды на человека
-    const foodBalance = city.resources?.food || 0;
     
-    if (foodBalance < foodNeeded) {
+    if (globalFood < foodNeeded) {
       factors.push({
         name: 'Нехватка еды',
         impact: '-1.0/с',
         isPositive: false,
         isWarning: true
+      });
+    } else {
+      // Если еды достаточно, отображаем позитивный фактор
+      factors.push({
+        name: 'Достаточно еды',
+        impact: '+0.0/с',
+        isPositive: true
       });
     }
   }
@@ -85,17 +94,16 @@ export function getSatisfactionFactors(city: City): SatisfactionFactor[] {
     }
   }
 
-  // Базовое падение при росте населения
-  if (city.population > 20) {
-    const baseDecayImpact = -0.2 - (city.population * 0.01);
+  // Если нет отрицательных факторов, добавляем базовый прирост
+  if (factors.filter(f => !f.isPositive).length === 0 && city.satisfaction < 100) {
     factors.push({
-      name: 'Базовое падение',
-      impact: baseDecayImpact.toFixed(1) + '/с',
-      isPositive: false
+      name: 'Базовый прирост',
+      impact: '+0.5/с',
+      isPositive: true
     });
   }
 
-  // Статус протестов
+  // Если идут протесты
   if (city.protestTimer) {
     factors.push({
       name: 'Протесты',

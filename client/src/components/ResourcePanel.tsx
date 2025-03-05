@@ -274,8 +274,7 @@ export function ResourcePanel() {
                     {factor.impact}
                   </span>
                 </div>
-              ))}
-              {getSatisfactionFactors(city).length === 0 && (
+              ))}Factors(city).length === 0 && (
                 <div className="text-gray-300">Нет активных факторов</div>
               )}
             </div>

@@ -277,7 +277,16 @@ export const CityPanel: React.FC<CityPanelProps> = ({
                   </TooltipTrigger>
                   <TooltipContent className="w-72 p-3">
                     <h4 className="font-bold mb-1">Факторы влияющие на удовлетворенность:</h4>
-                    <ul className="text-sm space-y-1">
+                    <ul className="space-y-1">
+                      {getSatisfactionFactors(city).map((factor, idx) => (
+                        <li key={`city-factor-${idx}`} className="flex justify-between">
+                          <span>{factor.name}:</span>
+                          <span className={`${factor.isPositive ? 'text-green-500' : factor.isWarning ? 'text-yellow-500' : 'text-red-500'}`}>
+                            {factor.impact}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>Name="text-sm space-y-1">
                       <li>- Базовое значение: 50%</li>
                       <li>- Количество рабочих мест: {city.satisfaction < 50 ?
                         <span className="text-red-500">Недостаточно рабочих мест</span> :
