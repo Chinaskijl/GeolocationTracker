@@ -304,9 +304,9 @@ export const CityPanel: React.FC<CityPanelProps> = ({
             </div>
             <div className="text-sm space-y-1">
               <ul>
-                      <li>- Базовое значение: 50%</li>
-                      <li>- Количество рабочих мест: {city.satisfaction < 50 ?
-                        <span className="text-red-500">Недостаточно рабочих мест</span> :
+                <li>- Базовое значение: 50%</li>
+                <li>- Количество рабочих мест: {city.satisfaction < 50 ?
+                  <span className="text-red-500">Недостаточно рабочих мест</span> :
                         <span className="text-green-500">Достаточно</span>}
                       </li>
                       <li>- Бонусы от зданий: {city.buildings.some(b => b === 'theater' || b === 'park' || b === 'temple') ?
