@@ -303,6 +303,8 @@ export const CityPanel: React.FC<CityPanelProps> = ({
               </Tooltip>
             </div>
             <div className="text-sm space-y-1">
+              <ul>
+            <div className="text-sm space-y-1">
                       <li>- Базовое значение: 50%</li>
                       <li>- Количество рабочих мест: {city.satisfaction < 50 ?
                         <span className="text-red-500">Недостаточно рабочих мест</span> :
