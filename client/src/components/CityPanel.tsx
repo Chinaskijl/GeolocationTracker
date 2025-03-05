@@ -496,50 +496,7 @@ export const CityPanel: React.FC<CityPanelProps> = ({
 
                 {/* Табы категорий зданий с возможностью перетаскивания */}
                 <div 
-                  className="flex space-x-2 overflow-x-auto pb-2 cursor-grab"
-                  id="categories-container"
-                  onMouseDown={(e) => {
-                    const container = document.getElementById('categories-container');
-                    if (!container) return;
-                    
-                    // Начальные позиции
-                    const startX = e.pageX;
-                    const scrollLeft = container.scrollLeft;
-                    
-                    // Функция обработки движения мыши
-                    const onMouseMove = (moveEvent: MouseEvent) => {
-                      // Вычисляем насколько переместилась мышь
-                      const x = moveEvent.pageX;
-                      const distance = x - startX;
-                      
-                      // Прокручиваем контейнер
-                      container.scrollLeft = scrollLeft - distance;
-                      
-                      // Запрещаем выделение текста при перетаскивании
-                      moveEvent.preventDefault();
-                    };
-                    
-                    // Функция обработки отпускания кнопки мыши
-                    const onMouseUp = () => {
-                      // Удаляем обработчики событий
-                      document.removeEventListener('mousemove', onMouseMove);
-                      document.removeEventListener('mouseup', onMouseUp);
-                      
-                      // Возвращаем курсор
-                      if (container) {
-                        container.classList.remove('cursor-grabbing');
-                        container.classList.add('cursor-grab');
-                      }
-                    };
-                    
-                    // Изменяем курсор при перетаскивании
-                    container.classList.remove('cursor-grab');
-                    container.classList.add('cursor-grabbing');
-                    
-                    // Добавляем обработчики событий
-                    document.addEventListener('mousemove', onMouseMove);
-                    document.addEventListener('mouseup', onMouseUp);
-                  }}
+                  className="flex space-x-2 overflow-x-auto pb-2"
                 >
                   <Button 
                     variant="outline" 
