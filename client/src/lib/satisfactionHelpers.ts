@@ -13,15 +13,25 @@ export interface SatisfactionFactor {
 export function getSatisfactionFactors(city: City): SatisfactionFactor[] {
   const factors = [];
 
+  // Добавляем базовый прирост удовлетворенности
+  factors.push({
+    name: 'Базовый прирост',
+    impact: '+0.5/с',
+    isPositive: true
+  });
+
   // Проверяем влияние нехватки рабочих
   const cityTotalWorkers = city.buildings?.length || 0;
   const cityPopulation = city.population || 0;
   const cityAvailableWorkers = cityPopulation - cityTotalWorkers;
   
   if (cityTotalWorkers > 0) {
+    // Применяем штраф только если работников не хватает
     const workerSatisfactionImpact = (cityAvailableWorkers < 0) ? 
       -5 : // Сильное падение если вообще не хватает работников
-      Math.min(0, -5 * (1 - cityAvailableWorkers / cityTotalWorkers)); // Постепенное падение
+      (cityAvailableWorkers < cityTotalWorkers * 0.5) ? 
+        Math.min(0, -5 * (0.5 - cityAvailableWorkers / cityTotalWorkers)) : // Постепенное падение при менее 50% работников
+        0; // Нет штрафа если достаточно работников
     
     if (workerSatisfactionImpact < 0) {
       factors.push({
@@ -54,6 +64,17 @@ export function getSatisfactionFactors(city: City): SatisfactionFactor[] {
       name: 'Налоговая ставка',
       impact: (taxSatisfactionImpact > 0 ? '+' : '') + taxSatisfactionImpact.toFixed(1) + '/с',
       isPositive: taxSatisfactionImpact > 0
+    });
+  }
+
+  // Добавляем штраф за отсутствие золота при нулевой ставке
+  const globalResources = window.gameStore?.getState()?.gameState?.resources;
+  if (taxRate === 0 && globalResources && globalResources.gold <= 0) {
+    factors.push({
+      name: 'Нет золота для субсидий',
+      impact: '-2.0/с',
+      isPositive: false,
+      isWarning: true
     });
   }
 
